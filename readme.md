@@ -34,7 +34,7 @@ The following need to be added for this implementation to be of any use:
 * set
 * Standard operands on objects, for comparisons and math. n m + to leave type(n) on stack, so if n m + cannot be added, can n m n type totype + n be executed instead?
 * sort ( w array -- ) where w is anonymous word.
-* move execstate state into variables
+* create execstate local variables, and move execstate variables into them
 * ```INTERPRET``` is currently implemented in C++, and it should be recoded in Forth. 
   * Dictionary to gain invocable words 
   * Typesystem to be made a ref-counted object, with invocable words
@@ -65,7 +65,7 @@ Implement traditional Forth behaviour. Keep the old word alive, just unreacheabl
 
 ## Type system
 
-The type system is declared in TypeSystem.h
+The type system is declared in TypeSystem.h.  It's a singleton that is returned by TypeSystem::GetTypeSystem().  Typically in methods where it is used, it is retrieved into a local variable named pTS.
 
 The type system supports:
 * bool
@@ -92,7 +92,7 @@ The upper 16 bits is the indirection level:
 * 1 would correspond to a pointer to a value type, or a pointer to an object (held in C++ as a pointer to a pointer)
 * 2 would correspond to a pointer, to a pointer, to a value type.
 
-creating a variable created a pointer (with indirection level of 1):
+creating a variable creates a pointer (with indirection level of 1):
 
 ```" hello I am a string " variable vstr```
 
@@ -137,7 +137,7 @@ Currently the execution state is stored in ExecState. The following would need t
 
 Exceptions would need to be pushed onto the stack as a string and ```QUIT``` called directly.
 
-The built in word, ```Exit```, which lives at the end of each compiled (second-level) word, currently just returns ```false``` to the function that is iterating over all the word list to call. Doing so without creating an exception in the ExecState (execution state) implies that the word being run should exit.
+The built-in word, ```Exit```, which lives at the end of each compiled (second-level) word, currently just returns ```false``` to the function that is iterating over all the word list to call. Doing so without creating an exception in the ExecState (execution state) implies that the word being run should exit.
 
 (according to some references, this ```Exit``` should actually be called ```SEMI```)
 
@@ -147,9 +147,9 @@ This word would need to instead pull the return address in a known location wher
 
 The built-in word, ```QUIT``` would need to be given direct control of the return stack by implementing ```RP```, so it can blank out the current execution state and restart interpreting.
 
-The dictionary would either need implementing as a singly-linked list, or as btree or hashmap implemented in Forth. Implementing a btree or hashmap would need a heap and garbage collection.
+The dictionary would either need implementing as a singly-linked list, or as btree or hashmap implemented in Forth.
 
-This would be a good target for web assembly, allowing the resulting program to interact with the HTML5 canvas. 
+This would be a good target for web assembly.
 
 ## Things to try
 
