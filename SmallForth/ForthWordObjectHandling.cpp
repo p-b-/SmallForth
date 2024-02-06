@@ -19,14 +19,22 @@ using namespace std;
 
 bool PreBuiltWords::BuiltIn_StringLiteral(ExecState* pExecState) {
 	pExecState->insideStringLiteral = true;
-	// TODO Change this to get individual characters, so can absorb multiple spaces
-	//      This can be done when input processor is changed to absorb characters through a KEY word
 	InputWord inputWord = pExecState->pInputProcessor->GetNextWord(pExecState);
 	string partOfWord = inputWord.word;
 
 	string literal;
+	bool firstPart = true;
 	while (partOfWord.compare("\"") != 0) {
-		if (literal.length() > 0) {
+		if (firstPart) {
+			// literals start with "_ and that first space (represented by underscore) should not be added, so it is -1 here on the loop comparison
+			firstPart = false;
+			for (int i = 0; i < pExecState->delimitersAfterCurrentWord-1; ++i) {
+				literal += " ";
+			}
+		}
+		else {
+			// In previous loop, added one less space than the delimiter count specified, in case it was the last iteration of the loop
+			//  String literals end _" and that final space should not be included.  This line is adding that space, as it wasn't the final iteration
 			literal += " ";
 		}
 		literal += partOfWord;

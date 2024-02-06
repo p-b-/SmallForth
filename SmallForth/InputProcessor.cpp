@@ -39,6 +39,7 @@ tuple<ForthWord*, bool> InputProcessor::GetForthWordFromVocabOrObject(ExecState*
 	if (pExecState->insideLineComment || wordName.length() == 0) {
 		return { nullptr, executeOnTOSObject };
 	}
+	pExecState->delimitersAfterCurrentWord = wordWithDelimiterCount.postDelimiterCount;
 	ForthWord* pWord = nullptr;
 	if (pExecState->nextWordIsCharLiteral) {
 		pExecState->nextWordIsCharLiteral = false;

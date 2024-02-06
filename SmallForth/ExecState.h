@@ -89,6 +89,7 @@ public:
 	bool runtimeCompileState;
 	bool executionPostponed;
 	bool nextWordIsCharLiteral;
+	int delimitersAfterCurrentWord;
 
 	bool exceptionThrown;
 	char* pzException;
