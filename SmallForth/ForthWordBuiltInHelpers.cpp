@@ -7,6 +7,7 @@
 #include "ForthDict.h"
 #include "TypeSystem.h"
 #include "CompileHelper.h"
+#include "PreBuiltWords.h"
 
 // TODO Refactor this
 //      This will be altered when changing the way binary operations function.  Simple types will still have code from here, but if type1 (further down the stack) is an object, it
@@ -233,19 +234,19 @@ bool ForthWord::BuiltInHelper_UpdateForwardJump(ExecState* pExecState) {
 	if (pExecState->compileState == false) {
 		return pExecState->CreateException("Cannot update forward jump when not compiling");
 	}
-	if (!ForthWord::BuiltIn_PushReturnStackToDataStack(pExecState)) {
+	if (!PreBuiltWords::BuiltIn_PushReturnStackToDataStack(pExecState)) {
 		return false;
 	}
 	if (!pExecState->ExecuteWordDirectly("2+")) {
 		return false;
 	}
 
-	if (!ForthWord::BuiltIn_Here(pExecState)) {
+	if (!PreBuiltWords::BuiltIn_Here(pExecState)) {
 		return false;
 	}
 
 	// poke ( addr:value -- ) *addr=value
-	if (!ForthWord::BuiltIn_PokeIntegerInWord(pExecState)) {
+	if (!PreBuiltWords::BuiltIn_PokeIntegerInWord(pExecState)) {
 		return false;
 	}
 	return true;

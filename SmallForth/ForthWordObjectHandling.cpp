@@ -13,10 +13,11 @@
 #include "TypeSystem.h"
 #include "UserDefinedObject.h"
 #include "CompileHelper.h"
+#include "PreBuiltWords.h"
 
 using namespace std;
 
-bool ForthWord::BuiltIn_StringLiteral(ExecState* pExecState) {
+bool PreBuiltWords::BuiltIn_StringLiteral(ExecState* pExecState) {
 	pExecState->insideStringLiteral = true;
 	// TODO Change this to get individual characters, so can absorb multiple spaces
 	//      This can be done when input processor is changed to absorb characters through a KEY word
@@ -49,30 +50,30 @@ bool ForthWord::BuiltIn_StringLiteral(ExecState* pExecState) {
 	return true;
 }
 
-bool ForthWord::BuiltIn_CallObject(ExecState* pExecState) {
+bool PreBuiltWords::BuiltIn_CallObject(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
 	StackElement* pElementAddress;
 	StackElement* pElementFunctionIndex;
-	if (!BuiltInHelper_GetTwoStackElements(pExecState, pElementFunctionIndex, pElementAddress)) {
+	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElementFunctionIndex, pElementAddress)) {
 		return pExecState->CreateStackUnderflowException();
 	}
 
 	ForthType addressType = pElementAddress->GetType();
 	ForthType indexType = pElementFunctionIndex->GetType();
 	if (!pTS->TypeIsObject(addressType) || indexType!=StackElement_Int) {
-		BuiltInHelper_DeleteOperands(pElementFunctionIndex, pElementAddress);
+		ForthWord::BuiltInHelper_DeleteOperands(pElementFunctionIndex, pElementAddress);
 		return pExecState->CreateException("Invoking call must have ( index objaddr -- )");
 	}
 	RefCountedObject* pObj = pElementAddress->GetObject();
 	int n = (int)pElementFunctionIndex->GetInt();
 	bool success = pObj->InvokeFunctionIndex(pExecState, (ObjectFunction)n);
 
-	BuiltInHelper_DeleteOperands(pElementFunctionIndex, pElementAddress);
+	ForthWord::BuiltInHelper_DeleteOperands(pElementFunctionIndex, pElementAddress);
 	return success;
 }
 
-bool ForthWord::BuiltIn_Construct(ExecState* pExecState) {
+bool PreBuiltWords::BuiltIn_Construct(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
 	StackElement* pElementType;
@@ -85,7 +86,7 @@ bool ForthWord::BuiltIn_Construct(ExecState* pExecState) {
 	}
 
 	ForthType type = pElementType->GetValueType();
-	BuiltInHelper_DeleteStackElement(pElementType);
+	ForthWord::BuiltInHelper_DeleteStackElement(pElementType);
 
 	if (pTS->GetIndirectionLevel(type) > 0) {
 		return pExecState->CreateException("Currently constructing pointers to objects is not supported");
@@ -94,24 +95,24 @@ bool ForthWord::BuiltIn_Construct(ExecState* pExecState) {
 	return pTS->Construct(pExecState, type);
 }
 
-bool ForthWord::BuiltIn_DefineObject(ExecState* pExecState) {
+bool PreBuiltWords::BuiltIn_DefineObject(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
 	StackElement* pElementObjectName;
 	StackElement* pElementStateCount;
-	if (!BuiltInHelper_GetTwoStackElements(pExecState, pElementStateCount, pElementObjectName)) {
+	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElementStateCount, pElementObjectName)) {
 		return false;
 	}
 	if (pElementObjectName->GetType() != ObjectType_String ||
 		pElementStateCount->GetType() != StackElement_Int) {
-		BuiltInHelper_DeleteOperands(pElementStateCount, pElementObjectName);
+		ForthWord::BuiltInHelper_DeleteOperands(pElementStateCount, pElementObjectName);
 		return pExecState->CreateException("Define objects must be called with ( [state] n $ -- ");
 	}
 	ForthString* pString = (ForthString* )pElementObjectName->GetObject();
 	string newTypeName = pString->GetContainedString();
 	int stateCount = (int)pElementStateCount->GetInt();
 
-	BuiltInHelper_DeleteOperands(pElementStateCount, pElementObjectName);
+	ForthWord::BuiltInHelper_DeleteOperands(pElementStateCount, pElementObjectName);
 
 	if (pTS->TypeExists(newTypeName)) {
 		return pExecState->CreateException("Object type already exists");

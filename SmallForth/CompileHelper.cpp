@@ -4,6 +4,7 @@
 #include "DataStack.h"
 #include "ForthWord.h"
 #include "ForthDict.h"
+#include "PreBuiltWords.h"
 
 CompileHelper::CompileHelper() {
 	this->pWordUnderCreation = nullptr;
@@ -16,7 +17,7 @@ bool CompileHelper::CompilePushAndLiteralIntoWordBeingCreated(ExecState* pExecSt
 	}
 
 	// This compiles whatever is on the stack now, as a literal into the word being compiled
-	if (!ForthWord::BuiltIn_Literal(pExecState)) {
+	if (!PreBuiltWords::BuiltIn_Literal(pExecState)) {
 		return false;
 	}
 	return true;
@@ -28,7 +29,7 @@ bool CompileHelper::CompilePushAndLiteralIntoWordBeingCreated(ExecState* pExecSt
 	}
 
 	// This compiles whatever is on the stack now, as a literal into the word being compiled
-	if (!ForthWord::BuiltIn_Literal(pExecState)) {
+	if (!PreBuiltWords::BuiltIn_Literal(pExecState)) {
 		return false;
 	}
 	return true;
@@ -40,7 +41,7 @@ bool CompileHelper::CompilePushAndLiteralIntoWordBeingCreated(ExecState* pExecSt
 	}
 
 	// This compiles whatever is on the stack now, as a literal into the word being compiled
-	if (!ForthWord::BuiltIn_Literal(pExecState)) {
+	if (!PreBuiltWords::BuiltIn_Literal(pExecState)) {
 		return false;
 	}
 	return true;
@@ -52,7 +53,7 @@ bool CompileHelper::CompilePushAndLiteralIntoWordBeingCreated(ExecState* pExecSt
 	}
 
 	// This compiles whatever is on the stack now, as a literal into the word being compiled
-	if (!ForthWord::BuiltIn_Literal(pExecState)) {
+	if (!PreBuiltWords::BuiltIn_Literal(pExecState)) {
 		return false;
 	}
 	return true;
@@ -75,7 +76,7 @@ bool CompileHelper::CompilePushAndLiteralIntoWordBeingCreated(ExecState* pExecSt
 		return pExecState->CreateStackOverflowException();
 	}
 
-	if (!ForthWord::BuiltIn_Literal(pExecState)) {
+	if (!PreBuiltWords::BuiltIn_Literal(pExecState)) {
 		return false;
 	}
 	return true;

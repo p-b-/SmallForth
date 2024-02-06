@@ -13,6 +13,7 @@
 #include "TypeSystem.h"
 #include "CompileHelper.h"
 #include "ForthFile.h"
+#include "PreBuiltWords.h"
 
 int InputProcessor::HandlerRoutine(unsigned long fdwCtrlType) {
 	if (fdwCtrlType == CTRL_C_EVENT) {
@@ -106,7 +107,7 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 			}
 			continue;
 		}
-		if (pExecState->insideComment && WordMatchesXT(pWord, ForthWord::BuiltIn_ParenthesisCommentEnd) == false)
+		if (pExecState->insideComment && WordMatchesXT(pWord, PreBuiltWords::BuiltIn_ParenthesisCommentEnd) == false)
 		{
 			continue;
 		}
