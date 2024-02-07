@@ -75,7 +75,6 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseWord(pDict, "word>object", PreBuiltWords::BuiltIn_AddWordToObject);
 	InitialiseWord(pDict, "find", PreBuiltWords::BuiltIn_Find);
 
-	InitialiseWord(pDict, "variable", PreBuiltWords::BuiltIn_Variable);
 	InitialiseImmediateWord(pDict, "]", PreBuiltWords::BuiltIn_StartCompilation);
 	InitialiseImmediateWord(pDict, "[", PreBuiltWords::BuiltIn_EndCompilation);
 	InitialiseImmediateWord(pDict, "postpone", PreBuiltWords::BuiltIn_Postpone);
@@ -207,6 +206,7 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	pEndWordDefinition = nullptr;
 
 	InterpretForth(pExecState, ": constant create postpone #literal reveal postpone does> fetchliteral ;");
+	InterpretForth(pExecState, ": variable create postpone #literal reveal ;");
 
 	InterpretForth(pExecState, "1 type type variable #compileForType");
 
@@ -851,7 +851,7 @@ bool PreBuiltWords::BuiltIn_Create(ExecState* pExecState) {
 	string word = iw.word;
 
 	pExecState->pCompiler->StartWordCreation(word);
-	pExecState->pCompiler->CompileDoesXT(pExecState, PreBuiltWords::BuiltIn_PushIntPter);
+	pExecState->pCompiler->CompileDoesXT(pExecState, PreBuiltWords::BuiltIn_PushPter);
 
 	return true;
 }
@@ -1912,12 +1912,6 @@ bool PreBuiltWords::BuiltIn_CharLiteral(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_FetchLiteral(ExecState* pExecState) {
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
-	if (nCompileState == 0) {
-		return pExecState->CreateException("Cannot execute FETCHLITERAL when not compiling");
-	}
-
 	return ForthWord::BuiltInHelper_FetchLiteralWithOffset(pExecState, 0);
 }
 
