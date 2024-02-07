@@ -73,6 +73,8 @@ public:
 	bool NestSelfPointer(RefCountedObject* pSelf);
 	bool UnnestSelfPointer();
 	RefCountedObject* GetCurrentSelfPter();
+	bool* GetPointerToBoolStateVariable(int index) { return boolStates + index; }
+	int64_t* GetPointerToIntStateVariable(int index) { return intStates + index; }
 
 public:
 	ForthDict* pDict;
@@ -104,4 +106,9 @@ public:
 	string interpetPrompt;
 
 	CompileHelper* pCompiler;
+
+private:
+	static const int c_maxStates = 10;
+	bool boolStates[c_maxStates];
+	int64_t intStates[c_maxStates];
 };

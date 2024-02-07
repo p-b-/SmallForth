@@ -14,6 +14,9 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseImmediateWord(pDict, ")", PreBuiltWords::BuiltIn_ParenthesisCommentEnd);
 	InitialiseImmediateWord(pDict, "\\", PreBuiltWords::BuiltIn_LineCommentStart);
 
+	InitialiseWord(pDict, "#boolvar", PreBuiltWords::BuiltIn_ThreadSafeBoolVariable);
+	InitialiseWord(pDict, "#intvar", PreBuiltWords::BuiltIn_ThreadSafeIntVariable);
+	
 	InitialiseWord(pDict, "docol", PreBuiltWords::BuiltIn_DoCol);
 	InitialiseWord(pDict, "[docol]", PreBuiltWords::BuiltIn_IndirectDoCol);
 	InitialiseWord(pDict, "immediate", PreBuiltWords::BuiltIn_Immediate);
@@ -142,6 +145,7 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 
 void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	ForthDict* pDict = pExecState->pDict;
+
 	ForthWord* pDefineWord = new ForthWord(":", PreBuiltWords::BuiltIn_DoCol);
 	CompileWordIntoWord(pDict, pDefineWord, "create");
 	CompileWordIntoWord(pDict, pDefineWord, "]");
@@ -166,6 +170,39 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	pEndWordDefinition = nullptr;
 
 	InterpretForth(pExecState, "1 type type variable #compileForType");
+
+	InterpretForth(pExecState, "0 variable #nextIntVarIndex");
+	InterpretForth(pExecState, "0 variable #nextBoolVarIndex");
+
+	InterpretForth(pExecState, ": #getNextIntVarIndex #nextIntVarIndex dup @ dup 1 + rot ! ; immediate");
+	InterpretForth(pExecState, ": #getNextBoolVarIndex #nextBoolVarIndex dup @ dup 1 + rot ! ; immediate");
+	InterpretForth(pExecState, ": variable_intstate \
+        create \
+          postpone ] \
+          postpone #getNextIntVarIndex \
+          postpone dup \
+          postpone literal \
+          #intvar ! \
+          (postpone) #intvar \
+          (postpone) postpone exit \
+          reveal \
+          postpone does> docol \
+          postpone [ \
+        ;");
+	InterpretForth(pExecState, ": variable_boolstate \
+        create \
+          postpone ] \
+          postpone #getNextBoolVarIndex \
+          postpone dup \
+          postpone literal \
+          #boolvar ! \
+          (postpone) #boolvar \
+          (postpone) postpone exit \
+          reveal \
+          postpone does> docol \
+          postpone [ \
+        ;");
+
 	InterpretForth(pExecState, "3.1415926535897932384626433832795 constant pi");
 	InterpretForth(pExecState, ": radtodeg pi / 180 * ;");
 	InterpretForth(pExecState, ": degtorad 180 / pi * ;");
@@ -316,6 +353,54 @@ bool PreBuiltWords::CompileWordIntoWord(ForthDict* pDict, ForthWord* pForthWord,
 	}
 	pForthWord->CompileCFAPterIntoWord(pAdd->GetPterToBody());
 
+	return true;
+}
+
+bool PreBuiltWords::BuiltIn_ThreadSafeBoolVariable(ExecState* pExecState) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+	StackElement* pElementIndex;
+	bool incorrectType;
+	tie(incorrectType, pElementIndex) = pExecState->pStack->PullType(StackElement_Int);
+	if (incorrectType) {
+		return pExecState->CreateException("Getting thread safe variable must be called with ( n -- ) - need an element index");
+	}
+	else if (pElementIndex == nullptr) {
+		return pExecState->CreateStackUnderflowException("whilst getting threadsafe bool");
+	}
+	int index = (int)pElementIndex->GetInt();
+	delete pElementIndex;
+	pElementIndex = nullptr;
+
+	bool* pVar = pExecState->GetPointerToBoolStateVariable(index);
+	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Bool);
+	StackElement* pElementVariable = new StackElement(pterType, (void*)pVar);
+	if (!pExecState->pStack->Push(pElementVariable)) {
+		return pExecState->CreateStackOverflowException("whilst pushing a state boolean variable");
+	}
+	return true;
+}
+
+bool PreBuiltWords::BuiltIn_ThreadSafeIntVariable(ExecState* pExecState) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+	StackElement* pElementIndex;
+	bool incorrectType;
+	tie(incorrectType, pElementIndex) = pExecState->pStack->PullType(StackElement_Int);
+	if (incorrectType) {
+		return pExecState->CreateException("Getting thread safe variable must be called with ( n -- ) - need an element index");
+	}
+	else if (pElementIndex == nullptr) {
+		return pExecState->CreateStackUnderflowException("whilst getting threadsafe int");
+	}
+	int index = (int)pElementIndex->GetInt();
+	delete pElementIndex;
+	pElementIndex = nullptr;
+
+	int64_t* pVar = pExecState->GetPointerToIntStateVariable(index);
+	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Int);
+	StackElement* pElementVariable = new StackElement(pterType, (void*)pVar);
+	if (!pExecState->pStack->Push(pElementVariable)) {
+		return pExecState->CreateStackOverflowException("whilst pushing a state int variable");
+	}
 	return true;
 }
 

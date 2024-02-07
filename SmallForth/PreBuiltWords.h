@@ -24,6 +24,8 @@ public:
 	static void RegisterWords(ForthDict* pDict);
 	static void CreateSecondLevelWords(ExecState* pExecState);
 	// Low level words
+	static bool BuiltIn_ThreadSafeBoolVariable(ExecState* pExecState);
+	static bool BuiltIn_ThreadSafeIntVariable(ExecState* pExecState);
 	static bool BuiltIn_IndirectDoCol(ExecState* pExecState);
 	static bool BuiltIn_DoCol(ExecState* pExecState);
 	static bool BuiltIn_Immediate(ExecState* pExecState);

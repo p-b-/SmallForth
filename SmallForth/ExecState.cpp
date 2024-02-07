@@ -37,6 +37,13 @@ ExecState::ExecState(DataStack* pStack, ForthDict* pDict, InputProcessor* pInput
 	this->compilePrompt = ":> ";
 	this->interpetPrompt = "? ";
 	this->stringLiteralPrompt = "\"> ";
+
+	for (int n = 0; n < c_maxStates; ++n) {
+		boolStates[n] = false;
+		intStates[n] = 0;
+	}
+	intStates[0] = 2; // Index of next int state available
+	intStates[1] = 0; // Index of next bool state available
 }
 
 ExecState::~ExecState() {
