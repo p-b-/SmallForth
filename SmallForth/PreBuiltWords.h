@@ -109,10 +109,21 @@ public:
 	static bool BuiltIn_GreaterThanOrEquals(ExecState* pExecState);
 	static bool BuiltIn_GreaterThan(ExecState* pExecState);
 
+	// Logical operators
 	static bool BuiltIn_Not(ExecState* pExecState);
 	static bool BuiltIn_Or(ExecState* pExecState);
 	static bool BuiltIn_And(ExecState* pExecState);
 	static bool BuiltIn_Xor(ExecState* pExecState);
+
+	// Maths operators
+	static bool BuiltIn_Power(ExecState* pExecState);
+	static bool BuiltIn_Cos(ExecState* pExecState);
+	static bool BuiltIn_Sin(ExecState* pExecState);
+	static bool BuiltIn_Tan(ExecState* pExecState);
+	static bool BuiltIn_Arccosine(ExecState* pExecState);
+	static bool BuiltIn_Arcsine(ExecState* pExecState);
+	static bool BuiltIn_Arctan(ExecState* pExecState);
+	static bool BuiltIn_Sqrt(ExecState* pExecState);
 
 	// Pointers
 	static bool BuiltIn_Peek(ExecState* pExecState);
