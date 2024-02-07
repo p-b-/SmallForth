@@ -144,7 +144,6 @@ public:
 	static bool BuiltIn_PushPter(ExecState* pExecState);
 
 	// Variables, constants and literals
-	static bool BuiltIn_Constant(ExecState* pExecState);
 	static bool BuiltIn_Variable(ExecState* pExecState);
 	static bool BuiltIn_True(ExecState* pExecState);
 	static bool BuiltIn_False(ExecState* pExecState);
@@ -163,6 +162,8 @@ public:
 	//  on executing the defining word, 'BuiltIn_PushUpcomingCharLiteral' and 'a' push 'a' onto the stack.  
 	//  'literal'/BuiltIn_Literal takes it off the stack and compiles it into the newly minted word
 	static bool BuiltIn_Literal(ExecState* pExecState);
+	static bool BuiltIn_LiteralNoPush(ExecState* pExecState);
+
 	// When compiling, mark next word in stream as a character literal
 	static bool BuiltIn_CharLiteral(ExecState* pExecState);
 	static bool BuiltIn_FetchLiteral(ExecState* pExecState);

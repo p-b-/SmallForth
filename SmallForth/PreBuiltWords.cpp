@@ -66,6 +66,8 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseWord(pDict, "!inword", PreBuiltWords::BuiltIn_PokeIntegerInWord); // (v addr -- )
 	InitialiseWord(pDict, "@", PreBuiltWords::BuiltIn_Peek); // (
 	InitialiseWord(pDict, "!", PreBuiltWords::BuiltIn_Poke);
+	InitialiseWord(pDict, "fetchliteral", PreBuiltWords::BuiltIn_FetchLiteral);
+
 
 	InitialiseWord(pDict, "reveal", PreBuiltWords::BuiltIn_Reveal);
 	InitialiseWord(pDict, "stackreveal", PreBuiltWords::BuiltIn_RevealToStack);
@@ -73,13 +75,13 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseWord(pDict, "word>object", PreBuiltWords::BuiltIn_AddWordToObject);
 	InitialiseWord(pDict, "find", PreBuiltWords::BuiltIn_Find);
 
-	InitialiseWord(pDict, "constant", PreBuiltWords::BuiltIn_Constant);
 	InitialiseWord(pDict, "variable", PreBuiltWords::BuiltIn_Variable);
 	InitialiseImmediateWord(pDict, "]", PreBuiltWords::BuiltIn_StartCompilation);
 	InitialiseImmediateWord(pDict, "[", PreBuiltWords::BuiltIn_EndCompilation);
 	InitialiseImmediateWord(pDict, "postpone", PreBuiltWords::BuiltIn_Postpone);
 	InitialiseWord(pDict, "(postpone)", PreBuiltWords::BuiltIn_Postpone);
 	InitialiseImmediateWord(pDict, "literal", PreBuiltWords::BuiltIn_Literal);
+	InitialiseImmediateWord(pDict, "#literal", PreBuiltWords::BuiltIn_LiteralNoPush);
 	InitialiseImmediateWord(pDict, ",", PreBuiltWords::BuiltIn_Literal);
 	InitialiseImmediateWord(pDict, "[char]", PreBuiltWords::BuiltIn_CharLiteral);
 
@@ -203,6 +205,8 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	pEndWordDefinition->SetWordVisibility(true);
 	pDict->AddWord(pEndWordDefinition);
 	pEndWordDefinition = nullptr;
+
+	InterpretForth(pExecState, ": constant create postpone #literal reveal postpone does> fetchliteral ;");
 
 	InterpretForth(pExecState, "1 type type variable #compileForType");
 
@@ -1824,24 +1828,6 @@ bool PreBuiltWords::BuiltIn_PushTypePter(ExecState* pExecState) {
 	return true;
 }
 
-bool PreBuiltWords::BuiltIn_Constant(ExecState* pExecState) {
-	if (!PreBuiltWords::BuiltIn_Create(pExecState)) {
-		return false;
-	}
-	if (!PreBuiltWords::BuiltIn_Dup(pExecState)) return false;
-	if (!PreBuiltWords::BuiltIn_PushType(pExecState)) return false;
-	StackElement* pTypeElement = pExecState->pStack->Pull();
-	ForthType vt = pTypeElement->GetValueType();
-	delete pTypeElement;
-	pTypeElement = nullptr;
-	if (!ForthWord::BuiltInHelper_CompileTOSLiteral(pExecState, false)) return false;
-
-	pExecState->pCompiler->CompileDoesXT(pExecState, PreBuiltWords::BuiltIn_FetchLiteral);
-	pExecState->pCompiler->RevealWord(pExecState, true);
-
-	return true;
-}
-
 bool PreBuiltWords::BuiltIn_Variable(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (!PreBuiltWords::BuiltIn_Create(pExecState)) {
@@ -1910,6 +1896,11 @@ bool PreBuiltWords::BuiltIn_Literal(ExecState* pExecState) {
 	return ForthWord::BuiltInHelper_CompileTOSLiteral(pExecState, true);
 }
 
+bool PreBuiltWords::BuiltIn_LiteralNoPush(ExecState* pExecState) {
+	return ForthWord::BuiltInHelper_CompileTOSLiteral(pExecState, false);
+}
+
+
 bool PreBuiltWords::BuiltIn_CharLiteral(ExecState* pExecState) {
 	int64_t nCompileState;
 	pExecState->GetVariable("#compileState", nCompileState);
@@ -1921,6 +1912,12 @@ bool PreBuiltWords::BuiltIn_CharLiteral(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_FetchLiteral(ExecState* pExecState) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState == 0) {
+		return pExecState->CreateException("Cannot execute FETCHLITERAL when not compiling");
+	}
+
 	return ForthWord::BuiltInHelper_FetchLiteralWithOffset(pExecState, 0);
 }
 
