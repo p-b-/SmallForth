@@ -19,6 +19,10 @@ private:
 	static void InitialiseImmediateWord(ForthDict* pDict, const string& wordName, XT wordCode);
 	static bool InterpretForth(ExecState* pExecState, const string& toExecute);
 	static bool CompileWordIntoWord(ForthDict* pDict, ForthWord* pForthWord, const string& wordName);
+	static void CompileTypeIntoWord(ForthWord* pForthWord, ForthType type);
+	static void CompileLiteralValueIntoWord(ForthWord* pForthWord, int value);
+	static void CompileLiteralValueIntoWord(ForthWord* pForthWord, bool value);
+
 
 public:
 	static void RegisterWords(ForthDict* pDict);
@@ -27,6 +31,8 @@ public:
 	static bool BuiltIn_ThreadSafeBoolVariable(ExecState* pExecState);
 	static bool BuiltIn_ThreadSafeIntVariable(ExecState* pExecState);
 	static bool BuiltIn_IndirectDoCol(ExecState* pExecState);
+	static bool BuiltIn_CompileState(ExecState* pExecState);
+	static bool BuiltIn_PostponeState(ExecState* pExecState);
 	static bool BuiltIn_DoCol(ExecState* pExecState);
 	static bool BuiltIn_Immediate(ExecState* pExecState);
 	static bool BuiltIn_Here(ExecState* pExecState);

@@ -24,9 +24,6 @@ ExecState::ExecState(DataStack* pStack, ForthDict* pDict, InputProcessor* pInput
 	this->ip = 0;
 	this->exceptionThrown = false;
 	this->pzException = nullptr;
-	this->compileState = false;
-	this->runtimeCompileState = false;
-	this->executionPostponed = false;
 	this->nextWordIsCharLiteral = false;
 	this->pTempStack = new DataStack(40);
 	this->pSelfStack = new DataStack(40);
@@ -42,8 +39,6 @@ ExecState::ExecState(DataStack* pStack, ForthDict* pDict, InputProcessor* pInput
 		boolStates[n] = false;
 		intStates[n] = 0;
 	}
-	intStates[0] = 2; // Index of next int state available
-	intStates[1] = 0; // Index of next bool state available
 }
 
 ExecState::~ExecState() {
@@ -259,8 +254,8 @@ istream* ExecState::GetStdin() {
 	return pStdinStream;
 }
 
-bool ExecState::PushVariableOntoStack(const string& constantName) {
-	if (!this->ExecuteWordDirectly(constantName)) {
+bool ExecState::PushVariableValueOntoStack(const string& variableName) {
+	if (!this->ExecuteWordDirectly(variableName)) {
 		this->exceptionThrown = false;
 		return false;
 	}
@@ -269,6 +264,154 @@ bool ExecState::PushVariableOntoStack(const string& constantName) {
 		return false;
 	}
 	return true;
+}
+
+bool ExecState::SetVariable(const string& variableName, int64_t setTo) {
+	if (!pStack->Push(setTo)) {
+		return CreateStackOverflowException("whilst setting an integer variable");
+	}
+	if (!this->ExecuteWordDirectly(variableName)) {
+		return false;
+	}
+	if (!this->ExecuteWordDirectly("!")) {
+		return false;
+	}
+	return true;
+}
+
+bool ExecState::SetVariable(const string& variableName, bool setTo) {
+	if (!pStack->Push(setTo)) {
+		return CreateStackOverflowException("whilst setting a bool variable");
+	}
+	if (!this->ExecuteWordDirectly(variableName)) {
+		return false;
+	}
+	if (!this->ExecuteWordDirectly("!")) {
+		return false;
+	}
+	return true;
+}
+
+bool ExecState::SetVariable(const string& variableName, double setTo) {
+	if (!pStack->Push(setTo)) {
+		return CreateStackOverflowException("whilst setting a float variable");
+	}
+	if (!this->ExecuteWordDirectly(variableName)) {
+		return false;
+	}
+	if (!this->ExecuteWordDirectly("!")) {
+		return false;
+	}
+	return true;
+}
+
+bool ExecState::SetVariable(const string& variableName, ForthType setTo) {
+	if (!pStack->Push(setTo)) {
+		return CreateStackOverflowException("whilst setting a type variable");
+	}
+	if (!this->ExecuteWordDirectly(variableName)) {
+		return false;
+	}
+	if (!this->ExecuteWordDirectly("!")) {
+		return false;
+	}
+	return true;
+}
+
+bool ExecState::GetVariable(const string& variableName, int64_t& variableValue) { 
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+	if (!this->ExecuteWordDirectly(variableName)) {
+		return false;
+	}
+	StackElement* pElementVariableValuePter = this->pStack->TopElement();
+	
+	if (pElementVariableValuePter->GetType() == pTS->CreatePointerTypeTo(StackElement_Int)) {
+		pElementVariableValuePter = nullptr;
+		if (this->ExecuteWordDirectly("@")) {
+			StackElement* pElementVariableValue;
+			pElementVariableValue = pStack->Pull();
+			if (pElementVariableValue == nullptr) {
+				return CreateStackOverflowException("whilst getting variable");
+			}
+			variableValue = pElementVariableValue->GetInt();
+			delete pElementVariableValue;
+			pElementVariableValue = nullptr;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool ExecState::GetVariable(const string& variableName, double& variableValue) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+	if (!this->ExecuteWordDirectly(variableName)) {
+		return false;
+	}
+	StackElement* pElementVariableValuePter = this->pStack->TopElement();
+
+	if (pElementVariableValuePter->GetType() == pTS->CreatePointerTypeTo(StackElement_Float)) {
+		pElementVariableValuePter = nullptr;
+		if (this->ExecuteWordDirectly("@")) {
+			StackElement* pElementVariableValue;
+			pElementVariableValue = pStack->Pull();
+			if (pElementVariableValue == nullptr) {
+				return CreateStackOverflowException("whilst getting variable");
+			}
+			variableValue = pElementVariableValue->GetFloat();
+			delete pElementVariableValue;
+			pElementVariableValue = nullptr;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool ExecState::GetVariable(const string& variableName, bool& variableValue) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+	if (!this->ExecuteWordDirectly(variableName)) {
+		return false;
+	}
+	StackElement* pElementVariableValuePter = this->pStack->TopElement();
+
+	if (pElementVariableValuePter->GetType() == pTS->CreatePointerTypeTo(StackElement_Bool)) {
+		pElementVariableValuePter = nullptr;
+		if (this->ExecuteWordDirectly("@")) {
+			StackElement* pElementVariableValue;
+			pElementVariableValue = pStack->Pull();
+			if (pElementVariableValue == nullptr) {
+				return CreateStackOverflowException("whilst getting variable");
+			}
+			variableValue = pElementVariableValue->GetBool();
+			delete pElementVariableValue;
+			pElementVariableValue = nullptr;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool ExecState::GetVariable(const string& variableName, ForthType& variableValue) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+	if (!this->ExecuteWordDirectly(variableName)) {
+		return false;
+	}
+	StackElement* pElementVariableValuePter = this->pStack->TopElement();
+
+	if (pElementVariableValuePter->GetType() == pTS->CreatePointerTypeTo(StackElement_Type)) {
+		pElementVariableValuePter = nullptr;
+		if (this->ExecuteWordDirectly("@")) {
+			StackElement* pElementVariableValue;
+			pElementVariableValue = pStack->Pull();
+			if (pElementVariableValue == nullptr) {
+				return CreateStackOverflowException("whilst getting variable");
+			}
+			variableValue = pElementVariableValue->GetValueType();
+			delete pElementVariableValue;
+			pElementVariableValue = nullptr;
+			return true;
+		}
+	}
+	return false;
 }
 
 bool ExecState::PushConstantOntoStack(const string& constantName) {

@@ -47,7 +47,16 @@ public:
 	ostream* GetStderr();
 	istream* GetStdin();
 
-	bool PushVariableOntoStack(const string& constantName);
+	bool PushVariableValueOntoStack(const string& variableName);
+	bool SetVariable(const string& variableName, int64_t setTo);
+	bool SetVariable(const string& variableName, bool setTo);
+	bool SetVariable(const string& variableName, double setTo);
+	bool SetVariable(const string& variableName, ForthType setTo);
+	bool GetVariable(const string& variableName, int64_t& variableValue);
+	bool GetVariable(const string& variableName, double& variableValue);
+	bool GetVariable(const string& variableName, bool& variableValue);
+	bool GetVariable(const string& variableName, ForthType& variableValue);
+
 	bool PushConstantOntoStack(const string& constantName);
 	bool GetConstant(const string& constantName, int64_t& constantValue);
 	bool GetConstant(const string& constantName, double& constantValue);
@@ -87,9 +96,6 @@ public:
 	WordBodyElement** pExecBody;
 	int ip;
 
-	bool compileState;
-	bool runtimeCompileState;
-	bool executionPostponed;
 	bool nextWordIsCharLiteral;
 	int delimitersAfterCurrentWord;
 
@@ -106,6 +112,9 @@ public:
 	string interpetPrompt;
 
 	CompileHelper* pCompiler;
+
+	static const int c_compileStateIndex = 0; // Index into int threadlocal variables
+	static const int c_postponedExecIndex = 0; // Index into bool threadlocal variables
 
 private:
 	static const int c_maxStates = 10;

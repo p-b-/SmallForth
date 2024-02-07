@@ -197,7 +197,9 @@ bool CompileHelper::CompileWordOnStack(ExecState* pExecState) {
 }
 
 bool CompileHelper::CompileWord(ExecState* pExecState, WordBodyElement** pCFA) {
-	if (pExecState->runtimeCompileState) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState==2) {
 		pLastWordCreated->CompileXTIntoWord(pCFA[0]->wordElement_XT, 0);
 	}
 	else if (this->pWordUnderCreation->GetBodySize() == 0) {

@@ -16,13 +16,50 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 
 	InitialiseWord(pDict, "#boolvar", PreBuiltWords::BuiltIn_ThreadSafeBoolVariable);
 	InitialiseWord(pDict, "#intvar", PreBuiltWords::BuiltIn_ThreadSafeIntVariable);
+	InitialiseWord(pDict, "exit", PreBuiltWords::BuiltIn_Exit);
+	InitialiseWord(pDict, "pushliteral", PreBuiltWords::BuiltIn_PushUpcomingLiteral);
+
+	// cannot yet execute either of these:
+	//  "0 variable_intstate compileState "
+	//  ": compileState 0 #intvar ;"
+	// as : not yet defined, and neither is variable_intstate
+	// ":" needs compileState to work correctly, so manually create it here.  Note, as this is a threadlocal state variable, we start the 
+	//  the variable definition of #nextIntVarIndex at 1 not 0.
+
+	//  Note, #compileState has to be first thread-local int, as ExecState::c_compileStateIndex is set to 0
+	// Cannot create these as leve-two words, as DOCOL (that executes level 2 words) needs to be able to execute them
+	InitialiseWord(pDict, "#compileState", PreBuiltWords::BuiltIn_CompileState);
+	//  Note, #postponeState has to be first thread-local bool, as ExecState::c_postponedExecIndex is set to 0
+	// Creating this means #nextBoolVarIndex starts at 1, not 0
+	InitialiseWord(pDict, "#postponeState", PreBuiltWords::BuiltIn_PostponeState);
+
+
+	// TODO Delete this
+	//ForthWord* pCompileStateWord = new ForthWord("#compileState", PreBuiltWords::BuiltIn_DoCol);
+	//CompileWordIntoWord(pDict, pCompileStateWord, "pushliteral");
+	//CompileTypeIntoWord(pCompileStateWord, StackElement_Int);
+	//CompileLiteralValueIntoWord(pCompileStateWord, 0);
+	//CompileWordIntoWord(pDict, pCompileStateWord, "#intvar");
+	//CompileWordIntoWord(pDict, pCompileStateWord, "exit");
+	//pCompileStateWord->SetWordVisibility(true);
+	//pDict->AddWord(pCompileStateWord);
+
+	// TODO Delete this
+	//// Creating this means #nextBoolVarIndex starts at 1, not 0
+	//ForthWord* pPostponeStateWord = new ForthWord("#postponeState", PreBuiltWords::BuiltIn_DoCol);
+	//CompileWordIntoWord(pDict, pPostponeStateWord, "pushliteral");
+	//CompileTypeIntoWord(pPostponeStateWord, StackElement_Int);
+	//CompileLiteralValueIntoWord(pPostponeStateWord, 1);
+	//CompileWordIntoWord(pDict, pPostponeStateWord, "#boolvar");
+	//CompileWordIntoWord(pDict, pPostponeStateWord, "exit");
+	//pPostponeStateWord->SetWordVisibility(true);
+	//pDict->AddWord(pPostponeStateWord);
 	
 	InitialiseWord(pDict, "docol", PreBuiltWords::BuiltIn_DoCol);
 	InitialiseWord(pDict, "[docol]", PreBuiltWords::BuiltIn_IndirectDoCol);
 	InitialiseWord(pDict, "immediate", PreBuiltWords::BuiltIn_Immediate);
 	InitialiseWord(pDict, "execute", PreBuiltWords::BuiltIn_Execute);
 	InitialiseWord(pDict, "executeonobject", PreBuiltWords::BuiltIn_ExecuteOnObject);
-	InitialiseWord(pDict, "exit", PreBuiltWords::BuiltIn_Exit);
 	InitialiseWord(pDict, "jump", PreBuiltWords::BuiltIn_Jump); // ( addr -- )
 	InitialiseWord(pDict, "jumpontrue", PreBuiltWords::BuiltIn_JumpOnTrue); // ( addr b -- )
 	InitialiseWord(pDict, "jumponfalse", PreBuiltWords::BuiltIn_JumpOnFalse); // ( addr b -- )
@@ -46,7 +83,6 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseImmediateWord(pDict, ",", PreBuiltWords::BuiltIn_Literal);
 	InitialiseImmediateWord(pDict, "[char]", PreBuiltWords::BuiltIn_CharLiteral);
 
-	InitialiseWord(pDict, "pushliteral", PreBuiltWords::BuiltIn_PushUpcomingLiteral);
 	InitialiseWord(pDict, "true", PreBuiltWords::BuiltIn_True);
 	InitialiseWord(pDict, "false", PreBuiltWords::BuiltIn_False);
 	InitialiseWord(pDict, "type", PreBuiltWords::BuiltIn_PushType);
@@ -151,7 +187,6 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	CompileWordIntoWord(pDict, pDefineWord, "]");
 	CompileWordIntoWord(pDict, pDefineWord, "exit");
 	pDefineWord->SetWordVisibility(true);
-
 	pDict->AddWord(pDefineWord);
 
 	ForthWord* pEndWordDefinition = new ForthWord(";", PreBuiltWords::BuiltIn_DoCol);
@@ -171,8 +206,9 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 
 	InterpretForth(pExecState, "1 type type variable #compileForType");
 
-	InterpretForth(pExecState, "0 variable #nextIntVarIndex");
-	InterpretForth(pExecState, "0 variable #nextBoolVarIndex");
+	// Set to 1, as already defined compileState (int) and postponeState (bool) manually
+	InterpretForth(pExecState, "1 variable #nextIntVarIndex");
+	InterpretForth(pExecState, "1 variable #nextBoolVarIndex");
 
 	InterpretForth(pExecState, ": #getNextIntVarIndex #nextIntVarIndex dup @ dup 1 + rot ! ; immediate");
 	InterpretForth(pExecState, ": #getNextBoolVarIndex #nextBoolVarIndex dup @ dup 1 + rot ! ; immediate");
@@ -356,6 +392,18 @@ bool PreBuiltWords::CompileWordIntoWord(ForthDict* pDict, ForthWord* pForthWord,
 	return true;
 }
 
+void PreBuiltWords::CompileTypeIntoWord(ForthWord* pForthWord, ForthType type) {
+	pForthWord->CompileTypeIntoWord(type);
+}
+
+void PreBuiltWords::CompileLiteralValueIntoWord(ForthWord* pForthWord, int value) {
+	pForthWord->CompileLiteralIntoWord((int64_t)value);
+}
+
+void PreBuiltWords::CompileLiteralValueIntoWord(ForthWord* pForthWord, bool value) {
+	pForthWord->CompileLiteralIntoWord(value);
+}
+
 bool PreBuiltWords::BuiltIn_ThreadSafeBoolVariable(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	StackElement* pElementIndex;
@@ -404,6 +452,29 @@ bool PreBuiltWords::BuiltIn_ThreadSafeIntVariable(ExecState* pExecState) {
 	return true;
 }
 
+bool PreBuiltWords::BuiltIn_CompileState(ExecState* pExecState) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	int64_t* pVar = pExecState->GetPointerToIntStateVariable(ExecState::c_compileStateIndex);
+	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Int);
+	StackElement* pElementVariable = new StackElement(pterType, (void*)pVar);
+	if (!pExecState->pStack->Push(pElementVariable)) {
+		return pExecState->CreateStackOverflowException("whilst pushing a state int variable");
+	}
+	return true;
+}
+
+bool PreBuiltWords::BuiltIn_PostponeState(ExecState* pExecState) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	bool* pVar = pExecState->GetPointerToBoolStateVariable(ExecState::c_postponedExecIndex);
+	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Bool);
+	StackElement* pElementVariable = new StackElement(pterType, (void*)pVar);
+	if (!pExecState->pStack->Push(pElementVariable)) {
+		return pExecState->CreateStackOverflowException("whilst pushing a state boolean variable");
+	}
+	return true;
+}
 
 bool PreBuiltWords::BuiltIn_IndirectDoCol(ExecState* pExecState) {
 	WordBodyElement* pWbe = pExecState->pExecBody[pExecState->ip];
@@ -455,12 +526,18 @@ bool PreBuiltWords::BuiltIn_DoCol(ExecState* pExecState) {
 		//  it would compile the EXIT and continue past into undefined behaviour.
 
 
-		if (pExecState->executionPostponed) {
-			pExecState->executionPostponed = false;
-			if (pExecState->compileState || pExecState->runtimeCompileState) {
+		bool bExecutePostponed;
+		pExecState->GetVariable("#postponeState", bExecutePostponed);
+		if (bExecutePostponed) {
+			int64_t nCompileState;
+			pExecState->GetVariable("#compileState", nCompileState);
+
+			pExecState->SetVariable("#postponeState", false);
+
+			if (nCompileState>0) {
 				// Compile this word
 				pExecState->pCompiler->CompileWord(pExecState, pCFA);
-				pExecState->executionPostponed = false;
+				pExecState->SetVariable("#postponeState", false);
 				continue;
 			}
 		}
@@ -627,7 +704,9 @@ bool PreBuiltWords::BuiltIn_JumpOnFalse(ExecState* pExecState) {
 
 // ( addr:value -- ) *addr=value
 bool PreBuiltWords::BuiltIn_PokeIntegerInWord(ExecState* pExecState) {
-	if (!pExecState->compileState) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState==0) {
 		return pExecState->CreateException("Cannot execute !INWORD when not compiling");
 	}
 	StackElement* pAddressElement = nullptr;
@@ -755,8 +834,8 @@ bool PreBuiltWords::BuiltIn_Does(ExecState* pExecState) {
 	if (!pExecState->pCompiler->HasValidLastWordCreated()) {
 		return pExecState->CreateException("Cannot execute does> when not compiling");
 	}
-	pExecState->runtimeCompileState = true;
-	pExecState->executionPostponed = true;
+	pExecState->SetVariable("#compileState", (int64_t)2);
+	pExecState->SetVariable("#postponeState", true);
 	return true;
 }
 
@@ -821,15 +900,13 @@ bool PreBuiltWords::BuiltIn_AddWordToObject(ExecState* pExecState) {
 
 // TODO Once variables are working, remove compile state from ExecState and implement this word in Forth
 bool PreBuiltWords::BuiltIn_StartCompilation(ExecState* pExecState) {
-	pExecState->compileState = true;
-	pExecState->runtimeCompileState = false;
+	pExecState->SetVariable("#compileState", (int64_t)1);
 	return true;
 }
 
 // TODO Once variables are working, remove compile state from ExecState and implement this word in Forth
 bool PreBuiltWords::BuiltIn_EndCompilation(ExecState* pExecState) {
-	pExecState->compileState = false;
-	pExecState->runtimeCompileState = false;
+	pExecState->SetVariable("#compileState", (int64_t)0);
 	return true;
 }
 
@@ -842,7 +919,7 @@ bool PreBuiltWords::BuiltIn_Forget(ExecState* pExecState) {
 
 // TODO Once variables are working, remove flag from ExecState and implement this word in Forth
 bool PreBuiltWords::BuiltIn_Postpone(ExecState* pExecState) {
-	pExecState->executionPostponed = true;
+	pExecState->SetVariable("#postponeState", true);
 	return true;
 }
 
@@ -1834,8 +1911,9 @@ bool PreBuiltWords::BuiltIn_Literal(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_CharLiteral(ExecState* pExecState) {
-	if (pExecState->compileState == false) {
-		// Does nothing when not compiling
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState==0) {
 		return true;
 	}
 	pExecState->nextWordIsCharLiteral = true;
@@ -1864,7 +1942,9 @@ bool PreBuiltWords::BuiltIn_PushUpcomingLiteral(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_Leave(ExecState* pExecState) {
-	if (pExecState->compileState == false) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState == 0) {
 		return pExecState->CreateException("Cannot execute LEAVE when not compiling");
 	}
 	// Make a duplicate of where to leave to
@@ -1885,7 +1965,9 @@ bool PreBuiltWords::BuiltIn_Leave(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_Begin(ExecState* pExecState) {
-	if (pExecState->compileState == false) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState == 0) {
 		return pExecState->CreateException("Cannot execute BEGIN when not compiling");
 	}
 
@@ -1908,7 +1990,9 @@ bool PreBuiltWords::BuiltIn_Begin(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_Until(ExecState* pExecState) {
-	if (pExecState->compileState == false) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState == 0) {
 		return pExecState->CreateException("Cannot execute UNTIL when not compiling");
 	}
 
@@ -1953,7 +2037,9 @@ bool PreBuiltWords::BuiltIn_Until(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_While(ExecState* pExecState) {
-	if (pExecState->compileState == false) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState == 0) {
 		return pExecState->CreateException("Cannot execute WHILE when not compiling");
 	}
 
@@ -1967,7 +2053,9 @@ bool PreBuiltWords::BuiltIn_While(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_Repeat(ExecState* pExecState) {
 	// Same code as AGAIN apart from this error message
-	if (pExecState->compileState == false) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState == 0) {
 		return pExecState->CreateException("Cannot execute REPEAT when not compiling");
 	}
 
@@ -2011,7 +2099,9 @@ bool PreBuiltWords::BuiltIn_Repeat(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_Again(ExecState* pExecState) {
-	if (pExecState->compileState == false) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState == 0) {
 		return pExecState->CreateException("Cannot execute AGAIN when not compiling");
 	}
 
@@ -2056,7 +2146,9 @@ bool PreBuiltWords::BuiltIn_Again(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_Do(ExecState* pExecState) {
-	if (pExecState->compileState == false) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState == 0) {
 		return pExecState->CreateException("Cannot execute DO when not compiling");
 	}
 
@@ -2074,7 +2166,9 @@ bool PreBuiltWords::BuiltIn_Do(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_Loop(ExecState* pExecState) {
-	if (pExecState->compileState == false) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState == 0) {
 		return pExecState->CreateException("Cannot execute LOOP when not compiling");
 	}
 
@@ -2125,7 +2219,9 @@ bool PreBuiltWords::BuiltIn_Loop(ExecState* pExecState) {
 
 
 bool PreBuiltWords::BuiltIn_PlusLoop(ExecState* pExecState) {
-	if (pExecState->compileState == false) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState == 0) {
 		return pExecState->CreateException("Cannot execute LOOP when not compiling");
 	}
 
@@ -2175,7 +2271,9 @@ bool PreBuiltWords::BuiltIn_PlusLoop(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_If(ExecState* pExecState) {
-	if (pExecState->compileState == false) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState == 0) {
 		return pExecState->CreateException("Cannot execute IF when not compiling");
 	}
 	// Pushes dictionary pointer (where the next word will compile to) to stack
@@ -2203,14 +2301,18 @@ bool PreBuiltWords::BuiltIn_If(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_Then(ExecState* pExecState) {
-	if (pExecState->compileState == false) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState == 0) {
 		return pExecState->CreateException("Cannot update forward jump when not compiling");
 	}
 	return ForthWord::BuiltInHelper_UpdateForwardJump(pExecState);
 }
 
 bool PreBuiltWords::BuiltIn_Else(ExecState* pExecState) {
-	if (pExecState->compileState == false) {
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+	if (nCompileState == 0) {
 		return pExecState->CreateException("Cannot execute ELSE when not compiling");
 	}
 

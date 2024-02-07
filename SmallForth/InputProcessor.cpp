@@ -41,15 +41,19 @@ tuple<ForthWord*, bool> InputProcessor::GetForthWordFromVocabOrObject(ExecState*
 	}
 	pExecState->delimitersAfterCurrentWord = wordWithDelimiterCount.postDelimiterCount;
 	ForthWord* pWord = nullptr;
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+
 	if (pExecState->nextWordIsCharLiteral) {
 		pExecState->nextWordIsCharLiteral = false;
-		if (pExecState->compileState) {
+
+		if (nCompileState == 1) {
 			pExecState->pStack->Push((char)(wordName[0]));
 			pWord = pExecState->pDict->FindWord("literal");
 		}
 	}
 	if (pWord == nullptr) {
-		if (pExecState->compileState) {
+		if (nCompileState == 1) {
 			pWord = FindWordInObjectDefinition(pExecState, wordName);
 		}
 		if (pWord == nullptr) {
@@ -76,7 +80,7 @@ tuple<ForthWord*, bool> InputProcessor::GetForthWordFromVocabOrObject(ExecState*
 					(*pStderr) << "Unknown word: " << wordName << endl;
 				}
 
-				if (pExecState->compileState) {
+				if (nCompileState==1) {
 					pWord = pExecState->pDict->FindWord("literal");
 				}
 			}
@@ -122,14 +126,20 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 			continue;
 		}
 
+		int64_t nCompileState;
+		pExecState->GetVariable("#compileState", nCompileState);
+
 		try {
 			bool executeWordNow = false;
-			if (pExecState->compileState) {
-				if (pWord->GetImmediate() && !pExecState->executionPostponed) {
+			if (nCompileState==1) {
+				bool bExecutePostponed;
+				pExecState->GetVariable("#postponeState", bExecutePostponed);
+				if (pWord->GetImmediate() && !bExecutePostponed) {
 					executeWordNow = true;
 				}
 				else {
-					pExecState->executionPostponed = false;
+					pExecState->SetVariable("#postponeState", false);
+
 					// Compile word
 					if (!pExecState->pCompiler->CompileWordOnStack(pExecState)) {
 						ostream* pStderr = pExecState->GetStderr();
@@ -192,6 +202,10 @@ void InputProcessor::ClearRestOfLine() {
 void InputProcessor::ReadAndProcess(ExecState* pExecState) {
 	ostream* pStdout = pExecState->GetStdout();
 	istream* pStdin = pExecState->GetStdin();
+
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+
 	try
 	{
 		while (true) {
@@ -202,7 +216,7 @@ void InputProcessor::ReadAndProcess(ExecState* pExecState) {
 			else if (pExecState->insideStringLiteral) {
 				(*pStdout) << pExecState->stringLiteralPrompt;
 			}
-			else if (pExecState->compileState) {
+			else if (nCompileState==1) {
 				(*pStdout) << pExecState->compilePrompt;
 			}
 			else {
@@ -505,6 +519,9 @@ bool InputProcessor::ConvertToFloat(const string& word, double& n) {
 ForthWord* InputProcessor::FindWordInTOSWord(ExecState* pExecState, const string& wordName) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	StackElement* pElement = pExecState->pStack->TopElement();
+	int64_t nCompileState;
+	pExecState->GetVariable("#compileState", nCompileState);
+
 	if (pElement != nullptr) {
 		ForthType tosType = pElement->GetType();
 		
@@ -512,7 +529,7 @@ ForthWord* InputProcessor::FindWordInTOSWord(ExecState* pExecState, const string
 			ForthWord* pWord = pTS->FindWordWithName(tosType, wordName);
 			return pWord;
 		}
-		else if (pExecState->compileState && tosType == StackElement_Type) {
+		else if (nCompileState == 1 && tosType == StackElement_Type) {
 			// When compiling words on objects, can use previously defined object words. FindWordInObjectDefinition adds the current
 			//  defining object to the stack before call this method.
 			return pTS->FindWordWithName(pElement->GetValueType(), wordName);
@@ -522,7 +539,7 @@ ForthWord* InputProcessor::FindWordInTOSWord(ExecState* pExecState, const string
 }
 
 ForthWord* InputProcessor::FindWordInObjectDefinition(ExecState* pExecState, const string& wordName) {
-	if (!pExecState->PushVariableOntoStack("#compileForType")) {
+	if (!pExecState->PushVariableValueOntoStack("#compileForType")) {
 		pExecState->exceptionThrown = false;
 		return nullptr;
 	}
