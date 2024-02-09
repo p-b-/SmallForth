@@ -75,10 +75,13 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseWord(pDict, "word>object", PreBuiltWords::BuiltIn_AddWordToObject);
 	InitialiseWord(pDict, "find", PreBuiltWords::BuiltIn_Find);
 
+	// Although these change TLS variables, they cannot be create via forth because the definition for ":" needs them, and we need ":" to define things in forth
 	InitialiseImmediateWord(pDict, "]", PreBuiltWords::BuiltIn_StartCompilation);
 	InitialiseImmediateWord(pDict, "[", PreBuiltWords::BuiltIn_EndCompilation);
 	InitialiseImmediateWord(pDict, "postpone", PreBuiltWords::BuiltIn_Postpone);
-	InitialiseWord(pDict, "(postpone)", PreBuiltWords::BuiltIn_Postpone);
+	InitialiseWord(pDict, "(postpone)", PreBuiltWords::BuiltIn_PostponePostpone);
+	InitialiseImmediateWord(pDict, "postpone=0", PreBuiltWords::BuiltIn_ResetPostponeState);
+
 	InitialiseImmediateWord(pDict, "literal", PreBuiltWords::BuiltIn_Literal);
 	InitialiseImmediateWord(pDict, "#literal", PreBuiltWords::BuiltIn_LiteralNoPush);
 	InitialiseImmediateWord(pDict, ",", PreBuiltWords::BuiltIn_Literal);
@@ -921,9 +924,19 @@ bool PreBuiltWords::BuiltIn_Forget(ExecState* pExecState) {
 	return pExecState->pDict->ForgetWord(word);;
 }
 
-// TODO Once variables are working, remove flag from ExecState and implement this word in Forth
 bool PreBuiltWords::BuiltIn_Postpone(ExecState* pExecState) {
 	pExecState->SetVariable("#postponeState", true);
+	return true;
+}
+
+// None-immediate version of postpone, used to compile postpone into a defining word
+bool PreBuiltWords::BuiltIn_PostponePostpone(ExecState* pExecState) {
+	pExecState->SetVariable("#postponeState", true);
+	return true;
+}
+
+bool PreBuiltWords::BuiltIn_ResetPostponeState(ExecState* pExecState) {
+	pExecState->SetVariable("#postponeState", false);
 	return true;
 }
 
@@ -1889,10 +1902,6 @@ bool PreBuiltWords::BuiltIn_TypeFromInt(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_Literal(ExecState* pExecState) {
-	//if (pExecState->compileState == false) {
-	//	// Does nothing when not compiling
-	//	return true;
-	//}
 	return ForthWord::BuiltInHelper_CompileTOSLiteral(pExecState, true);
 }
 

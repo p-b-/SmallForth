@@ -69,6 +69,9 @@ public:
 	// When compiling, the next word won't be executed, it will be compiled into the new word
 	//  Even if executing a docol, the postpone command will compile the next word into the command being compiled (if the docol is involved in compiling a word).
 	static bool BuiltIn_Postpone(ExecState* pExecState);
+	static bool BuiltIn_PostponePostpone(ExecState* pExecState);
+	static bool BuiltIn_ResetPostponeState(ExecState* pExecState);
+
 	static bool BuiltIn_CallObject(ExecState* pExecState);
 	static bool BuiltIn_Construct(ExecState* pExecState);
 	static bool BuiltIn_DefineObject(ExecState* pExecState);
