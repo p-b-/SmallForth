@@ -50,7 +50,6 @@ public:
 	static bool Quit(ExecState* pExecState);
 	static bool BuiltIn_Find(ExecState* pExecState);
 
-
 	// Altering interpretation words
 	static bool BuiltIn_ParenthesisCommentStart(ExecState* pExecState);
 	static bool BuiltIn_ParenthesisCommentEnd(ExecState* pExecState);
@@ -177,14 +176,15 @@ public:
 	static bool BuiltIn_Begin(ExecState* pExecState);
 	static bool BuiltIn_Until(ExecState* pExecState);
 	static bool BuiltIn_Again(ExecState* pExecState);
-	static bool BuiltIn_While(ExecState* pExecState);
 	static bool BuiltIn_Repeat(ExecState* pExecState);
 	static bool BuiltIn_Do(ExecState* pExecState);
 	static bool BuiltIn_Loop(ExecState* pExecState);
-	static bool BuiltIn_Leave(ExecState* pExecState);
 	static bool BuiltIn_PlusLoop(ExecState* pExecState);
 	static bool BuiltIn_If(ExecState* pExecState);
 	static bool BuiltIn_Then(ExecState* pExecState);
 	static bool BuiltIn_Else(ExecState* pExecState);
+
+	// Exceptions
+	static bool BuiltIn_ThrowException(ExecState* pExecState);
 };
 

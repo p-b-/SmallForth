@@ -19,6 +19,8 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseWord(pDict, "exit", PreBuiltWords::BuiltIn_Exit);
 	InitialiseWord(pDict, "pushliteral", PreBuiltWords::BuiltIn_PushUpcomingLiteral);
 
+	InitialiseWord(pDict, "exception", PreBuiltWords::BuiltIn_ThrowException);
+
 	// cannot yet execute either of these:
 	//  "0 variable_intstate compileState "
 	//  ": compileState 0 #intvar ;"
@@ -144,11 +146,9 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseImmediateWord(pDict, "begin", PreBuiltWords::BuiltIn_Begin);
 	InitialiseImmediateWord(pDict, "until", PreBuiltWords::BuiltIn_Until);
 	InitialiseImmediateWord(pDict, "again", PreBuiltWords::BuiltIn_Again);
-	InitialiseImmediateWord(pDict, "while", PreBuiltWords::BuiltIn_While);
 	InitialiseImmediateWord(pDict, "repeat", PreBuiltWords::BuiltIn_Repeat);
 	InitialiseImmediateWord(pDict, "do", PreBuiltWords::BuiltIn_Do);
 	InitialiseImmediateWord(pDict, "loop", PreBuiltWords::BuiltIn_Loop);
-	InitialiseImmediateWord(pDict, "leave", PreBuiltWords::BuiltIn_Leave);
 	InitialiseImmediateWord(pDict, "+loop", PreBuiltWords::BuiltIn_PlusLoop);
 	InitialiseImmediateWord(pDict, "if", PreBuiltWords::BuiltIn_If);
 	InitialiseImmediateWord(pDict, "then", PreBuiltWords::BuiltIn_Then);
@@ -208,7 +208,7 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	pDict->AddWord(pEndWordDefinition);
 	pEndWordDefinition = nullptr;
 
-	InterpretForth(pExecState, ": constant create postpone #literal reveal postpone does> fetchliteral ;");
+	InterpretForth(pExecState, ": constant create postpone #literal reveal postpone does> fetchliteral postpone [ ;");
 	InterpretForth(pExecState, ": variable create postpone #literal reveal ;");
 
 	InterpretForth(pExecState, "1 type type variable #compileForType");
@@ -280,13 +280,15 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	pDefineWordForObject->SetWordVisibility(true);
 	pDict->AddWord(pDefineWordForObject);
 
-
+	// 2+ needs to be compiled before if/then is run
 	InterpretForth(pExecState, ": 1+ 1 + ;"); // ( m -- m+1 )
 	InterpretForth(pExecState, ": 1- 1 - ;"); // ( m -- m-1 )
 	InterpretForth(pExecState, ": 2+ 2 + ;"); // ( m -- m+2 )
 	InterpretForth(pExecState, ": 2- 2 - ;"); // ( m -- m-2 )
+	InterpretForth(pExecState, ": .\" postpone \" . ;"); // ( -- ) outputs literal to stdout
 
-	InterpretForth(pExecState, ": .\" postpone \" . ;"); // ( -- obj($) )
+	InterpretForth(pExecState, ": leave #compileState @ 0 = if \" Cannot execute LEAVE when not compiling \" exception then (postpone) <r (postpone) dup (postpone) >r (postpone) jump ; immediate ");
+	InterpretForth(pExecState, ": while #compileState @ 0 = if \" Cannot execute WHILE when not compiling \" exception then (postpone) not postpone if postpone leave postpone then ; immediate ");
 
 	InterpretForth(pExecState, ": cr ( -- ) 10 emit ;"); // (  --  )
 	InterpretForth(pExecState, ": '\10' 10 tochar ; ");
@@ -1941,29 +1943,6 @@ bool PreBuiltWords::BuiltIn_PushUpcomingLiteral(ExecState* pExecState) {
 	return true;
 }
 
-bool PreBuiltWords::BuiltIn_Leave(ExecState* pExecState) {
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
-	if (nCompileState == 0) {
-		return pExecState->CreateException("Cannot execute LEAVE when not compiling");
-	}
-	// Make a duplicate of where to leave to
-	if (!pExecState->pCompiler->CompileWord(pExecState, "<r")) {
-		return false;
-	}
-	if (!pExecState->pCompiler->CompileWord(pExecState, "dup")) {
-		return false;
-	}
-	if (!pExecState->pCompiler->CompileWord(pExecState, ">r")) {
-		return false;
-	}
-	if (!pExecState->pCompiler->CompileWord(pExecState, "jump")) {
-		return false;
-	}
-
-	return true;
-}
-
 bool PreBuiltWords::BuiltIn_Begin(ExecState* pExecState) {
 	int64_t nCompileState;
 	pExecState->GetVariable("#compileState", nCompileState);
@@ -2032,21 +2011,6 @@ bool PreBuiltWords::BuiltIn_Until(ExecState* pExecState) {
 	}
 	if (!pExecState->pCompiler->CompileWord(pExecState, "3<r")) return false;
 	if (!pExecState->pCompiler->CompileWord(pExecState, "3drop")) return false;
-
-	return true;
-}
-
-bool PreBuiltWords::BuiltIn_While(ExecState* pExecState) {
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
-	if (nCompileState == 0) {
-		return pExecState->CreateException("Cannot execute WHILE when not compiling");
-	}
-
-	if (!pExecState->pCompiler->CompileWord(pExecState, "not")) return false;
-	if (!PreBuiltWords::BuiltIn_If(pExecState)) return false;
-	if (!PreBuiltWords::BuiltIn_Leave(pExecState)) return false;
-	if (!PreBuiltWords::BuiltIn_Then(pExecState)) return false;
 
 	return true;
 }
@@ -2356,4 +2320,16 @@ bool PreBuiltWords::BuiltIn_Else(ExecState* pExecState) {
 	}
 
 	return true;
+}
+
+bool PreBuiltWords::BuiltIn_ThrowException(ExecState* pExecState) {
+	string str;
+	bool success;
+	tie(success, str) = pExecState->pStack->PullAsString();
+	if (success) {
+		return pExecState->CreateException(str.c_str());
+	}
+	else {
+		return pExecState->CreateException("Could not retrieve string to make exception of");
+	}
 }

@@ -73,7 +73,6 @@ void initialiseTypeSystem(ExecState* pExecState) {
 void initialiseDict(ForthDict* pDict, ExecState* pExecState) {
     PreBuiltWords::RegisterWords(pDict);
     PreBuiltWords::CreateSecondLevelWords(pExecState);
-
     createTypeWords(pExecState);
     createFileTypes(pExecState);
 }
