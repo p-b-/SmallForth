@@ -490,9 +490,19 @@ void InputProcessor::WriteLineFromPosition(ostream* pStdout, const string& line,
 	this->CalculateLineStartPosition(cursorPosition, startX, startY);
 	SetCursorPosition(startX, startY);
 
+	int len = line.length();
+
 	(*pStdout) << line;
 	if (addExtraSpaceForDeletion) {
+		len++;
 		(*pStdout) << " ";
+	}
+	int startX_AfterLineOut;
+	int startY_AfterLineOut;
+	this->CalculateLineStartPosition(len, startX_AfterLineOut, startY_AfterLineOut);
+	if (startY_AfterLineOut < startY) {
+		// Console has scrolled
+		y -= startY - startY_AfterLineOut;
 	}
 	SetCursorPosition(x, y);
 }
