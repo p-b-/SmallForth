@@ -512,7 +512,7 @@ void InputProcessor::BlankCurrentLine(ostream* pStdout, const string& line, int 
 	this->SetCursorPosition(startX, startY);
 
 	for (int i = (int)line.length(); i > 0; --i) {
-		cout << " ";
+		(*pStdout) << " ";
 	}
 	this->SetCursorPosition(startX, startY);
 }
