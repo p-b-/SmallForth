@@ -145,10 +145,7 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 
 	InitialiseImmediateWord(pDict, "begin", PreBuiltWords::BuiltIn_Begin);
 	InitialiseImmediateWord(pDict, "until", PreBuiltWords::BuiltIn_Until);
-	InitialiseImmediateWord(pDict, "again", PreBuiltWords::BuiltIn_Again);
 	InitialiseImmediateWord(pDict, "repeat", PreBuiltWords::BuiltIn_Repeat);
-//	InitialiseImmediateWord(pDict, "loop", PreBuiltWords::BuiltIn_Loop);
-	InitialiseImmediateWord(pDict, "+loop", PreBuiltWords::BuiltIn_PlusLoop);
 	InitialiseImmediateWord(pDict, "if", PreBuiltWords::BuiltIn_If);
 	InitialiseImmediateWord(pDict, "then", PreBuiltWords::BuiltIn_Then);
 	InitialiseImmediateWord(pDict, "else", PreBuiltWords::BuiltIn_Else);
@@ -314,6 +311,8 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	InterpretForth(pExecState, ": while #compileState @ 0 = if \" Cannot execute WHILE when not compiling \" exception then (postpone) not postpone if postpone leave postpone then ; immediate ");
 	InterpretForth(pExecState, ": do #compileState @ 0 = if \" Cannot execute DO when not compiling \" exception then postpone here 0 postpone , (postpone) 3>r postpone here ; immediate ");
 	InterpretForth(pExecState, ": loop #compileState @ 0 = if \" Cannot execute LOOP when not compiling \" exception then postpone , 2 + (postpone)  3<r (postpone)  >r (postpone) 1+ (postpone) 2dup (postpone) != (postpone) -rot (postpone) <r (postpone) 3>r (postpone) jumpontrue postpone here !inword (postpone) 3<r (postpone) 3drop ; immediate");
+	InterpretForth(pExecState, ": +loop #compileState @ 0 = if \" Cannot execute +LOOP when not compiling \" exception then postpone , 2 + (postpone) swap (postpone) 3<r (postpone)  >r (postpone) rot (postpone) + (postpone) 2dup (postpone) != (postpone) -rot (postpone) <r (postpone) 3>r (postpone) jumpontrue postpone here !inword (postpone) 3<r (postpone) 3drop ; immediate");
+	InterpretForth(pExecState, ": again #compileState @ 0 = if \" Cannot execute AGAIN when not compiling \" exception then postpone , 2 + (postpone) 3<r (postpone)  >r (postpone) 1+ (postpone) <r (postpone) 3>r (postpone) jump postpone here !inword (postpone) 3<r (postpone) 3drop ; immediate");
 
 	InterpretForth(pExecState, ": space ( -- ) 32 emit ;"); // (  --  )
 	InterpretForth(pExecState, ": spaces ( n -- ) dup 0 > if 0 do 32 emit loop then ;"); // ( n -- )
@@ -2076,155 +2075,6 @@ bool PreBuiltWords::BuiltIn_Repeat(ExecState* pExecState) {
 	}
 	if (!pExecState->pCompiler->CompileWord(pExecState, "3<r")) return false;
 	if (!pExecState->pCompiler->CompileWord(pExecState, "3drop")) return false;
-	return true;
-}
-
-bool PreBuiltWords::BuiltIn_Again(ExecState* pExecState) {
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
-	if (nCompileState == 0) {
-		return pExecState->CreateException("Cannot execute AGAIN when not compiling");
-	}
-
-	// Stack ==> IP to jump back to when looping
-	//           IP where literal is stored for LEAVE word (points to start of LOOP word compiled into new word)
-	// Compile what is top of stack now, into word as push literal word, and literal
-	// This was the HERE in the DO word, where we are to jump back to
-	// 
-	if (!PreBuiltWords::BuiltIn_Literal(pExecState)) {
-		return false;
-	}
-
-	// Stack ==> IP where literal is stored for LEAVE word (points to start of LOOP word compiled into new word)
-	// Inc addr past BuiltIn_PushUpcomingIntLiteral word and to actual value
-	if (!pExecState->pStack->Push((int64_t)2)) return pExecState->CreateStackOverflowException("whilst executing AGAIN");
-	if (!pExecState->ExecuteWordDirectly("+")) return false;
-
-	// Increment counter (all loops have counters)
-	if (!pExecState->pCompiler->CompileWord(pExecState, "3<r")) return false;
-	if (!pExecState->pCompiler->CompileWord(pExecState, ">r")) return false;
-	if (!pExecState->pCompiler->CompileWord(pExecState, "1+")) return false;
-	if (!pExecState->pCompiler->CompileWord(pExecState, "<r")) return false;
-	if (!pExecState->pCompiler->CompileWord(pExecState, "3>r")) return false;
-
-	if (!pExecState->pCompiler->CompileWord(pExecState, "jump")) return false;
-	// Mark IP on stack where LEAVE is to jump to
-	if (!PreBuiltWords::BuiltIn_Here(pExecState)) {
-		return false;
-	}
-	// Stack ==> Location for leave to jump to (HERE)
-	//			 IP where literal is actually stored for LEAVE word (points to start of LOOP word compiled into new word)
-
-	// poke ( addr:value -- ) *addr=value
-	if (!PreBuiltWords::BuiltIn_PokeIntegerInWord(pExecState)) {
-		return false;
-	}
-	if (!pExecState->pCompiler->CompileWord(pExecState, "3<r")) return false;
-	if (!pExecState->pCompiler->CompileWord(pExecState, "3drop")) return false;
-
-	return true;
-}
-
-bool PreBuiltWords::BuiltIn_Loop(ExecState* pExecState) {
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
-	if (nCompileState == 0) {
-		return pExecState->CreateException("Cannot execute LOOP when not compiling");
-	}
-
-	// Stack ==> IP to jump back to when looping
-	//           IP where literal is stored for LEAVE word (points to start of LOOP word compiled into new word)
-	// Compile what is top of stack now, into word as push literal word, and literal
-	// This was the HERE in the DO word, where we are to jump back to
-	// 
-	if (!PreBuiltWords::BuiltIn_Literal(pExecState)) {
-		return false;
-	}
-
-	// Stack ==> IP where literal is stored for LEAVE word (points to start of LOOP word compiled into new word)
-	// Inc addr past BuiltIn_PushUpcomingIntLiteral word and to actual value
-	if (!pExecState->pStack->Push((int64_t)2)) return pExecState->CreateStackOverflowException("whilst executing LOOP");
-	if (!pExecState->ExecuteWordDirectly("+")) return false;
-
-	if (!pExecState->pCompiler->CompileWord(pExecState, "3<r")) return false;
-	// Move leave IP back to return stack
-	if (!pExecState->pCompiler->CompileWord(pExecState, ">r")) return false;
-
-	if (!pExecState->pCompiler->CompileWord(pExecState, "1+")) return false;
-	if (!pExecState->pCompiler->CompileWord(pExecState, "2dup")) return false;
-	if (!pExecState->pCompiler->CompileWord(pExecState, "!=")) return false;
-	if (!pExecState->pCompiler->CompileWord(pExecState, "-rot")) return false;
-	// Move leave IP back 
-	if (!pExecState->pCompiler->CompileWord(pExecState, "<r")) return false;
-	if (!pExecState->pCompiler->CompileWord(pExecState, "3>r")) return false;
-
-	if (!pExecState->pCompiler->CompileWord(pExecState, "jumpontrue")) return false;
-	// Mark IP on stack where LEAVE is to jump to
-	if (!PreBuiltWords::BuiltIn_Here(pExecState)) {
-		return false;
-	}
-	// Stack ==> Location for leave to jump to (HERE)
-	//			 IP where literal is actually stored for LEAVE word (points to start of LOOP word compiled into new word)
-
-	// poke ( addr:value -- ) *addr=value
-	if (!PreBuiltWords::BuiltIn_PokeIntegerInWord(pExecState)) {
-		return false;
-	}
-	if (!pExecState->pCompiler->CompileWord(pExecState, "3<r")) return false;
-	if (!pExecState->pCompiler->CompileWord(pExecState, "3drop")) return false;
-
-	return true;
-}
-
-
-bool PreBuiltWords::BuiltIn_PlusLoop(ExecState* pExecState) {
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
-	if (nCompileState == 0) {
-		return pExecState->CreateException("Cannot execute LOOP when not compiling");
-	}
-
-	// Stack ==> IP to jump back to when looping
-	//           IP where literal is stored for LEAVE word (points to start of LOOP word compiled into new word)
-	// Compile what is top of stack now, into word as push literal word, and literal
-	// This was the HERE in the DO word, where we are to jump back to
-	// 
-	if (!PreBuiltWords::BuiltIn_Literal(pExecState)) {
-		return false;
-	}
-
-	// Stack ==> IP where literal is stored for LEAVE word (points to start of LOOP word compiled into new word)
-	// Inc addr past BuiltIn_PushUpcomingIntLiteral word and to actual value
-	if (!pExecState->pStack->Push((int64_t)2)) return pExecState->CreateStackOverflowException("whilst executing +LOOP");
-	if (!pExecState->ExecuteWordDirectly("+")) return false;
-
-	pExecState->pCompiler->CompileWord(pExecState, "swap");
-	pExecState->pCompiler->CompileWord(pExecState, "3<r");
-	if (!pExecState->pCompiler->CompileWord(pExecState, ">r")) return false;
-
-	pExecState->pCompiler->CompileWord(pExecState, "rot");
-	pExecState->pCompiler->CompileWord(pExecState, "+");
-	pExecState->pCompiler->CompileWord(pExecState, "2dup");
-	pExecState->pCompiler->CompileWord(pExecState, "!=");
-	pExecState->pCompiler->CompileWord(pExecState, "-rot");
-	if (!pExecState->pCompiler->CompileWord(pExecState, "<r")) return false;
-	pExecState->pCompiler->CompileWord(pExecState, "3>r");
-	pExecState->pCompiler->CompileWord(pExecState, "jumpontrue");
-
-	// Mark IP on stack where LEAVE is to jump to
-	if (!PreBuiltWords::BuiltIn_Here(pExecState)) {
-		return false;
-	}
-	// Stack ==> Location for leave to jump to (HERE)
-	//			 IP where literal is actually stored for LEAVE word (points to start of LOOP word compiled into new word)
-
-	// poke ( addr:value -- ) *addr=value
-	if (!PreBuiltWords::BuiltIn_PokeIntegerInWord(pExecState)) {
-		return false;
-	}
-	if (!pExecState->pCompiler->CompileWord(pExecState, "3<r")) return false;
-	if (!pExecState->pCompiler->CompileWord(pExecState, "3drop")) return false;
-
 	return true;
 }
 
