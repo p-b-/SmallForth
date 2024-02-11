@@ -33,6 +33,9 @@ public:
 	static bool BuiltIn_IndirectDoCol(ExecState* pExecState);
 	static bool BuiltIn_CompileState(ExecState* pExecState);
 	static bool BuiltIn_PostponeState(ExecState* pExecState);
+	static bool BuiltIn_InsideCommentState(ExecState* pExecState);
+	static bool BuiltIn_InsideCommentLineState(ExecState* pExecState);
+
 	static bool BuiltIn_DoCol(ExecState* pExecState);
 	static bool BuiltIn_Immediate(ExecState* pExecState);
 	static bool BuiltIn_Here(ExecState* pExecState);

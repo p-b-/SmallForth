@@ -39,7 +39,9 @@ tuple<ForthWord*, bool> InputProcessor::GetForthWordFromVocabOrObject(ExecState*
 	bool executeOnTOSObject = false;
 	InputWord wordWithDelimiterCount = GetNextWord(pExecState);
 	string wordName = wordWithDelimiterCount.word;
-	if (pExecState->insideLineComment || wordName.length() == 0) {
+	bool bInsideCommentLine;
+	pExecState->GetVariable("#insideCommentLine", bInsideCommentLine);
+	if (bInsideCommentLine || wordName.length() == 0) {
 		return { nullptr, executeOnTOSObject };
 	}
 	pExecState->delimitersAfterCurrentWord = wordWithDelimiterCount.postDelimiterCount;
@@ -68,23 +70,28 @@ tuple<ForthWord*, bool> InputProcessor::GetForthWordFromVocabOrObject(ExecState*
 		if (pWord == nullptr)
 		{
 			pWord = pExecState->pDict->FindWord(wordName);
-			if (pWord == nullptr && pExecState->insideComment == false) {
-				int64_t intValue;
-				double floatValue;
-				if (ConvertToInt(wordName, intValue)) {
-					pExecState->pStack->Push(intValue);
-				}
-				else if (ConvertToFloat(wordName, floatValue)) {
-					pExecState->pStack->Push(floatValue);
-				}
-				else {
-					ClearRestOfLine();
-					ostream* pStderr = pExecState->GetStderr();
-					(*pStderr) << "Unknown word: " << wordName << endl;
-				}
+			if (pWord == nullptr) {
+				bool bInsideComment;
+				pExecState->GetVariable("#insideComment", bInsideComment);
 
-				if (nCompileState==1) {
-					pWord = pExecState->pDict->FindWord("literal");
+				if (bInsideComment == false) {
+					int64_t intValue;
+					double floatValue;
+					if (ConvertToInt(wordName, intValue)) {
+						pExecState->pStack->Push(intValue);
+					}
+					else if (ConvertToFloat(wordName, floatValue)) {
+						pExecState->pStack->Push(floatValue);
+					}
+					else {
+						ClearRestOfLine();
+						ostream* pStderr = pExecState->GetStderr();
+						(*pStderr) << "Unknown word: " << wordName << endl;
+					}
+
+					if (nCompileState == 1) {
+						pWord = pExecState->pDict->FindWord("literal");
+					}
 				}
 			}
 		}
@@ -115,7 +122,10 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 			}
 			continue;
 		}
-		if (pExecState->insideComment && WordMatchesXT(pWord, PreBuiltWords::BuiltIn_ParenthesisCommentEnd) == false)
+		bool bInsideComment;
+		pExecState->GetVariable("#insideComment", bInsideComment);
+
+		if (bInsideComment && WordMatchesXT(pWord, PreBuiltWords::BuiltIn_ParenthesisCommentEnd) == false)
 		{
 			continue;
 		}
@@ -183,7 +193,8 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 
 InputWord InputProcessor::GetNextWord(ExecState* pExecState) {
 	while (this->inputWords.size() == 0) {
-		pExecState->insideLineComment = false;
+		pExecState->SetVariable("#insideCommentLine", false);
+
 		if (processFromString)
 		{
 			processFromString = false;
@@ -213,7 +224,10 @@ void InputProcessor::ReadAndProcess(ExecState* pExecState) {
 	{
 		while (true) {
 			std::string line;
-			if (pExecState->insideComment) {
+			bool bInsideComment;
+			pExecState->GetVariable("#insideComment", bInsideComment);
+
+			if (bInsideComment) {
 				(*pStdout) << pExecState->commentPrompt;
 			}
 			else if (pExecState->insideStringLiteral) {
@@ -493,7 +507,7 @@ void InputProcessor::WriteLineFromPosition(ostream* pStdout, const string& line,
 	this->CalculateLineStartPosition(cursorPosition, startX, startY);
 	SetCursorPosition(startX, startY);
 
-	int len = line.length();
+	int len = (int)line.length();
 
 	(*pStdout) << line;
 	if (addExtraSpaceForDeletion) {

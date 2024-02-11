@@ -35,6 +35,8 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	// Creating this means #nextBoolVarIndex starts at 1, not 0
 	InitialiseWord(pDict, "#postponeState", PreBuiltWords::BuiltIn_PostponeState);
 
+	InitialiseWord(pDict, "#insideComment", PreBuiltWords::BuiltIn_InsideCommentState);
+	InitialiseWord(pDict, "#insideCommentLine", PreBuiltWords::BuiltIn_InsideCommentLineState);
 
 	// TODO Delete this
 	//ForthWord* pCompileStateWord = new ForthWord("#compileState", PreBuiltWords::BuiltIn_DoCol);
@@ -203,15 +205,14 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	pEndWordDefinition->SetWordVisibility(true);
 	pDict->AddWord(pEndWordDefinition);
 	pEndWordDefinition = nullptr;
-
 	InterpretForth(pExecState, ": constant create postpone #literal reveal postpone does> fetchliteral postpone [ ;");
 	InterpretForth(pExecState, ": variable create postpone #literal reveal ;");
 
 	InterpretForth(pExecState, "1 type type variable #compileForType");
 
-	// Set to 1, as already defined compileState (int) and postponeState (bool) manually
+	// Set to 1 and 3, as already defined compileState (int) and postponeState, insideComment, insideCommentLine (bool) manually
 	InterpretForth(pExecState, "1 variable #nextIntVarIndex");
-	InterpretForth(pExecState, "1 variable #nextBoolVarIndex");
+	InterpretForth(pExecState, "3 variable #nextBoolVarIndex");
 
 	InterpretForth(pExecState, ": #getNextIntVarIndex #nextIntVarIndex dup @ dup 1 + rot ! ; immediate");
 	InterpretForth(pExecState, ": #getNextBoolVarIndex #nextBoolVarIndex dup @ dup 1 + rot ! ; immediate");
@@ -483,6 +484,31 @@ bool PreBuiltWords::BuiltIn_PostponeState(ExecState* pExecState) {
 	return true;
 }
 
+bool PreBuiltWords::BuiltIn_InsideCommentState(ExecState* pExecState) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	bool* pVar = pExecState->GetPointerToBoolStateVariable(ExecState::c_insideCommentIndex);
+	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Bool);
+	StackElement* pElementVariable = new StackElement(pterType, (void*)pVar);
+	if (!pExecState->pStack->Push(pElementVariable)) {
+		return pExecState->CreateStackOverflowException("whilst pushing a state boolean variable");
+	}
+	return true;
+}
+
+bool PreBuiltWords::BuiltIn_InsideCommentLineState(ExecState* pExecState) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	bool* pVar = pExecState->GetPointerToBoolStateVariable(ExecState::c_insideCommentLineIndex);
+	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Bool);
+	StackElement* pElementVariable = new StackElement(pterType, (void*)pVar);
+	if (!pExecState->pStack->Push(pElementVariable)) {
+		return pExecState->CreateStackOverflowException("whilst pushing a state boolean variable");
+	}
+	return true;
+}
+
+
 bool PreBuiltWords::BuiltIn_IndirectDoCol(ExecState* pExecState) {
 	WordBodyElement* pWbe = pExecState->pExecBody[pExecState->ip];
 	pExecState->ip++;
@@ -544,12 +570,16 @@ bool PreBuiltWords::BuiltIn_DoCol(ExecState* pExecState) {
 			int64_t nCompileState;
 			pExecState->GetVariable("#compileState", nCompileState);
 
-			pExecState->SetVariable("#postponeState", false);
+			if (!pExecState->SetVariable("#postponeState", false)) {
+				return pExecState->CreateException("Could not reset postpone state flag");
+			}
 
 			if (nCompileState>0) {
 				// Compile this word
 				pExecState->pCompiler->CompileWord(pExecState, pCFA);
-				pExecState->SetVariable("#postponeState", false);
+				if (!pExecState->SetVariable("#postponeState", false)) {
+					return pExecState->CreateException("Could not reset postpone state flag");
+				}
 				continue;
 			}
 		}
@@ -814,17 +844,23 @@ bool PreBuiltWords::BuiltIn_Find(ExecState* pExecState) {
 
 
 bool PreBuiltWords::BuiltIn_ParenthesisCommentStart(ExecState* pExecState) {
-	pExecState->insideComment = true;
+	if (!pExecState->SetVariable("#insideComment", true)) {
+		return pExecState->CreateException("Could not set #insideComment flag");
+	}
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_ParenthesisCommentEnd(ExecState* pExecState) {
-	pExecState->insideComment = false;
+	if (!pExecState->SetVariable("#insideComment", false)) {
+		return pExecState->CreateException("Could not reset #insideComment flag");
+	}
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_LineCommentStart(ExecState* pExecState) {
-	pExecState->insideLineComment = true;
+	if (!pExecState->SetVariable("#insideCommentLine", true)) {
+		return pExecState->CreateException("Could not set #insideCommentLine flag");
+	}
 	return true;
 }
 
@@ -841,7 +877,7 @@ bool PreBuiltWords::BuiltIn_Allot(ExecState* pExecState) {
 	}
 	int64_t n = pElementAllotBy->GetInt();
 	delete pElementAllotBy;
-	pElementAllotBy = nullptr;
+	pElementAllotBy = nullptr;//
 
 	pExecState->pCompiler->ExpandLastWordCompiledBy(pExecState, (int)n);
 
@@ -860,8 +896,12 @@ bool PreBuiltWords::BuiltIn_Does(ExecState* pExecState) {
 	if (!pExecState->pCompiler->HasValidLastWordCreated()) {
 		return pExecState->CreateException("Cannot execute does> when not compiling");
 	}
-	pExecState->SetVariable("#compileState", (int64_t)2);
-	pExecState->SetVariable("#postponeState", true);
+	if (!pExecState->SetVariable("#compileState", (int64_t)2)) {
+		return pExecState->CreateException("Could not set #compileState to 2");
+	}
+	if (!pExecState->SetVariable("#postponeState", true)) {
+		return pExecState->CreateException("Could not set postpone state flag");
+	}
 	return true;
 }
 
@@ -926,13 +966,17 @@ bool PreBuiltWords::BuiltIn_AddWordToObject(ExecState* pExecState) {
 
 // TODO Once variables are working, remove compile state from ExecState and implement this word in Forth
 bool PreBuiltWords::BuiltIn_StartCompilation(ExecState* pExecState) {
-	pExecState->SetVariable("#compileState", (int64_t)1);
+	if (!pExecState->SetVariable("#compileState", (int64_t)1)) {
+		return pExecState->CreateException("Could not set compilation state to 1");
+	}
 	return true;
 }
 
 // TODO Once variables are working, remove compile state from ExecState and implement this word in Forth
 bool PreBuiltWords::BuiltIn_EndCompilation(ExecState* pExecState) {
-	pExecState->SetVariable("#compileState", (int64_t)0);
+	if (!pExecState->SetVariable("#compileState", (int64_t)0)) {
+		return pExecState->CreateException("Could not reset compilation state");
+	}
 	return true;
 }
 
@@ -944,18 +988,24 @@ bool PreBuiltWords::BuiltIn_Forget(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_Postpone(ExecState* pExecState) {
-	pExecState->SetVariable("#postponeState", true);
+	if (!pExecState->SetVariable("#postponeState", true)) {
+		return pExecState->CreateException("Could not set postpone state flag");
+	}
 	return true;
 }
 
 // None-immediate version of postpone, used to compile postpone into a defining word
 bool PreBuiltWords::BuiltIn_PostponePostpone(ExecState* pExecState) {
-	pExecState->SetVariable("#postponeState", true);
+	if (!pExecState->SetVariable("#postponeState", true)) {
+		return pExecState->CreateException("Could not set postpone state flag");
+	}
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_ResetPostponeState(ExecState* pExecState) {
-	pExecState->SetVariable("#postponeState", false);
+	if (!pExecState->SetVariable("#postponeState", false)) {
+		return pExecState->CreateException("Could not reset postpone state flag");
+	}
 	return true;
 }
 

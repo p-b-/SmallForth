@@ -27,9 +27,7 @@ ExecState::ExecState(DataStack* pStack, ForthDict* pDict, InputProcessor* pInput
 	this->nextWordIsCharLiteral = false;
 	this->pTempStack = new DataStack(40);
 	this->pSelfStack = new DataStack(40);
-	this->insideComment = false;
-	this->insideLineComment = false;
-
+	
 	this->commentPrompt = "C> ";
 	this->compilePrompt = ":> ";
 	this->interpetPrompt = "? ";
