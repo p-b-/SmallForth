@@ -147,7 +147,6 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseImmediateWord(pDict, "until", PreBuiltWords::BuiltIn_Until);
 	InitialiseImmediateWord(pDict, "again", PreBuiltWords::BuiltIn_Again);
 	InitialiseImmediateWord(pDict, "repeat", PreBuiltWords::BuiltIn_Repeat);
-	InitialiseImmediateWord(pDict, "do", PreBuiltWords::BuiltIn_Do);
 	InitialiseImmediateWord(pDict, "loop", PreBuiltWords::BuiltIn_Loop);
 	InitialiseImmediateWord(pDict, "+loop", PreBuiltWords::BuiltIn_PlusLoop);
 	InitialiseImmediateWord(pDict, "if", PreBuiltWords::BuiltIn_If);
@@ -287,9 +286,6 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	InterpretForth(pExecState, ": 2- 2 - ;"); // ( m -- m-2 )
 	InterpretForth(pExecState, ": .\" postpone \" . ;"); // ( -- ) outputs literal to stdout
 
-	InterpretForth(pExecState, ": leave #compileState @ 0 = if \" Cannot execute LEAVE when not compiling \" exception then (postpone) <r (postpone) dup (postpone) >r (postpone) jump ; immediate ");
-	InterpretForth(pExecState, ": while #compileState @ 0 = if \" Cannot execute WHILE when not compiling \" exception then (postpone) not postpone if postpone leave postpone then ; immediate ");
-
 	InterpretForth(pExecState, ": cr ( -- ) 10 emit ;"); // (  --  )
 	InterpretForth(pExecState, ": '\10' 10 tochar ; ");
 	InterpretForth(pExecState, ": pushNewLine '\10' ;");
@@ -315,6 +311,11 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 
 	InterpretForth(pExecState, ": 3>r -rot 2>r >r ;");  // ( a b c  -- R a b c )
 	InterpretForth(pExecState, ": 3<r <r 2<r rot ;");  // ( a b c  -- R a b c )
+
+	// Rely on stack operations above
+	InterpretForth(pExecState, ": leave #compileState @ 0 = if \" Cannot execute LEAVE when not compiling \" exception then (postpone) <r (postpone) dup (postpone) >r (postpone) jump ; immediate ");
+	InterpretForth(pExecState, ": while #compileState @ 0 = if \" Cannot execute WHILE when not compiling \" exception then (postpone) not postpone if postpone leave postpone then ; immediate ");
+	InterpretForth(pExecState, ": do #compileState @ 0 = if \" Cannot execute DO when not compiling \" exception then postpone here 0 postpone , (postpone) 3>r postpone here ; immediate ");
 
 	InterpretForth(pExecState, ": space ( -- ) 32 emit ;"); // (  --  )
 	InterpretForth(pExecState, ": spaces ( n -- ) dup 0 > if 0 do 32 emit loop then ;"); // ( n -- )
@@ -2106,26 +2107,6 @@ bool PreBuiltWords::BuiltIn_Again(ExecState* pExecState) {
 	if (!pExecState->pCompiler->CompileWord(pExecState, "3<r")) return false;
 	if (!pExecState->pCompiler->CompileWord(pExecState, "3drop")) return false;
 
-	return true;
-}
-
-bool PreBuiltWords::BuiltIn_Do(ExecState* pExecState) {
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
-	if (nCompileState == 0) {
-		return pExecState->CreateException("Cannot execute DO when not compiling");
-	}
-
-	// Allow LOOP to change this 0, into the IP of the LOOP instruction
-	if (!PreBuiltWords::BuiltIn_Here(pExecState)) {
-		return false;
-	}
-	pExecState->pCompiler->CompilePushAndLiteralIntoWordBeingCreated(pExecState, (int64_t)0);
-	pExecState->pCompiler->CompileWord(pExecState, "3>r");
-
-	if (!PreBuiltWords::BuiltIn_Here(pExecState)) {
-		return false;
-	}
 	return true;
 }
 

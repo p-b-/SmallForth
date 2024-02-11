@@ -177,7 +177,6 @@ public:
 	static bool BuiltIn_Until(ExecState* pExecState);
 	static bool BuiltIn_Again(ExecState* pExecState);
 	static bool BuiltIn_Repeat(ExecState* pExecState);
-	static bool BuiltIn_Do(ExecState* pExecState);
 	static bool BuiltIn_Loop(ExecState* pExecState);
 	static bool BuiltIn_PlusLoop(ExecState* pExecState);
 	static bool BuiltIn_If(ExecState* pExecState);
