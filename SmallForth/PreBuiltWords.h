@@ -176,9 +176,6 @@ public:
 	static bool BuiltIn_StringLiteral(ExecState* pExecState);
 
 	// Control flow
-	static bool BuiltIn_Begin(ExecState* pExecState);
-	static bool BuiltIn_Until(ExecState* pExecState);
-	static bool BuiltIn_Repeat(ExecState* pExecState);
 	static bool BuiltIn_If(ExecState* pExecState);
 	static bool BuiltIn_Then(ExecState* pExecState);
 	static bool BuiltIn_Else(ExecState* pExecState);
