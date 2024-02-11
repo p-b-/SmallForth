@@ -279,11 +279,8 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	pDefineWordForObject->SetWordVisibility(true);
 	pDict->AddWord(pDefineWordForObject);
 
-	// 2+ needs to be compiled before if/then is run
 	InterpretForth(pExecState, ": 1+ 1 + ;"); // ( m -- m+1 )
 	InterpretForth(pExecState, ": 1- 1 - ;"); // ( m -- m-1 )
-	InterpretForth(pExecState, ": 2+ 2 + ;"); // ( m -- m+2 )
-	InterpretForth(pExecState, ": 2- 2 - ;"); // ( m -- m-2 )
 	InterpretForth(pExecState, ": .\" postpone \" . ;"); // ( -- ) outputs literal to stdout
 
 	InterpretForth(pExecState, ": cr ( -- ) 10 emit ;"); // (  --  )
@@ -1987,9 +1984,9 @@ bool PreBuiltWords::BuiltIn_Until(ExecState* pExecState) {
 
 	// Stack ==> IP where literal is stored for LEAVE word (points to start of LOOP word compiled into new word)
 	// Inc addr past BuiltIn_PushUpcomingIntLiteral word and to actual value
-	if (!pExecState->ExecuteWordDirectly("2+")) {
-		return false;
-	}
+	if (!pExecState->pStack->Push((int64_t)2)) return pExecState->CreateStackOverflowException("whilst executing UNTIL");
+	if (!pExecState->ExecuteWordDirectly("+")) return false;
+	
 	// Increment counter (all loops have counters)
 	if (!pExecState->pCompiler->CompileWord(pExecState, "3<r")) return false;
 	if (!pExecState->pCompiler->CompileWord(pExecState, ">r")) return false;
@@ -2035,9 +2032,8 @@ bool PreBuiltWords::BuiltIn_Repeat(ExecState* pExecState) {
 
 	// Stack ==> IP where literal is stored for LEAVE word (points to start of LOOP word compiled into new word)
 	// Inc addr past BuiltIn_PushUpcomingIntLiteral word and to actual value
-	if (!pExecState->ExecuteWordDirectly("2+")) {
-		return false;
-	}
+	if (!pExecState->pStack->Push((int64_t)2)) return pExecState->CreateStackOverflowException("whilst executing REPEAT");
+	if (!pExecState->ExecuteWordDirectly("+")) return false; 
 
 	// Increment counter (all loops have counters)
 	if (!pExecState->pCompiler->CompileWord(pExecState, "3<r")) return false;
@@ -2081,9 +2077,8 @@ bool PreBuiltWords::BuiltIn_Again(ExecState* pExecState) {
 
 	// Stack ==> IP where literal is stored for LEAVE word (points to start of LOOP word compiled into new word)
 	// Inc addr past BuiltIn_PushUpcomingIntLiteral word and to actual value
-	if (!pExecState->ExecuteWordDirectly("2+")) {
-		return false;
-	}
+	if (!pExecState->pStack->Push((int64_t)2)) return pExecState->CreateStackOverflowException("whilst executing AGAIN");
+	if (!pExecState->ExecuteWordDirectly("+")) return false;
 
 	// Increment counter (all loops have counters)
 	if (!pExecState->pCompiler->CompileWord(pExecState, "3<r")) return false;
@@ -2128,9 +2123,8 @@ bool PreBuiltWords::BuiltIn_Loop(ExecState* pExecState) {
 
 	// Stack ==> IP where literal is stored for LEAVE word (points to start of LOOP word compiled into new word)
 	// Inc addr past BuiltIn_PushUpcomingIntLiteral word and to actual value
-	if (!pExecState->ExecuteWordDirectly("2+")) {
-		return false;
-	}
+	if (!pExecState->pStack->Push((int64_t)2)) return pExecState->CreateStackOverflowException("whilst executing LOOP");
+	if (!pExecState->ExecuteWordDirectly("+")) return false;
 
 	if (!pExecState->pCompiler->CompileWord(pExecState, "3<r")) return false;
 	// Move leave IP back to return stack
@@ -2181,9 +2175,8 @@ bool PreBuiltWords::BuiltIn_PlusLoop(ExecState* pExecState) {
 
 	// Stack ==> IP where literal is stored for LEAVE word (points to start of LOOP word compiled into new word)
 	// Inc addr past BuiltIn_PushUpcomingIntLiteral word and to actual value
-	if (!pExecState->ExecuteWordDirectly("2+")) {
-		return false;
-	}
+	if (!pExecState->pStack->Push((int64_t)2)) return pExecState->CreateStackOverflowException("whilst executing +LOOP");
+	if (!pExecState->ExecuteWordDirectly("+")) return false;
 
 	pExecState->pCompiler->CompileWord(pExecState, "swap");
 	pExecState->pCompiler->CompileWord(pExecState, "3<r");

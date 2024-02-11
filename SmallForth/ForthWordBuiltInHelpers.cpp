@@ -240,9 +240,9 @@ bool ForthWord::BuiltInHelper_UpdateForwardJump(ExecState* pExecState) {
 	if (!PreBuiltWords::BuiltIn_PushReturnStackToDataStack(pExecState)) {
 		return false;
 	}
-	if (!pExecState->ExecuteWordDirectly("2+")) {
-		return false;
-	}
+
+	if (!pExecState->pStack->Push((int64_t)2)) return pExecState->CreateStackOverflowException("whilst updating forward jump");
+	if (!pExecState->ExecuteWordDirectly("+")) return false;
 
 	if (!PreBuiltWords::BuiltIn_Here(pExecState)) {
 		return false;
