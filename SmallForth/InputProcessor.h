@@ -17,6 +17,9 @@ public:
 	InputWord GetNextWord(ExecState* pExecState);
 	void ClearRestOfLine();
 
+	static bool ExecuteHaltRequested() { return s_executionToHalt; }
+	static void ResetExecutionHaltFlag() { s_executionToHalt = false; }
+
 private:
 	tuple<ForthWord*, bool> GetForthWordFromVocabOrObject(ExecState* pExecState);
 	bool WordMatchesXT(ForthWord* pWord, XT xtToMatch);
@@ -61,5 +64,7 @@ private:
 	int historySize;
 	deque<string> commandHistory;
 	bool exitApplication;
+
+	volatile static bool s_executionToHalt;
 };
 

@@ -15,8 +15,11 @@
 #include "ForthFile.h"
 #include "PreBuiltWords.h"
 
+volatile bool InputProcessor::s_executionToHalt = false;
+
 int InputProcessor::HandlerRoutine(unsigned long fdwCtrlType) {
 	if (fdwCtrlType == CTRL_C_EVENT) {
+		InputProcessor::s_executionToHalt = true;
 		return TRUE;
 	}
 	return FALSE;

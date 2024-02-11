@@ -505,6 +505,11 @@ bool PreBuiltWords::BuiltIn_DoCol(ExecState* pExecState) {
 	bool exitFound = false;
 
 	while (!exitFound) {
+		if (InputProcessor::ExecuteHaltRequested()) {
+			InputProcessor::ResetExecutionHaltFlag();
+			return pExecState->CreateException("Halted");
+		}
+
 		// Each execution state object contains a pointer to a word body.
 		//  Traditionally in forth, this contain either machine, or in the case of a call to DoCol, it contains
 		// pWbe[0]  :   address of docol (this method)
@@ -649,6 +654,10 @@ bool PreBuiltWords::BuiltIn_Exit(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_Jump(ExecState* pExecState) {
+	if (InputProcessor::ExecuteHaltRequested()) {
+		InputProcessor::ResetExecutionHaltFlag();
+		return pExecState->CreateException("Halted");
+	}
 	StackElement* pElement = pExecState->pStack->Pull();
 	if (pElement == nullptr) {
 		return pExecState->CreateStackUnderflowException();
@@ -668,6 +677,11 @@ bool PreBuiltWords::BuiltIn_Jump(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_JumpOnTrue(ExecState* pExecState) {
+	if (InputProcessor::ExecuteHaltRequested()) {
+		InputProcessor::ResetExecutionHaltFlag();
+		return pExecState->CreateException("Halted");
+	}
+
 	StackElement* pAddrElement = nullptr;
 	StackElement* pBoolElement = nullptr;
 	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pAddrElement, pBoolElement)) {
@@ -689,6 +703,11 @@ bool PreBuiltWords::BuiltIn_JumpOnTrue(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_JumpOnFalse(ExecState* pExecState) {
+	if (InputProcessor::ExecuteHaltRequested()) {
+		InputProcessor::ResetExecutionHaltFlag();
+		return pExecState->CreateException("Halted");
+	}
+
 	StackElement* pAddrElement = nullptr;
 	StackElement* pBoolElement = nullptr;
 	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pAddrElement, pBoolElement)) {
