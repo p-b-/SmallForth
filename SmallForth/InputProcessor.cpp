@@ -9,6 +9,7 @@
 #include "ForthDict.h"
 #include "ForthWord.h"
 #include "DataStack.h"
+#include "ReturnStack.h"
 #include "ExecState.h"
 #include "TypeSystem.h"
 #include "CompileHelper.h"
@@ -176,13 +177,28 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 					ClearRestOfLine();
 					ostream* pStderr = pExecState->GetStderr();
 					(*pStderr) << "Exception: " << pExecState->pzException << endl;
+
+					pExecState->SetVariable("#postponestate", false);
+					pExecState->SetVariable("#compileState", (int64_t)0);
+					pExecState->SetVariable("#insideComment", false);
+					pExecState->SetVariable("#insideLineComment", false);
 				}
 			}
 		}
+		// Exception handling outputs the exception to stderr, clears stack, and continues
+		catch (const std::runtime_error& e)
+		{
+			HandleException(pExecState, &e, "Runtime exception: ");
+		}
+		catch (const std::logic_error& e)
+		{
+			HandleException(pExecState, &e, "Logic exception: ");
+		}
+		catch (const std::exception& e) {
+			HandleException(pExecState, &e, "Exception: ");
+		}
 		catch (...) {
-			delete pExecState;
-			pExecState = nullptr;
-			throw;
+			HandleException(pExecState, nullptr, "Non std exception: ");
 		}
 	}
 
@@ -207,6 +223,19 @@ InputWord InputProcessor::GetNextWord(ExecState* pExecState) {
 	InputWord wordToReturn = this->inputWords.front();
 	this->inputWords.pop_front();
 	return wordToReturn;
+}
+
+void InputProcessor::HandleException(ExecState* pExecState, const std::exception* pException, const string& msg) {
+	pExecState->pStack->Clear();
+	pExecState->pTempStack->Clear();
+	pExecState->pSelfStack->Clear();
+	pExecState->pReturnStack->Clear();
+	ostream* pStderr = pExecState->GetStderr();
+	(*pStderr) << msg;
+	if (pException != nullptr) {
+		(*pStderr) << pException->what();
+	}
+
 }
 
 void InputProcessor::ClearRestOfLine() {

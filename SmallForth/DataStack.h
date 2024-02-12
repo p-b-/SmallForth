@@ -19,6 +19,8 @@ public:
 	bool Push(RefCountedObject* value);
 	bool Push(const string& value);
 
+	void Clear();
+
 	StackElement* TopElement();
 	StackElement* Pull();
 	tuple<bool, string> PullAsString();

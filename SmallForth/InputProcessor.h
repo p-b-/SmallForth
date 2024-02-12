@@ -21,6 +21,8 @@ public:
 	static void ResetExecutionHaltFlag() { s_executionToHalt = false; }
 
 private:
+	void HandleException(ExecState* pExecState, const std::exception* pException, const string& msg);
+
 	tuple<ForthWord*, bool> GetForthWordFromVocabOrObject(ExecState* pExecState);
 	bool WordMatchesXT(ForthWord* pWord, XT xtToMatch);
 

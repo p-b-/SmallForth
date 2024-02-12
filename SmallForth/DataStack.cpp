@@ -136,3 +136,12 @@ bool DataStack::Push(StackElement* pElement) {
 	this->stack.push(pElement);
 	return true;
 }
+
+void DataStack::Clear() {
+	while (this->stack.empty() == false) {
+		StackElement* pElement = this->stack.top();
+		delete pElement;
+		pElement = nullptr;
+		this->stack.pop();
+	}
+}
