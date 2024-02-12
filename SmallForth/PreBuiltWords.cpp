@@ -71,7 +71,7 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseWord(pDict, "@", PreBuiltWords::BuiltIn_Peek); // (
 	InitialiseWord(pDict, "!", PreBuiltWords::BuiltIn_Poke);
 	InitialiseWord(pDict, "fetchliteral", PreBuiltWords::BuiltIn_FetchLiteral);
-
+	InitialiseImmediateWord(pDict, "updateForwardJump", PreBuiltWords::BuiltIn_UpdateForwardJump);
 
 	InitialiseWord(pDict, "reveal", PreBuiltWords::BuiltIn_Reveal);
 	InitialiseWord(pDict, "stackreveal", PreBuiltWords::BuiltIn_RevealToStack);
@@ -144,10 +144,6 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseWord(pDict, "(here)", PreBuiltWords::BuiltIn_Here);
 	InitialiseWord(pDict, "forget", PreBuiltWords::BuiltIn_Forget);
 	InitialiseWord(pDict, "see", ForthWord::BuiltIn_DescribeWord);
-
-	InitialiseImmediateWord(pDict, "if", PreBuiltWords::BuiltIn_If);
-	InitialiseImmediateWord(pDict, "then", PreBuiltWords::BuiltIn_Then);
-	InitialiseImmediateWord(pDict, "else", PreBuiltWords::BuiltIn_Else);
 
 	InitialiseImmediateWord(pDict, "does>", PreBuiltWords::BuiltIn_Does);
 
@@ -305,6 +301,18 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	InterpretForth(pExecState, ": 3<r <r 2<r rot ;");  // ( a b c  -- R a b c )
 
 	// Rely on stack operations above
+	InterpretForth(pExecState, ": #if    postpone here dup >r postpone , (postpone) swap (postpone) jumponfalse ; immediate");
+	InterpretForth(pExecState, ": #then  postpone updateforwardjump ; immediate");
+	InterpretForth(pExecState, ": if     #compileState @ 0 = #if \" Cannot execute IF when not compiling \" exception #then \
+								         postpone here dup >r postpone , (postpone) swap (postpone) jumponfalse ; immediate");
+	InterpretForth(pExecState, ": then   #compileState @ 0 = #if \" Cannot execute THEN when not compiling \" exception updateforwardjump \
+										 postpone updateforwardjump ; immediate");
+	InterpretForth(pExecState, "forget #if forget #then");
+	InterpretForth(pExecState, ": else   #compileState @ 0 = if \" Cannot execute ELSE when not compiling \" exception then \
+                                         postpone here dup <r swap >r >r postpone , (postpone) jump postpone updateforwardjump ; immediate");
+	// Note, #if, and #then, have to be defined without exception traps on compilation state, because the actual IF and THEN definitions rely on if and then for the trapping.
+	// TODO Make forget work properaly
+
 	InterpretForth(pExecState, ": leave #compileState @ 0 = if \" Cannot execute LEAVE when not compiling \" exception then (postpone) <r (postpone) dup (postpone) >r (postpone) jump ; immediate ");
 	InterpretForth(pExecState, ": while #compileState @ 0 = if \" Cannot execute WHILE when not compiling \" exception then (postpone) not postpone if postpone leave postpone then ; immediate ");
 	InterpretForth(pExecState, ": do #compileState @ 0 = if \" Cannot execute DO when not compiling \" exception then postpone here 0 postpone , (postpone) 3>r postpone here ; immediate ");
@@ -314,6 +322,14 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	InterpretForth(pExecState, ": begin #compileState @ 0 = if \" Cannot execute BEGIN when not compiling \" exception then 0 postpone , 0 postpone , postpone here 0 postpone , (postpone) 3>r postpone here ; immediate");
 	InterpretForth(pExecState, ": until #compileState @ 0 = if \" Cannot execute UNTIL when not compiling \" exception then postpone , 2 + (postpone)  3<r (postpone)  >r (postpone) 1+ (postpone) <r (postpone) 3>r (postpone) swap (postpone) jumponfalse postpone here !inword (postpone) 3<r (postpone) 3drop ; immediate");
 	InterpretForth(pExecState, ": repeat  #compileState @ 0 = if \" Cannot execute REPEAT when not compiling \" exception then postpone , 2 + (postpone) 3<r (postpone)  >r (postpone) 1+ (postpone) <r (postpone) 3>r (postpone) jump postpone here !inword (postpone) 3<r (postpone) 3drop ; immediate");
+
+	// In the above:
+	// postpone is placed before any immediate words that are to be compiled into the defining word (into the IF or the BEGIN words).  Otherwise they would be executed directly during the compilation
+	//    : here , ; updateforwardjump leave if then     are all immediate words that needs to be postponed for them to make it into the words being defined
+	// (postpone) is placed before any words that make it into the compiled word being defined, that have to be compiled into the ultimate word that will be created from these defining words
+	//    <r dup > r swap 2dup                           etc are all preceded by (postpone), which means they make it into the final compiled word that if/repeat etc uses
+	// If any immediate words were to be compiled into the final compiled word, then it would need to be preceeded by (postpone) postpone.
+
 	InterpretForth(pExecState, ": space ( -- ) 32 emit ;"); // (  --  )
 	InterpretForth(pExecState, ": spaces ( n -- ) dup 0 > if 0 do 32 emit loop then ;"); // ( n -- )
 
@@ -2009,92 +2025,13 @@ bool PreBuiltWords::BuiltIn_PushUpcomingLiteral(ExecState* pExecState) {
 	return true;
 }
 
-bool PreBuiltWords::BuiltIn_If(ExecState* pExecState) {
+bool PreBuiltWords::BuiltIn_UpdateForwardJump(ExecState* pExecState) {
 	int64_t nCompileState;
 	pExecState->GetVariable("#compileState", nCompileState);
 	if (nCompileState == 0) {
-		return pExecState->CreateException("Cannot execute IF when not compiling");
-	}
-	// Pushes dictionary pointer (where the next word will compile to) to stack
-	if (!PreBuiltWords::BuiltIn_Here(pExecState)) {
-		return false;
-	}
-	if (!PreBuiltWords::BuiltIn_Dup(pExecState)) {
-		return false;
-	}
-	if (!PreBuiltWords::BuiltIn_PushDataStackToReturnStack(pExecState)) {
-		return false;
-	}
-
-	// Compiles a BuiltIn_PushUpcomingIntLiteral and then compiles the TOS integer.  This gives us something to alter in the THEN
-	//  (altering the WordBodyElement at the location+1 that's on the return stack
-	if (!PreBuiltWords::BuiltIn_Literal(pExecState)) {
-		return false;
-	}
-
-	// Stack needs to be address:flag, so have to swap
-	pExecState->pCompiler->CompileWord(pExecState, "swap");
-	pExecState->pCompiler->CompileWord(pExecState, "jumponfalse");
-
-	return true;
-}
-
-bool PreBuiltWords::BuiltIn_Then(ExecState* pExecState) {
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
-	if (nCompileState == 0) {
-		return pExecState->CreateException("Cannot update forward jump when not compiling");
+		return pExecState->CreateException("Cannot execute UPDATEFORWARDJUMP when not compiling");
 	}
 	return ForthWord::BuiltInHelper_UpdateForwardJump(pExecState);
-}
-
-bool PreBuiltWords::BuiltIn_Else(ExecState* pExecState) {
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
-	if (nCompileState == 0) {
-		return pExecState->CreateException("Cannot execute ELSE when not compiling");
-	}
-
-	// Pushes dictionary pointer (where the next word will compile to) to stack
-	if (!PreBuiltWords::BuiltIn_Here(pExecState)) {
-		return false;
-	}
-	if (!PreBuiltWords::BuiltIn_Dup(pExecState)) {
-		return false;
-	}
-	// Need to push here, but further down the stack as need the current TOS first
-	//  This is like doing >R RSWAP, only without an RSWAP, we are doing <R SWAP >R >R
-	if (!PreBuiltWords::BuiltIn_PushReturnStackToDataStack(pExecState)) {
-		return false;
-	}
-	if (!PreBuiltWords::BuiltIn_Swap(pExecState)) {
-		return false;
-	}
-	if (!PreBuiltWords::BuiltIn_PushDataStackToReturnStack(pExecState)) {
-		return false;
-	}
-	if (!PreBuiltWords::BuiltIn_PushDataStackToReturnStack(pExecState)) {
-		return false;
-	}
-
-	// Compiles a BuiltIn_PushUpcomingIntLiteral and then compiles the TOS integer.  This gives us something to alter in the THEN
-	//  (altering the WordBodyElement at the location+1 that's on the return stack
-	// Note, here, when THEN is executed, it will be updates the jump address of this jump.
-	//  Further down this method, we are altering the forward jump from the IF's jumponfalse, to the DUPlicated HERE address from at the top of this method
-	if (!PreBuiltWords::BuiltIn_Literal(pExecState)) {
-		return false;
-	}
-	pExecState->pCompiler->CompileWord(pExecState, "jump");
-
-
-	// Return stack  top => A1   (address of IF literal for jumponfalse)
-	//                      A2   (address of jump before ELSE literal (part of if)
-	// Alter a prior jump, based on the address in the top of the return stack, and the word being built's DP (dictionary pointer, where next compiled word gets put).
-	if (!ForthWord::BuiltInHelper_UpdateForwardJump(pExecState)) {
-		return false;
-	}
-
-	return true;
 }
 
 bool PreBuiltWords::BuiltIn_ThrowException(ExecState* pExecState) {

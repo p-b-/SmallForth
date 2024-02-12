@@ -175,10 +175,9 @@ public:
 	static bool BuiltIn_PushUpcomingLiteral(ExecState* pExecState);
 	static bool BuiltIn_StringLiteral(ExecState* pExecState);
 
-	// Control flow
-	static bool BuiltIn_If(ExecState* pExecState);
-	static bool BuiltIn_Then(ExecState* pExecState);
-	static bool BuiltIn_Else(ExecState* pExecState);
+	// Control flow - most control flow is now defined in FORTH, but they use this to update forward jumps
+	static bool BuiltIn_UpdateForwardJump(ExecState* pExecState);
+
 
 	// Exceptions
 	static bool BuiltIn_ThrowException(ExecState* pExecState);

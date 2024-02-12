@@ -266,6 +266,9 @@ void InputProcessor::ProcessLine(const string& line, char delimiter) {
 	int delimitersAfterCurrentWord = 0;
 	for (int n =0;n<len;++n) {
 		char c = line[n];
+		if (c == '\t') {
+			c = ' ';
+		}
 		if (currentWordStart == -1) {
 			if (c != delimiter) {
 				currentWordStart = n;
