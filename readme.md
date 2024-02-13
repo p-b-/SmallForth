@@ -27,6 +27,8 @@ The following need to be added for this implementation to be of any use:
 
 
 * Debugger
+* Loading of programs via s" <filename> "
+* Test script. A lot of the Forth is tested when creating Forth-based words, but a test script would be beneficial. The creation of the words for instance does not use all loop types.
 * * UTF8 - ensure str lengths and slicing use code-points rather than code units. Add support via ICU library if necessary.
 * ```Allot``` to allocate space in currently-created word
 * array - find, insert, remove, removeat, sort
@@ -65,7 +67,7 @@ Implement traditional Forth behaviour. Keep the old word alive, just unreacheabl
 
 ## Type system
 
-The type system is declared in TypeSystem.h.  It's a singleton that is returned by TypeSystem::GetTypeSystem().  Typically in methods where it is used, it is retrieved into a local variable named pTS.
+The type system is declared in TypeSystem.h. It's a singleton that is returned by TypeSystem::GetTypeSystem(). Typically in methods where it is used, it is retrieved into a local variable named pTS.
 
 The type system supports:
 * bool
@@ -149,7 +151,9 @@ The built-in word, ```QUIT``` would need to be given direct control of the retur
 
 The dictionary would either need implementing as a singly-linked list, or as btree or hashmap implemented in Forth.
 
-This would be a good target for web assembly.
+String literals would have to be stack-based, as they are in forth. 
+
+The user-defined object system would need implementing in actual Forth too - improvements to how a word can be access during runtime would be needed. The defined object would be need to contain a type and a default value, for each state value - currently only the first element in a word can be accessed.
 
 ## Things to try
 
