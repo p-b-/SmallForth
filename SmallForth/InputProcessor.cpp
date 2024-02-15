@@ -181,7 +181,7 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 					pExecState->SetVariable("#postponestate", false);
 					pExecState->SetVariable("#compileState", (int64_t)0);
 					pExecState->SetVariable("#insideComment", false);
-					pExecState->SetVariable("#insideLineComment", false);
+					pExecState->SetVariable("#insideCommentLine", false);
 				}
 			}
 		}

@@ -33,8 +33,8 @@ public:
 	WordBodyElement* GetWordAtOffsetFromCurrentBody(int offset);
 	WordBodyElement** GetWordPterAtOffsetFromCurrentBody(int offset);
 
-	WordBodyElement* GetNextWordFromPreviousNestedBodyAndIncIP();
-	WordBodyElement** GetNextWordPterFromPreviousNestedBodyAndIncIP();
+	WordBodyElement** GetNextWordFromPreviousNestedBodyAndIncIP();
+	//WordBodyElement** GetNextWordPterFromPreviousNestedBodyAndIncIP();
 
 	bool SetPreviousBodyIP(int setToIP);
 	int GetPreviousBodyIP();
@@ -82,8 +82,8 @@ public:
 	bool NestSelfPointer(RefCountedObject* pSelf);
 	bool UnnestSelfPointer();
 	RefCountedObject* GetCurrentSelfPter();
-	bool* GetPointerToBoolStateVariable(int index) { return boolStates + index; }
-	int64_t* GetPointerToIntStateVariable(int index) { return intStates + index; }
+	WordBodyElement** GetPointerToBoolStateVariable(int index) { return boolStates + index; }
+	WordBodyElement** GetPointerToIntStateVariable(int index) { return intStates + index; }
 
 public:
 	ForthDict* pDict;
@@ -118,6 +118,6 @@ public:
 
 private:
 	static const int c_maxStates = 10;
-	bool boolStates[c_maxStates];
-	int64_t intStates[c_maxStates];
+	WordBodyElement* boolStates[c_maxStates];
+	WordBodyElement* intStates[c_maxStates];
 };

@@ -34,8 +34,15 @@ ExecState::ExecState(DataStack* pStack, ForthDict* pDict, InputProcessor* pInput
 	this->stringLiteralPrompt = "\"> ";
 
 	for (int n = 0; n < c_maxStates; ++n) {
-		boolStates[n] = false;
-		intStates[n] = 0;
+		WordBodyElement* pElementBool = new WordBodyElement();
+		pElementBool->wordElement_bool = false;
+		boolStates[n] = pElementBool;
+		pElementBool = nullptr;
+
+		WordBodyElement* pElementInt = new WordBodyElement();
+		pElementInt->wordElement_int = 0;
+		intStates[n] = pElementInt;
+		pElementInt = nullptr;
 	}
 }
 
@@ -91,17 +98,7 @@ WordBodyElement** ExecState::GetWordPterAtOffsetFromCurrentBody(int offset) {
 	return ppWBE;
 }
 
-WordBodyElement* ExecState::GetNextWordFromPreviousNestedBodyAndIncIP() {
-	int currentIp = ip;
-	WordBodyElement** currentCFA = pExecBody;
-	UnnestCFA();
-	WordBodyElement* pWBE = this->pExecBody[this->ip];
-	this->ip++;
-	NestAndSetCFA(currentCFA, currentIp);
-	return pWBE;
-}
-
-WordBodyElement** ExecState::GetNextWordPterFromPreviousNestedBodyAndIncIP() {
+WordBodyElement** ExecState::GetNextWordFromPreviousNestedBodyAndIncIP() {
 	int currentIp = ip;
 	WordBodyElement** currentCFA = pExecBody;
 	UnnestCFA();
@@ -110,6 +107,16 @@ WordBodyElement** ExecState::GetNextWordPterFromPreviousNestedBodyAndIncIP() {
 	NestAndSetCFA(currentCFA, currentIp);
 	return ppWBE;
 }
+//
+//WordBodyElement** ExecState::GetNextWordPterFromPreviousNestedBodyAndIncIP() {
+//	int currentIp = ip;
+//	WordBodyElement** currentCFA = pExecBody;
+//	UnnestCFA();
+//	WordBodyElement** ppWBE = this->pExecBody+this->ip;
+//	this->ip++;
+//	NestAndSetCFA(currentCFA, currentIp);
+//	return ppWBE;
+//}
 
 // This is used to jump.  As jump is inside it's own body, altering the IP would not have any affect, have to alter the IP of 
 //  the body that nested the jump

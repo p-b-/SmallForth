@@ -260,12 +260,12 @@ bool ForthWord::BuiltInHelper_FetchLiteralWithOffset(ExecState* pExecState, int 
 	if (pWBE_Type == nullptr) {
 		return pExecState->CreateException("Cannot fetch literal as cannot find a literal type in word body");
 	}
-	WordBodyElement* pWBE_Word = pExecState->GetWordAtOffsetFromCurrentBody(offset + 2);
-	if (pWBE_Word == nullptr) {
+	WordBodyElement** ppWBE_Word = pExecState->GetWordPterAtOffsetFromCurrentBody(offset + 2);
+	if (ppWBE_Word == nullptr) {
 		return pExecState->CreateException("Cannot fetch literal as cannot find a literal in word body");
 	}
-	ValueType toPush = pWBE_Word->wordElement_type;
-	if (!pExecState->pStack->Push(new StackElement(pWBE_Type->forthType, pWBE_Word))) {
+//	ValueType toPush = (*ppWBE_Word)->wordElement_type;
+	if (!pExecState->pStack->Push(new StackElement(pWBE_Type->forthType, ppWBE_Word))) {
 		return pExecState->CreateStackOverflowException();
 	}
 	return true;
@@ -283,6 +283,7 @@ bool ForthWord::BuiltInHelper_CompileTOSLiteral(ExecState* pExecState, bool incl
 	}
 	else {
 		pExecState->pCompiler->CompileTypeIntoWordBeingCreated(pExecState, pTopElement->GetType());
+
 		pExecState->pCompiler->CompileWBEIntoWordBeingCreated(pExecState, pTopElement->GetValueAsWordBodyElement());
 	}
 

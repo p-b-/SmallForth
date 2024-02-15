@@ -19,7 +19,7 @@ public:
 //	StackElement(WordBodyElement*** pppWbe);
 	StackElement(ForthType v);
 	StackElement(RefCountedObject* pObject);
-	StackElement(ForthType forthType, WordBodyElement* pLiteral);
+	StackElement(ForthType forthType, WordBodyElement** ppLiteral);
 	StackElement(ForthType forthType, void* pter);
 	~StackElement();
 

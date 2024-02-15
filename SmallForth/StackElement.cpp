@@ -33,6 +33,7 @@ StackElement::StackElement(const StackElement& element) {
 	else {
 		this->valuePter = element.valuePter; 
 		if (!pTS->IsValueOrValuePter(elementType)) {
+			//pTS->IncReferenceForPter(elementType, *(reinterpret_cast<WordBodyElement**>(this->valuePter)));
 			pTS->IncReferenceForPter(elementType, this->valuePter);
 		}
 	}
@@ -41,8 +42,14 @@ StackElement::StackElement(const StackElement& element) {
 StackElement::~StackElement() {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (!pTS->IsValueOrValuePter(elementType)) {
-		// Is object, or object pter
 		pTS->DecReferenceForPter(elementType, this->valuePter);
+		//if (pTS->IsPter(elementType)) {
+		//	// Is object, or object pter
+		//	pTS->DecReferenceForPter(elementType, *(reinterpret_cast<WordBodyElement**>(this->valuePter)));
+		//}
+		//else {
+		//	pTS->DecReferenceForPter(elementType, reinterpret_cast<RefCountedObject*>(this->valuePter));
+		//}
 	}
 }
 
@@ -103,15 +110,17 @@ StackElement::StackElement(ForthType forthType, void* pter) {
 	elementType = forthType;
 	valuePter = pter;
 	if (!pTS->IsValueOrValuePter(elementType)) {
+		//pTS->IncReferenceForPter(elementType, *(reinterpret_cast<WordBodyElement * *>(this->valuePter)));
 		pTS->IncReferenceForPter(elementType, this->valuePter);
 	}
 }
 
-StackElement::StackElement(ForthType forthType, WordBodyElement* pLiteral) {
+StackElement::StackElement(ForthType forthType, WordBodyElement** ppLiteral) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
 	elementType = forthType;
 	if (!pTS->IsPter(forthType)) {
+		WordBodyElement* pLiteral = *ppLiteral;
 		if (pTS->TypeIsObject(elementType)) {
 			this->valuePter = pLiteral->pter;
 			pTS->IncReferenceForPter(elementType, this->valuePter);
@@ -128,10 +137,12 @@ StackElement::StackElement(ForthType forthType, WordBodyElement* pLiteral) {
 		}
 	}
 	else {
-		this->valuePter = pLiteral->pter;
+		this->valuePter = (void*)ppLiteral;
 		// If pointer to a ref-counted object, increment the object (follow the dereference chain)
 		if (!pTS->IsValueOrValuePter(forthType)) {
-			pTS->IncReferenceForPter(forthType, this->valuePter);
+			//pTS->IncReferenceForPter(forthType, *(reinterpret_cast<WordBodyElement**>(this->valuePter)));
+			// This works for deferencing pter to pter to string
+			pTS->IncReferenceForPter(forthType, (reinterpret_cast<WordBodyElement**>(this->valuePter)));
 		}
 	}
 }
@@ -247,11 +258,14 @@ StackElement* StackElement::GetDerefedPterValueAsStackElement() const {
 	std::tie(newType, pter) = pTS->DeferencePointer(this->elementType, this->valuePter);
 
 	if (pTS->IsPter(newType)) {
-		return new StackElement(newType, pter);
+		WordBodyElement** ppWBE = (WordBodyElement**)pter;
+		// When dereferenciong a pter to pter to string, this is (RefCountedObject*)((*ppWBE)->pter)
+		return new StackElement(newType, ppWBE);
+//		return new StackElement(newType, (*ppWBE)->pter);
 	}
 	else {
 		if (pTS->TypeIsObject(newType)) {
-			return new StackElement(newType, pter);
+			return new StackElement((RefCountedObject*)pter);
 		}
 		else {
 			// After the call to deference, the void* pter it has returned hasnt't been dereferenced, but returned as is.  This is only 
@@ -290,24 +304,31 @@ bool StackElement::PokeIntoContainedPter(ExecState* pExecState, StackElement* pV
 bool StackElement::PokeValueIntoContainedPter(ExecState* pExecState, StackElement* pValueElement) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
-	switch (pTS->GetValueType(pValueElement->elementType)) {
-	case StackElement_Int:
-		*reinterpret_cast<int64_t*>(valuePter) = pValueElement->GetInt();
-		break;
-	case StackElement_Float:
-		*reinterpret_cast<double*>(valuePter) = pValueElement->GetFloat();
-		break;
-	case StackElement_Char:
-		*reinterpret_cast<char*>(valuePter) = pValueElement->GetChar();
-		break;
-	case StackElement_Bool:
-		*reinterpret_cast<bool*>(valuePter) = pValueElement->GetBool();
-		break;
-	case StackElement_Type:
-		*reinterpret_cast<ForthType*>(valuePter) = pValueElement->GetValueType();
-		break;
-	default:
-		return pExecState->CreateException("Undefined type when setting a value into a pointer");
+	WordBodyElement** ppWBE = reinterpret_cast<WordBodyElement**>(valuePter);
+	WordBodyElement* pWBE = *ppWBE;
+	if (pTS->IsPter(pValueElement->elementType)) {
+		pWBE->pter = pValueElement->GetContainedPter();
+	}
+	else {
+		switch (pTS->GetValueType(pValueElement->elementType)) {
+		case StackElement_Int:
+			pWBE->wordElement_int = pValueElement->GetInt();
+			break;
+		case StackElement_Float:
+			pWBE->wordElement_float = pValueElement->GetFloat();
+			break;
+		case StackElement_Char:
+			pWBE->wordElement_char = pValueElement->GetChar();
+			break;
+		case StackElement_Bool:
+			pWBE->wordElement_bool = pValueElement->GetBool();
+			break;
+		case StackElement_Type:
+			pWBE->forthType = pValueElement->GetValueType();
+			break;
+		default:
+			return pExecState->CreateException("Undefined type when setting a value into a pointer");
+		}
 	}
 	return true;
 }
@@ -323,39 +344,62 @@ bool StackElement::PokeObjectIntoContainedPter(ExecState* pExecState, StackEleme
 	tie(success, objectType, objectPter) = pObjectElement->GetObjectOrObjectPter();
 	addressType = this->elementType;
 	addressPter = this->valuePter;
-	RefCountedObject* pObject = reinterpret_cast<RefCountedObject*>(objectPter);
-	RefCountedObject** pAddress = reinterpret_cast<RefCountedObject**>(valuePter);
 
-	// Not calling dec/inc refernce directly only the objects, but using the type system to do so
-	// This is because we may not actually be working with pointers to objects directly, but levels of redirection and
-	//  the direction dec/inc only work on pointers to the objects, not pointers to pointers to pointers to objects.
+	int indirectionCount = pTS->GetIndirectionLevel(addressType);
+	if (indirectionCount > 1) {
+		// Read comments on if clause for indirectionCount = 0.  This clause is similar, but
+		//  as indirection levels >1 go WordBodyElement** -> WordBodyElement* -> pter 
+		//			(this is for indirection level 2					      (contains)
+		//           for address element)                                        WordBodyElement** -> WordBodyElement* -> pter
+		//                                                                                                             (contains)
+		//																											      RefCountedObject*
+		WordBodyElement** ppWBEAddress = static_cast<WordBodyElement**>(valuePter);
+		WordBodyElement** ppWBEObject = static_cast<WordBodyElement**>(objectPter);
+		WordBodyElement** ppWBEContainedInAddress = static_cast<WordBodyElement**>((*ppWBEAddress)->pter);
+		if (ppWBEContainedInAddress != ppWBEObject && ppWBEContainedInAddress != nullptr) {
+			pTS->DecReferenceForPter(addressType, valuePter);
+			pTS->DecReferenceForPter(addressType, valuePter);
+			(*ppWBEAddress)->pter = nullptr;
+			(*ppWBEAddress)->pter = ppWBEObject;
+			pTS->IncReferenceForPter(objectType, objectPter);
+			pTS->IncReferenceForPter(objectType, objectPter);
+		}
+	}
+	else {
+		RefCountedObject* pObject = reinterpret_cast<RefCountedObject*>(objectPter);
+		WordBodyElement** ppWBEAddress = static_cast<WordBodyElement**>(valuePter);
+		RefCountedObject* pContainedInAddress = static_cast<RefCountedObject*>((*ppWBEAddress)->pter);
+		// Not calling dec/inc reference directly only the objects, but using the type system to do so
+		// This is because we may not actually be working with pointers to objects directly, but levels of redirection and
+		//  the direction dec/inc only work on pointers to the objects, not pointers to pointers to pointers to objects.
+		if (pContainedInAddress != pObject && pContainedInAddress !=nullptr)  {
+			// Removing reference to whatever pAddress  currently points at - decrease reference
+			pTS->DecReferenceForPter(addressType, valuePter);
 
-	if (*pAddress != pObject && *pAddress != nullptr) {
-		// Removing reference to whatever pAddress  currently points at - decrease reference
-		pTS->DecReferenceForPter(addressType, addressPter);
+			// *** Comment A
+			// The reference count belongs to the object, not the object pointer.
+			// After exiting this method, the pAddress Element stack element will be deleted, which should call the DecReference on this object being 'null'-ed here.
+			// However, by the time that it gets to delete the pAddressElement, the pointer it contains will point at a different object (the value object being set
+			//  here).  To prevent the value object having its reference decremented incorrectly (and possibly deleting it), after setting the object pter's to point
+			//  at the value object, we increment it's reference (see below, *** Comment B), and the delete then decrements the reference.
+			// 
+			// However, there is still a missing reference decrement on the current whatever the object pter currently points at.  This should happen in the
+			//  delete pAddressElement after this switch statement, however, that pAddressElement will contain a pter to a pter that is the value object, not, the old object
+			// So as it won't be dec-ed there, we do it here.
+			pTS->DecReferenceForPter(addressType, valuePter);
 
-		// *** Comment A
-		// The reference count belongs to the object, not the object pointer.
-		// After exiting this method, the pAddress Element stack element will be deleted, which should call the DecReference on this object being 'null'-ed here.
-		// However, by the time that it gets to delete the pAddressElement, the pointer it contains will point at a different object (the value object being set
-		//  here).  To prevent the value object having its reference decremented incorrectly (and possibly deleting it), after setting the object pter's to point
-		//  at the value object, we increment it's reference (see below, *** Comment B), and the delete then decrements the reference.
-		// 
-		// However, there is still a missing reference decrement on the current whatever the object pter currently points at.  This should happen in the
-		//  delete pAddressElement after this switch statement, however, that pAddressElement will contain a pter to a pter that is the value object, not, the old object
-		// So as it won't be dec-ed there, we do it here.
-		pTS->DecReferenceForPter(addressType, addressPter);
-
-		*pAddress = nullptr;
-
-		*pAddress = pObject;
-		pTS->IncReferenceForPter(objectType, objectPter);
+			(*ppWBEAddress)->pter = nullptr;
+			(*ppWBEAddress)->pter = pObject;
 
 
-		// *** Comment B
-		// Stop deleting pAddressElement (after exiting) down from deleting the object
-		// See above comment marked *** Comment A
-		pTS->IncReferenceForPter(objectType, objectPter);
+			pTS->IncReferenceForPter(objectType, objectPter);
+
+
+			// *** Comment B
+			// Stop deleting pAddressElement (after exiting) down from deleting the object
+			// See above comment marked *** Comment A
+			pTS->IncReferenceForPter(objectType, objectPter);
+		}
 	}
 	return true;
 }
@@ -386,75 +430,8 @@ WordBodyElement* StackElement::GetValueAsWordBodyElement() const {
 	}
 	return pWBE;
 }
-// TODO Remove this code
-//bool StackElement::ValueTypeToString(ExecState* pExecState, ForthType forthType, const void* pter) const {
-//	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-//	ostringstream out;
-//
-//	if (pTS->TypeIsObject(forthType)) {
-//		const RefCountedObject* pObj = reinterpret_cast<const RefCountedObject* >(pter);
-//		if (!pObj->ToString(pExecState)) {
-//			return false;
-//		}
-//		else {
-//			string str;
-//			bool success;
-//			tie(success, str) = pExecState->pStack->PullAsString();
-//			if (!success) {
-//				return pExecState->CreateException(str.c_str());
-//			}
-//			out << str;
-//		}
-//	}
-//	else {
-//		switch (pTS->GetValueType(forthType)) {
-//		case StackElement_PterToCFA:
-//			out << "Word body";
-//			break;
-//		case StackElement_XT:
-//			out << "XT";
-//			break;
-//		case StackElement_Char:
-//			out << *((char*)pter);
-//			break;
-//		case StackElement_Int:
-//			out << *((int64_t*)pter);
-//			break;
-//		case StackElement_Float:
-//			out << *((double*)pter);
-//			break;
-//		case StackElement_Bool:
-//			if (*((double*)pter)) {
-//				out << "true";
-//			}
-//			else {
-//				out << "false";
-//			}
-//			break;
-//		case StackElement_Type:
-//			out << pTS->TypeToString(forthType);
-//			out << " " << pTS->TypeToString(*((ForthType*)pter));
-//			break;
-//		}
-//	}
-//	if (!pExecState->pStack->Push(out.str())) {
-//		return pExecState->CreateStackOverflowException();
-//	}
-//
-//	return true;
-//}
 
 bool StackElement::ToString(ExecState* pExecState ) const {
-	// TODO Some of this functionality has migrated to the typesystem.  Call that instead.
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	return pTS->VariableToString(pExecState, elementType, valuePter);
-
-// TODO Remove this code	
-	if (pTS->TypeIsObjectOrObjectPter(elementType)) {
-		return pTS->VariableToString(pExecState, elementType, valuePter);
-	}
-	else {
-		return pTS->VariableToString(pExecState, elementType, reinterpret_cast<const void*>(&valueInt64));
-	}
-	return false;
 }

@@ -56,7 +56,6 @@ public:
 	void DecReferenceForPterBy(ForthType type, void* pter, int by);
 	tuple<bool, void*> DeferencePointerToObjectPter(ForthType type, void* pter) const;
 	tuple<bool, const void*> DeferencePointerToObjectPter(ForthType type, const void* pter) const;
-	tuple<bool, void*> DeferencePointerToValuePter(ForthType type, void* pter) const;
 	tuple<bool, const void*> DeferencePointerToValuePter(ForthType type, const void* pter) const;
 	tuple<ForthType, void*> DeferencePointer(ForthType type, void* pter);
 	bool ValueCompatibleWithAddress(ForthType addressType, ForthType valueType, bool directAssignment) const;
