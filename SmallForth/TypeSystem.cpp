@@ -237,13 +237,12 @@ tuple<ForthType, void*> TypeSystem::DeferencePointer(ForthType type, void* pter)
 	}
 	else {
 		if (indirectionCount > 1) {
-			WordBodyElement** ppWBE = reinterpret_cast<WordBodyElement**>(pter);
-			void* pValue = &(*ppWBE)->pter;
-
 			--indirectionCount;
-			ForthType newForthType = (indirectionCount << 16) | GetValueType(type);
 
-			return { newForthType, pValue };
+			WordBodyElement** ppWBE = reinterpret_cast<WordBodyElement**>(pter);
+			void* pterInWBE = (*ppWBE)->pter;
+			ForthType newForthType = (indirectionCount << 16) | GetValueType(type);
+			return { newForthType, pterInWBE };
 		}
 		else {
 			--indirectionCount;
