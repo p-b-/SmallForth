@@ -15,6 +15,10 @@ StackElement::StackElement(const StackElement& element) {
 	elementType = element.elementType;
 	if (!pTS->IsPter(elementType)) {
 		if (pTS->TypeIsObject(elementType)) {
+			// If the stackelement contains an object it is not contained within a WordBodyElement->pter, but the C++ RefCountedObject* is cast to a void*.  This
+			//  is because RefCountedObjects can exist just on the stack, without being part of a word (and therefore in a WordBodyElement).
+			// As soon as we take a pointer to a RefCountedObject (by running: variable <variable name>) the reference to the RefCountedObject* becomes encapsulated
+			//  inside a WordBodyElement, and this if-clause ( if (!pTS->IsPter() ) does not get executed, but the next one (past the value type assignments).
 			this->valuePter = element.valuePter;
 			RefCountedObject* pObj = reinterpret_cast<RefCountedObject*>(this->valuePter);
 			pObj->IncReference();
@@ -31,9 +35,11 @@ StackElement::StackElement(const StackElement& element) {
 		}
 	}
 	else {
+		// It's a pointer to something, just copy the pointer.
 		this->valuePter = element.valuePter; 
 		if (!pTS->IsValueOrValuePter(elementType)) {
-			//pTS->IncReferenceForPter(elementType, *(reinterpret_cast<WordBodyElement**>(this->valuePter)));
+			// Its a pointer to a ref-counted object - increase reference count.  Note, the type system will take care of
+			//  getting the reference out of the WordbodyElement** that the this->valuePter points at
 			pTS->IncReferenceForPter(elementType, this->valuePter);
 		}
 	}
@@ -43,13 +49,6 @@ StackElement::~StackElement() {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (!pTS->IsValueOrValuePter(elementType)) {
 		pTS->DecReferenceForPter(elementType, this->valuePter);
-		//if (pTS->IsPter(elementType)) {
-		//	// Is object, or object pter
-		//	pTS->DecReferenceForPter(elementType, *(reinterpret_cast<WordBodyElement**>(this->valuePter)));
-		//}
-		//else {
-		//	pTS->DecReferenceForPter(elementType, reinterpret_cast<RefCountedObject*>(this->valuePter));
-		//}
 	}
 }
 
@@ -83,11 +82,6 @@ StackElement::StackElement(WordBodyElement** ppWbe) {
 	valueWordBodyPter = ppWbe;
 }
 
-//StackElement::StackElement(WordBodyElement*** pppWbe) {
-//	elementType = StackElement_PterToPterToCFA;
-//	valueWordBodyPterPter = pppWbe;
-//}
-
 StackElement::StackElement(XT* pXt) {
 	elementType = StackElement_XT;
 	valueXTPter = pXt;
@@ -110,7 +104,6 @@ StackElement::StackElement(ForthType forthType, void* pter) {
 	elementType = forthType;
 	valuePter = pter;
 	if (!pTS->IsValueOrValuePter(elementType)) {
-		//pTS->IncReferenceForPter(elementType, *(reinterpret_cast<WordBodyElement * *>(this->valuePter)));
 		pTS->IncReferenceForPter(elementType, this->valuePter);
 	}
 }
@@ -140,8 +133,6 @@ StackElement::StackElement(ForthType forthType, WordBodyElement** ppLiteral) {
 		this->valuePter = (void*)ppLiteral;
 		// If pointer to a ref-counted object, increment the object (follow the dereference chain)
 		if (!pTS->IsValueOrValuePter(forthType)) {
-			//pTS->IncReferenceForPter(forthType, *(reinterpret_cast<WordBodyElement**>(this->valuePter)));
-			// This works for deferencing pter to pter to string
 			pTS->IncReferenceForPter(forthType, (reinterpret_cast<WordBodyElement**>(this->valuePter)));
 		}
 	}
@@ -221,13 +212,6 @@ WordBodyElement** StackElement::GetWordBodyElement() const {
 	return valueWordBodyPter;
 }
 
-//WordBodyElement*** StackElement::GetWordBodyElementPter() const {
-//	if (elementType != StackElement_PterToPterToCFA) {
-//		return nullptr;
-//	}
-//	return valueWordBodyPterPter;
-//}
-
 bool StackElement::IsPter() const {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	return pTS->IsPter(this->elementType);
@@ -259,9 +243,7 @@ StackElement* StackElement::GetDerefedPterValueAsStackElement() const {
 
 	if (pTS->IsPter(newType)) {
 		WordBodyElement** ppWBE = (WordBodyElement**)pter;
-		// When dereferenciong a pter to pter to string, this is (RefCountedObject*)((*ppWBE)->pter)
 		return new StackElement(newType, ppWBE);
-//		return new StackElement(newType, (*ppWBE)->pter);
 	}
 	else {
 		if (pTS->TypeIsObject(newType)) {

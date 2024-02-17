@@ -63,6 +63,18 @@ bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOpera
 			return pExecState->CreateException("Unsupported operation on types");
 		}
 	}
+	else if (pTS->IsPter(type1) && type2 == StackElement_Int) {
+		int64_t n2 = pElement2->GetInt();
+		// Cannot do pointer arithmetic on a void*
+		int64_t* pObject1 = (int64_t*)pElement1->GetContainedPter();
+		switch (opType) {
+		case BinaryOp_Add: pNewElement = new StackElement(type1, pObject1 + n2); break;
+		case BinaryOp_Subtract: pNewElement = new StackElement(type1, pObject1 - n2); break;
+		default:
+			BuiltInHelper_DeleteOperands(pElement1, pElement2);
+			return pExecState->CreateException("Unsupported operation on pter");
+		}
+	}
 	else if (type1 == StackElement_Int || type2 == StackElement_Int) {
 		if (!TypeSystem::CanConvertToInt(type1) || !TypeSystem::CanConvertToInt(type2)) {
 			BuiltInHelper_DeleteOperands(pElement1, pElement2);

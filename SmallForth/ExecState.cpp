@@ -8,6 +8,7 @@ using namespace std;
 #include "InputProcessor.h"
 #include "TypeSystem.h"
 #include "ForthFile.h"
+#include "CompileHelper.h"
 
 ExecState::ExecState() 
 : ExecState(nullptr, nullptr, nullptr, nullptr, nullptr) {
@@ -107,16 +108,10 @@ WordBodyElement** ExecState::GetNextWordFromPreviousNestedBodyAndIncIP() {
 	NestAndSetCFA(currentCFA, currentIp);
 	return ppWBE;
 }
-//
-//WordBodyElement** ExecState::GetNextWordPterFromPreviousNestedBodyAndIncIP() {
-//	int currentIp = ip;
-//	WordBodyElement** currentCFA = pExecBody;
-//	UnnestCFA();
-//	WordBodyElement** ppWBE = this->pExecBody+this->ip;
-//	this->ip++;
-//	NestAndSetCFA(currentCFA, currentIp);
-//	return ppWBE;
-//}
+
+bool ExecState::CurrentBodyIsInLastCompiledWord() {
+	return pCompiler->LastCompiledWordHasBody(this->pExecBody);
+}
 
 // This is used to jump.  As jump is inside it's own body, altering the IP would not have any affect, have to alter the IP of 
 //  the body that nested the jump

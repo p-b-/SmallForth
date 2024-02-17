@@ -8,6 +8,7 @@ class CompileHelper
 {
 public:
 	CompileHelper();
+	~CompileHelper();
 
 	// Called by other words directly, to compile a pushbvalue into the word, followed by the literal value. 
 //  Works by pushing literal onto stack and then calling "," (compiles pushiliteral and TOS literal into word)
@@ -45,6 +46,9 @@ public:
 	bool ExecuteLastWordCompiled(ExecState* pExecState); 
 
 	bool ExpandLastWordCompiledBy(ExecState* pExecState, int expandBy);
+
+	bool LastCompiledWordHasBody(WordBodyElement** ppBody);
+	void ForgetLastCompiledWord();
 
 
 private:

@@ -32,9 +32,8 @@ public:
 	WordBodyElement** GetNextWordPterFromCurrentBodyAndIncIP();
 	WordBodyElement* GetWordAtOffsetFromCurrentBody(int offset);
 	WordBodyElement** GetWordPterAtOffsetFromCurrentBody(int offset);
-
 	WordBodyElement** GetNextWordFromPreviousNestedBodyAndIncIP();
-	//WordBodyElement** GetNextWordPterFromPreviousNestedBodyAndIncIP();
+	bool CurrentBodyIsInLastCompiledWord();
 
 	bool SetPreviousBodyIP(int setToIP);
 	int GetPreviousBodyIP();

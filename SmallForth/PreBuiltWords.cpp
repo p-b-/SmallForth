@@ -894,9 +894,9 @@ bool PreBuiltWords::BuiltIn_Allot(ExecState* pExecState) {
 	delete pElementAllotBy;
 	pElementAllotBy = nullptr;//
 
-	pExecState->pCompiler->ExpandLastWordCompiledBy(pExecState, (int)n);
+	bool success = pExecState->pCompiler->ExpandLastWordCompiledBy(pExecState, (int)n);
 
-	return true;
+	return success;
 }
 
 bool PreBuiltWords::BuiltIn_Reveal(ExecState* pExecState) {
@@ -1845,6 +1845,10 @@ bool PreBuiltWords::BuiltIn_PushPter(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	WordBodyElement** ppWBE_Type = pExecState->GetWordPterAtOffsetFromCurrentBody(1);
 	WordBodyElement** ppWBE_Literal = pExecState->GetWordPterAtOffsetFromCurrentBody(2);
+	if (pExecState->CurrentBodyIsInLastCompiledWord()) {
+		// 
+		pExecState->pCompiler->ForgetLastCompiledWord();
+	}
 
 	if (ppWBE_Type == nullptr || ppWBE_Literal == nullptr) {
 		return pExecState->CreateException("Cannot push a pointer a word-contained literal, as has to have both a type and a literal value");
