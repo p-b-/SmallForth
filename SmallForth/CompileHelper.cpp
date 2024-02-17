@@ -11,6 +11,18 @@ CompileHelper::CompileHelper() {
 	this->pLastWordCreated = nullptr;
 }
 
+CompileHelper::~CompileHelper() {
+	if (this->pWordUnderCreation != nullptr) {
+		this->pWordUnderCreation->DecReference();
+		this->pWordUnderCreation = nullptr;
+	}
+	if (this->pLastWordCreated != nullptr) {
+		this->pLastWordCreated->DecReference();
+		this->pLastWordCreated = nullptr;
+	}
+}
+
+
 bool CompileHelper::CompilePushAndLiteralIntoWordBeingCreated(ExecState* pExecState, int64_t literalValue) {
 	if (!pExecState->pStack->Push(literalValue)) {
 		return pExecState->CreateStackOverflowException();
@@ -332,4 +344,18 @@ bool CompileHelper::ExpandLastWordCompiledBy(ExecState* pExecState, int expandBy
 	}
 	pLastWordCreated->ExpandBy(expandBy);
 	return true;
+}
+
+bool CompileHelper::LastCompiledWordHasBody(WordBodyElement** ppBody) {
+	if (this->pLastWordCreated == nullptr) {
+		return false;
+	}
+	return this->pLastWordCreated->GetPterToBody() == ppBody;
+}
+
+void CompileHelper::ForgetLastCompiledWord() {
+	if (this->pLastWordCreated != nullptr) {
+		this->pLastWordCreated->DecReference();
+		this->pLastWordCreated = nullptr;
+	}
 }

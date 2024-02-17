@@ -141,11 +141,6 @@ public:
 	// Pointers
 	static bool BuiltIn_Peek(ExecState* pExecState);
 	static bool BuiltIn_Poke(ExecState* pExecState);
-	static bool BuiltIn_PushFloatPter(ExecState* pExecState);
-	static bool BuiltIn_PushIntPter(ExecState* pExecState);
-	static bool BuiltIn_PushCharPter(ExecState* pExecState);
-	static bool BuiltIn_PushBoolPter(ExecState* pExecState);
-	static bool BuiltIn_PushTypePter(ExecState* pExecState);
 	static bool BuiltIn_PushPter(ExecState* pExecState);
 
 	// Variables, constants and literals

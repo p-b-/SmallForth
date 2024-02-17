@@ -20,8 +20,6 @@ public:
 	void CompileLiteralIntoWord(char literal);
 	void CompileLiteralIntoWord(int64_t literal);
 	void CompileLiteralIntoWord(double literal);
-	void CompileLiteralIntoWord(ValueType literal);
-//	void CompileLiteralIntoWord(RefCountedObject* literal);
 	void CompileLiteralIntoWord(WordBodyElement* literal);
 	void CompileTypeIntoWord(ForthType forthType);
 	void CompilePterIntoWord(void* pter);

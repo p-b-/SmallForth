@@ -63,6 +63,18 @@ bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOpera
 			return pExecState->CreateException("Unsupported operation on types");
 		}
 	}
+	else if (pTS->IsPter(type1) && type2 == StackElement_Int) {
+		int64_t n2 = pElement2->GetInt();
+		// Cannot do pointer arithmetic on a void*
+		int64_t* pObject1 = (int64_t*)pElement1->GetContainedPter();
+		switch (opType) {
+		case BinaryOp_Add: pNewElement = new StackElement(type1, pObject1 + n2); break;
+		case BinaryOp_Subtract: pNewElement = new StackElement(type1, pObject1 - n2); break;
+		default:
+			BuiltInHelper_DeleteOperands(pElement1, pElement2);
+			return pExecState->CreateException("Unsupported operation on pter");
+		}
+	}
 	else if (type1 == StackElement_Int || type2 == StackElement_Int) {
 		if (!TypeSystem::CanConvertToInt(type1) || !TypeSystem::CanConvertToInt(type2)) {
 			BuiltInHelper_DeleteOperands(pElement1, pElement2);
@@ -260,12 +272,12 @@ bool ForthWord::BuiltInHelper_FetchLiteralWithOffset(ExecState* pExecState, int 
 	if (pWBE_Type == nullptr) {
 		return pExecState->CreateException("Cannot fetch literal as cannot find a literal type in word body");
 	}
-	WordBodyElement* pWBE_Word = pExecState->GetWordAtOffsetFromCurrentBody(offset + 2);
-	if (pWBE_Word == nullptr) {
+	WordBodyElement** ppWBE_Word = pExecState->GetWordPterAtOffsetFromCurrentBody(offset + 2);
+	if (ppWBE_Word == nullptr) {
 		return pExecState->CreateException("Cannot fetch literal as cannot find a literal in word body");
 	}
-	ValueType toPush = pWBE_Word->wordElement_type;
-	if (!pExecState->pStack->Push(new StackElement(pWBE_Type->forthType, pWBE_Word))) {
+//	ValueType toPush = (*ppWBE_Word)->wordElement_type;
+	if (!pExecState->pStack->Push(new StackElement(pWBE_Type->forthType, ppWBE_Word))) {
 		return pExecState->CreateStackOverflowException();
 	}
 	return true;
@@ -283,6 +295,7 @@ bool ForthWord::BuiltInHelper_CompileTOSLiteral(ExecState* pExecState, bool incl
 	}
 	else {
 		pExecState->pCompiler->CompileTypeIntoWordBeingCreated(pExecState, pTopElement->GetType());
+
 		pExecState->pCompiler->CompileWBEIntoWordBeingCreated(pExecState, pTopElement->GetValueAsWordBodyElement());
 	}
 

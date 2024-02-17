@@ -51,12 +51,12 @@ enum BinaryOperationType {
 };
 
 union WordBodyElement {
+
 	XT wordElement_XT;
 	int64_t wordElement_int;
 	double wordElement_float;
 	bool wordElement_bool;
 	char wordElement_char;
-	ValueType wordElement_type;
 	WordBodyElement** wordElement_BodyPter;
 	void* pter;
 	ForthType forthType;

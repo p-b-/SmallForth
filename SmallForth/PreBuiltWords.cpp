@@ -442,9 +442,9 @@ bool PreBuiltWords::BuiltIn_ThreadSafeBoolVariable(ExecState* pExecState) {
 	delete pElementIndex;
 	pElementIndex = nullptr;
 
-	bool* pVar = pExecState->GetPointerToBoolStateVariable(index);
+	WordBodyElement** ppWBE = pExecState->GetPointerToBoolStateVariable(index);
 	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Bool);
-	StackElement* pElementVariable = new StackElement(pterType, (void*)pVar);
+	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
 	if (!pExecState->pStack->Push(pElementVariable)) {
 		return pExecState->CreateStackOverflowException("whilst pushing a state boolean variable");
 	}
@@ -466,9 +466,9 @@ bool PreBuiltWords::BuiltIn_ThreadSafeIntVariable(ExecState* pExecState) {
 	delete pElementIndex;
 	pElementIndex = nullptr;
 
-	int64_t* pVar = pExecState->GetPointerToIntStateVariable(index);
+	WordBodyElement** ppWBE = pExecState->GetPointerToIntStateVariable(index);
 	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Int);
-	StackElement* pElementVariable = new StackElement(pterType, (void*)pVar);
+	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
 	if (!pExecState->pStack->Push(pElementVariable)) {
 		return pExecState->CreateStackOverflowException("whilst pushing a state int variable");
 	}
@@ -478,9 +478,9 @@ bool PreBuiltWords::BuiltIn_ThreadSafeIntVariable(ExecState* pExecState) {
 bool PreBuiltWords::BuiltIn_CompileState(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
-	int64_t* pVar = pExecState->GetPointerToIntStateVariable(ExecState::c_compileStateIndex);
+	WordBodyElement** ppWBE = pExecState->GetPointerToIntStateVariable(ExecState::c_compileStateIndex);
 	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Int);
-	StackElement* pElementVariable = new StackElement(pterType, (void*)pVar);
+	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
 	if (!pExecState->pStack->Push(pElementVariable)) {
 		return pExecState->CreateStackOverflowException("whilst pushing a state int variable");
 	}
@@ -490,9 +490,9 @@ bool PreBuiltWords::BuiltIn_CompileState(ExecState* pExecState) {
 bool PreBuiltWords::BuiltIn_PostponeState(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
-	bool* pVar = pExecState->GetPointerToBoolStateVariable(ExecState::c_postponedExecIndex);
+	WordBodyElement** ppWBE = pExecState->GetPointerToBoolStateVariable(ExecState::c_postponedExecIndex);
 	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Bool);
-	StackElement* pElementVariable = new StackElement(pterType, (void*)pVar);
+	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
 	if (!pExecState->pStack->Push(pElementVariable)) {
 		return pExecState->CreateStackOverflowException("whilst pushing a state boolean variable");
 	}
@@ -502,9 +502,9 @@ bool PreBuiltWords::BuiltIn_PostponeState(ExecState* pExecState) {
 bool PreBuiltWords::BuiltIn_InsideCommentState(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
-	bool* pVar = pExecState->GetPointerToBoolStateVariable(ExecState::c_insideCommentIndex);
+	WordBodyElement** ppWBE = pExecState->GetPointerToBoolStateVariable(ExecState::c_insideCommentIndex);
 	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Bool);
-	StackElement* pElementVariable = new StackElement(pterType, (void*)pVar);
+	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
 	if (!pExecState->pStack->Push(pElementVariable)) {
 		return pExecState->CreateStackOverflowException("whilst pushing a state boolean variable");
 	}
@@ -514,9 +514,9 @@ bool PreBuiltWords::BuiltIn_InsideCommentState(ExecState* pExecState) {
 bool PreBuiltWords::BuiltIn_InsideCommentLineState(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
-	bool* pVar = pExecState->GetPointerToBoolStateVariable(ExecState::c_insideCommentLineIndex);
+	WordBodyElement** ppWBE = pExecState->GetPointerToBoolStateVariable(ExecState::c_insideCommentLineIndex);
 	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Bool);
-	StackElement* pElementVariable = new StackElement(pterType, (void*)pVar);
+	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
 	if (!pExecState->pStack->Push(pElementVariable)) {
 		return pExecState->CreateStackOverflowException("whilst pushing a state boolean variable");
 	}
@@ -894,9 +894,9 @@ bool PreBuiltWords::BuiltIn_Allot(ExecState* pExecState) {
 	delete pElementAllotBy;
 	pElementAllotBy = nullptr;//
 
-	pExecState->pCompiler->ExpandLastWordCompiledBy(pExecState, (int)n);
+	bool success = pExecState->pCompiler->ExpandLastWordCompiledBy(pExecState, (int)n);
 
-	return true;
+	return success;
 }
 
 bool PreBuiltWords::BuiltIn_Reveal(ExecState* pExecState) {
@@ -1788,8 +1788,6 @@ bool PreBuiltWords::BuiltIn_Sqrt(ExecState* pExecState) {
 	return true;
 }
 
-
-
 bool PreBuiltWords::BuiltIn_Peek(ExecState* pExecState) {
 	StackElement* pElementAddress = pExecState->pStack->TopElement();
 
@@ -1847,78 +1845,19 @@ bool PreBuiltWords::BuiltIn_PushPter(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	WordBodyElement** ppWBE_Type = pExecState->GetWordPterAtOffsetFromCurrentBody(1);
 	WordBodyElement** ppWBE_Literal = pExecState->GetWordPterAtOffsetFromCurrentBody(2);
+	if (pExecState->CurrentBodyIsInLastCompiledWord()) {
+		// 
+		pExecState->pCompiler->ForgetLastCompiledWord();
+	}
 
 	if (ppWBE_Type == nullptr || ppWBE_Literal == nullptr) {
 		return pExecState->CreateException("Cannot push a pointer a word-contained literal, as has to have both a type and a literal value");
 	}
 	ForthType currentType = (*ppWBE_Type)->forthType;
 	ForthType pointerType = pTS->CreatePointerTypeTo(currentType);
-	// Note: commenting this line and adding the next one, currently breaks peek and poke
-	void* pter = reinterpret_cast<void*>(ppWBE_Literal[0]);
-	//void* pter = reinterpret_cast<void*>(ppWBE_Literal);
+	//void* pter = reinterpret_cast<void*>(ppWBE_Literal[0]);
+	void* pter = reinterpret_cast<void*>(ppWBE_Literal);
 	StackElement* pNewStackElement = new StackElement(pointerType, pter);
-	if (!pExecState->pStack->Push(pNewStackElement)) {
-		return pExecState->CreateStackOverflowException();
-	}
-	return true;
-}
-
-bool PreBuiltWords::BuiltIn_PushFloatPter(ExecState* pExecState) {
-	WordBodyElement** ppWBE = pExecState->GetWordPterAtOffsetFromCurrentBody(1);
-
-	double* pValue = &(*ppWBE)->wordElement_float;
-
-	StackElement* pNewStackElement = new StackElement(pValue);
-	if (!pExecState->pStack->Push(pNewStackElement)) {
-		return pExecState->CreateStackOverflowException();
-	}
-	return true;
-}
-
-bool PreBuiltWords::BuiltIn_PushIntPter(ExecState* pExecState) {
-	WordBodyElement** ppWBE = pExecState->GetWordPterAtOffsetFromCurrentBody(1);
-
-	int64_t* pValue = &(*ppWBE)->wordElement_int;
-
-	StackElement* pNewStackElement = new StackElement(pValue);
-	if (!pExecState->pStack->Push(pNewStackElement)) {
-		return pExecState->CreateStackOverflowException();
-	}
-	return true;
-}
-
-bool PreBuiltWords::BuiltIn_PushCharPter(ExecState* pExecState) {
-	WordBodyElement** ppWBE = pExecState->GetWordPterAtOffsetFromCurrentBody(1);
-
-	char* pValue = &(*ppWBE)->wordElement_char;
-
-	StackElement* pNewStackElement = new StackElement(pValue);
-	if (!pExecState->pStack->Push(pNewStackElement)) {
-		return pExecState->CreateStackOverflowException();
-	}
-	return true;
-}
-
-bool PreBuiltWords::BuiltIn_PushBoolPter(ExecState* pExecState) {
-	WordBodyElement** ppWBE = pExecState->GetWordPterAtOffsetFromCurrentBody(1);
-
-	bool* pValue = &(*ppWBE)->wordElement_bool;
-
-	StackElement* pNewStackElement = new StackElement(pValue);
-	if (!pExecState->pStack->Push(pNewStackElement)) {
-		return pExecState->CreateStackOverflowException();
-	}
-	return true;
-}
-
-// Push the pointer to word one of the current word, as a pointer to a type.
-//  Used by VARIABLE, when the variable contained is a type
-bool PreBuiltWords::BuiltIn_PushTypePter(ExecState* pExecState) {
-	WordBodyElement** ppWBE = pExecState->GetWordPterAtOffsetFromCurrentBody(1);
-
-	ValueType* pValue = &(*ppWBE)->wordElement_type;
-
-	StackElement* pNewStackElement = new StackElement(pValue);
 	if (!pExecState->pStack->Push(pNewStackElement)) {
 		return pExecState->CreateStackOverflowException();
 	}
@@ -2009,17 +1948,17 @@ bool PreBuiltWords::BuiltIn_FetchLiteral(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_PushUpcomingLiteral(ExecState* pExecState) {
-	WordBodyElement* pWBE_Type = pExecState->GetNextWordFromPreviousNestedBodyAndIncIP();
-	if (pWBE_Type == nullptr) {
+	WordBodyElement** ppWBE_Type = pExecState->GetNextWordFromPreviousNestedBodyAndIncIP();
+	if (ppWBE_Type == nullptr) {
 		return pExecState->CreateException("Push literal cannot find a literal type in word body");
 	}
-	WordBodyElement* pWBE_Literal = pExecState->GetNextWordFromPreviousNestedBodyAndIncIP();
-	if (pWBE_Literal == nullptr) {
+	WordBodyElement** ppWBE_Literal = pExecState->GetNextWordFromPreviousNestedBodyAndIncIP();
+	if (ppWBE_Literal == nullptr) {
 		return pExecState->CreateException("Push literal cannot find a literal in word body");
 	}
-	ForthType forthType = pWBE_Type->forthType;
+	ForthType forthType = (*ppWBE_Type)->forthType;
 
-	if (!pExecState->pStack->Push(new StackElement(forthType, pWBE_Literal))) {
+	if (!pExecState->pStack->Push(new StackElement(forthType, ppWBE_Literal))) {
 		return pExecState->CreateStackOverflowException();
 	}
 	return true;
