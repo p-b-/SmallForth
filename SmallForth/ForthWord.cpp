@@ -83,16 +83,9 @@ void ForthWord::CompileLiteralIntoWord(double literal) {
 	GrowByAndAdd(1, pNewElement);
 }
 
-void ForthWord::CompileLiteralIntoWord(ValueType literal) {
-	WordBodyElement* pNewElement = new WordBodyElement();
-	pNewElement->wordElement_type = literal;
-	GrowByAndAdd(1, pNewElement);
-}
-
 void ForthWord::CompileLiteralIntoWord(WordBodyElement* literal) {
 	GrowByAndAdd(1, literal);
 }
-
 
 void ForthWord::CompileTypeIntoWord(ForthType forthType) {
 	WordBodyElement* pNewElement = new WordBodyElement();
@@ -222,7 +215,7 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 				ForthWord* pWord = pExecState->pDict->FindWordFromCFAPter(pEl->wordElement_BodyPter);
 				if (pWord == nullptr) {
 					if (upcomingWordIsLiteralType) {
-						upcomingWordType = pEl->wordElement_type;
+						upcomingWordType = pEl->forthType;
 						string typeDescription = pTS->TypeToString(upcomingWordType);
 						(*pStdoutStream) << ip << ":  literal type (" << typeDescription << ")" << endl;
 						upcomingWordIsLiteralType = false;
