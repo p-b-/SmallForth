@@ -111,11 +111,7 @@ There are three stacks accessible from Forth:
 
 ## Arrays
 
-Arrays are implemented as an object, instead of the normal Forth-style ```5 variable <array name> 5 cells allot``` . Ths is due to the way variables have to store the type information against the value it stores, and the way storing pointers to WordBodyElements inside stackelements is implemented.
-
-If this was required to be changed, all storing/accessing pters to WordBodyElements would need to be changed to WordBodyElement** instead of WordBodyElement*. Note, these are stored as void* inside the actual stackelements.
-
-Storing as WordBodyElement** would allow the pointer to the word elements to undergo pointer math.
+Dynamic arrays are implemented as an object,
 
 To construct an int array, with 5 as the first element, 6 as the 2nd, and 7 as the third. Then output the first two elements:
 
@@ -126,6 +122,10 @@ dup 0 swap [n] . cr
 dup 1 swap [n] . cr
 ```
  
+Static arrays are implemented as words:
+ ```5 variable <array name> 5 cells allot```
+
+ ```<array name> 1 swap +``` to move to first (0-based) element.
 
 ## Changes needed for assembly
 
@@ -215,7 +215,8 @@ The user-defined object system would need implementing in actual Forth too - imp
      : helloworld [char] ! [char] d  [char] l [char] r [char] o [char] W space  [char] o  [char] l dup  [char] e  [char] H emitall ;
 * ```NOT``` inverts binary at TOS
 * ```AND```, ```XOR```, ```OR``` binary operations on the top two booleans
-
+* ```ALLOT``` append additional space to the last defined word, allowing it to be used as a static array. (note, this has to be called immediately after defining the word)
+* ```ELAPSEDSECONDS``` get the number of elapsed seconds from the operating systems high resolution timer, as a double.
 
 
 ## Defining an object
