@@ -55,6 +55,8 @@ public:
 	bool GetVariable(const string& variableName, double& variableValue);
 	bool GetVariable(const string& variableName, bool& variableValue);
 	bool GetVariable(const string& variableName, ForthType& variableValue);
+	bool GetBoolTLSVariable(int index);
+	int64_t GetIntTLSVariable(int index);
 
 	bool PushConstantOntoStack(const string& constantName);
 	bool GetConstant(const string& constantName, int64_t& constantValue);

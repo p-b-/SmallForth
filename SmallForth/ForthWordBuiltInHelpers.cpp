@@ -243,8 +243,7 @@ bool ForthWord::BuiltInHelper_GetThreeStackElements(ExecState* pExecState, Stack
 // Relies on return stack TOS have the index into the word being defines literal element
 //  (The actual pushlit that preceeds the actual value - it will have 1 added to it)
 bool ForthWord::BuiltInHelper_UpdateForwardJump(ExecState* pExecState) {
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
+	int64_t nCompileState = pExecState->GetIntTLSVariable(ExecState::c_compileStateIndex);
 
 	if (nCompileState == 0) {
 		return pExecState->CreateException("Cannot update forward jump when not compiling");

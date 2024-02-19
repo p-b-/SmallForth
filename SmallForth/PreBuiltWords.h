@@ -173,8 +173,10 @@ public:
 	// Control flow - most control flow is now defined in FORTH, but they use this to update forward jumps
 	static bool BuiltIn_UpdateForwardJump(ExecState* pExecState);
 
-
 	// Exceptions
 	static bool BuiltIn_ThrowException(ExecState* pExecState);
+
+	// Time, timers
+	static bool BuiltIn_GetHighResolutionTime(ExecState* pExecState);
 };
 

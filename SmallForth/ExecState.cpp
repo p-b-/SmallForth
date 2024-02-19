@@ -342,6 +342,16 @@ bool ExecState::GetVariable(const string& variableName, int64_t& variableValue) 
 	return false;
 }
 
+bool ExecState::GetBoolTLSVariable(int index) {
+	WordBodyElement* pWBE = this->boolStates[index];
+	return pWBE->wordElement_bool;
+}
+
+int64_t ExecState::GetIntTLSVariable(int index) {
+	WordBodyElement* pWBE = this->intStates[index];
+	return pWBE->wordElement_int;
+}
+
 bool ExecState::GetVariable(const string& variableName, double& variableValue) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (!this->ExecuteWordDirectly(variableName)) {

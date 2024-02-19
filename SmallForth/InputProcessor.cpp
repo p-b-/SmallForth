@@ -40,15 +40,13 @@ tuple<ForthWord*, bool> InputProcessor::GetForthWordFromVocabOrObject(ExecState*
 	bool executeOnTOSObject = false;
 	InputWord wordWithDelimiterCount = GetNextWord(pExecState);
 	string wordName = wordWithDelimiterCount.word;
-	bool bInsideCommentLine;
-	pExecState->GetVariable("#insideCommentLine", bInsideCommentLine);
+	bool bInsideCommentLine = pExecState->GetBoolTLSVariable(ExecState::c_insideCommentLineIndex);
 	if (bInsideCommentLine || wordName.length() == 0) {
 		return { nullptr, executeOnTOSObject };
 	}
 	pExecState->delimitersAfterCurrentWord = wordWithDelimiterCount.postDelimiterCount;
 	ForthWord* pWord = nullptr;
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
+	int64_t nCompileState = pExecState->GetIntTLSVariable(ExecState::c_compileStateIndex);
 
 	if (pExecState->nextWordIsCharLiteral) {
 		pExecState->nextWordIsCharLiteral = false;
@@ -72,8 +70,7 @@ tuple<ForthWord*, bool> InputProcessor::GetForthWordFromVocabOrObject(ExecState*
 		{
 			pWord = pExecState->pDict->FindWord(wordName);
 			if (pWord == nullptr) {
-				bool bInsideComment;
-				pExecState->GetVariable("#insideComment", bInsideComment);
+				bool bInsideComment = pExecState->GetBoolTLSVariable(ExecState::c_insideCommentIndex);
 
 				if (bInsideComment == false) {
 					int64_t intValue;
@@ -123,8 +120,7 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 			}
 			continue;
 		}
-		bool bInsideComment;
-		pExecState->GetVariable("#insideComment", bInsideComment);
+		bool bInsideComment = pExecState->GetBoolTLSVariable(ExecState::c_insideCommentIndex);
 
 		if (bInsideComment && WordMatchesXT(pWord, PreBuiltWords::BuiltIn_ParenthesisCommentEnd) == false)
 		{
@@ -140,14 +136,12 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 			continue;
 		}
 
-		int64_t nCompileState;
-		pExecState->GetVariable("#compileState", nCompileState);
+		int64_t nCompileState = pExecState->GetIntTLSVariable(ExecState::c_compileStateIndex);
 
 		try {
 			bool executeWordNow = false;
 			if (nCompileState==1) {
-				bool bExecutePostponed;
-				pExecState->GetVariable("#postponeState", bExecutePostponed);
+				bool bExecutePostponed = pExecState->GetBoolTLSVariable(ExecState::c_postponedExecIndex);
 				if (pWord->GetImmediate() && !bExecutePostponed) {
 					executeWordNow = true;
 				}
@@ -246,15 +240,13 @@ void InputProcessor::ReadAndProcess(ExecState* pExecState) {
 	ostream* pStdout = pExecState->GetStdout();
 	istream* pStdin = pExecState->GetStdin();
 
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
+	int64_t nCompileState = pExecState->GetIntTLSVariable(ExecState::c_compileStateIndex);
 
 	try
 	{
 		while (true) {
 			std::string line;
-			bool bInsideComment;
-			pExecState->GetVariable("#insideComment", bInsideComment);
+			bool bInsideComment = pExecState->GetBoolTLSVariable(ExecState::c_insideCommentIndex);
 
 			if (bInsideComment) {
 				(*pStdout) << pExecState->commentPrompt;
@@ -728,8 +720,7 @@ bool InputProcessor::ConvertToFloat(const string& word, double& n) {
 ForthWord* InputProcessor::FindWordInTOSWord(ExecState* pExecState, const string& wordName) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	StackElement* pElement = pExecState->pStack->TopElement();
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
+	int64_t nCompileState = pExecState->GetIntTLSVariable(ExecState::c_compileStateIndex);
 
 	if (pElement != nullptr) {
 		ForthType tosType = pElement->GetType();
