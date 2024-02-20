@@ -19,7 +19,7 @@ StackElement::StackElement(const StackElement& element) {
 			// As soon as we take a pointer to a RefCountedObject (by running: variable <variable name>) the reference to the RefCountedObject* becomes encapsulated
 			//  inside a WordBodyElement, and this if-clause ( if (!pTS->IsPter() ) does not get executed, but the next one (past the value type assignments).
 			this->valuePter = element.valuePter;
-			RefCountedObject* pObj = reinterpret_cast<RefCountedObject*>(this->valuePter);
+			RefCountedObject* pObj = static_cast<RefCountedObject*>(this->valuePter);
 			pObj->IncReference();
 		}
 		else {
@@ -93,7 +93,7 @@ StackElement::StackElement(BinaryOperationType opsType) {
 
 StackElement::StackElement(RefCountedObject* pObject) {
 	elementType = pObject->GetObjectTypeId();
-	valuePter = reinterpret_cast<void*>(pObject);
+	valuePter = static_cast<void*>(pObject);
 	pObject->IncReference();
 }
 
@@ -132,7 +132,7 @@ StackElement::StackElement(ForthType forthType, WordBodyElement** ppLiteral) {
 		this->valuePter = (void*)ppLiteral;
 		// If pointer to a ref-counted object, increment the object (follow the dereference chain)
 		if (!pTS->IsValueOrValuePter(forthType)) {
-			pTS->IncReferenceForPter(forthType, (reinterpret_cast<WordBodyElement**>(this->valuePter)));
+			pTS->IncReferenceForPter(forthType, (static_cast<WordBodyElement**>(this->valuePter)));
 		}
 	}
 }
@@ -190,7 +190,7 @@ RefCountedObject* StackElement::GetObject() const {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (pTS->TypeIsObject(elementType))
 	{
-		return reinterpret_cast<RefCountedObject*>(this->valuePter);
+		return static_cast<RefCountedObject*>(this->valuePter);
 	}
 	return nullptr;
 }
@@ -285,7 +285,7 @@ bool StackElement::PokeIntoContainedPter(ExecState* pExecState, StackElement* pV
 bool StackElement::PokeValueIntoContainedPter(ExecState* pExecState, StackElement* pValueElement) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
-	WordBodyElement** ppWBE = reinterpret_cast<WordBodyElement**>(valuePter);
+	WordBodyElement** ppWBE = static_cast<WordBodyElement**>(valuePter);
 	WordBodyElement* pWBE = *ppWBE;
 	if (pTS->IsPter(pValueElement->elementType)) {
 		pWBE->pter = pValueElement->GetContainedPter();
@@ -347,7 +347,7 @@ bool StackElement::PokeObjectIntoContainedPter(ExecState* pExecState, StackEleme
 		}
 	}
 	else {
-		RefCountedObject* pObject = reinterpret_cast<RefCountedObject*>(objectPter);
+		RefCountedObject* pObject = static_cast<RefCountedObject*>(objectPter);
 		WordBodyElement** ppWBEAddress = static_cast<WordBodyElement**>(valuePter);
 		RefCountedObject* pContainedInAddress = static_cast<RefCountedObject*>((*ppWBEAddress)->pter);
 		// Not calling dec/inc reference directly only the objects, but using the type system to do so

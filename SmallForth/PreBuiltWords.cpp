@@ -1856,7 +1856,7 @@ bool PreBuiltWords::BuiltIn_PushPter(ExecState* pExecState) {
 	ForthType currentType = (*ppWBE_Type)->forthType;
 	ForthType pointerType = pTS->CreatePointerTypeTo(currentType);
 	//void* pter = reinterpret_cast<void*>(ppWBE_Literal[0]);
-	void* pter = reinterpret_cast<void*>(ppWBE_Literal);
+	void* pter = static_cast<void*>(ppWBE_Literal);
 	StackElement* pNewStackElement = new StackElement(pointerType, pter);
 	if (!pExecState->pStack->Push(pNewStackElement)) {
 		return pExecState->CreateStackOverflowException();
