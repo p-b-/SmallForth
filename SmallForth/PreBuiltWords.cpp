@@ -172,6 +172,9 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 
 	InitialiseWord(pDict, "isObject", PreBuiltWords::IsObject);
 	InitialiseWord(pDict, "isPter", PreBuiltWords::IsPter);
+
+	// Timer and time
+	InitialiseWord(pDict, "elapsedSeconds", PreBuiltWords::BuiltIn_GetHighResolutionTime);
 }
 
 void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
@@ -278,7 +281,7 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	InterpretForth(pExecState, ": '\10' 10 tochar ; ");
 	InterpretForth(pExecState, ": pushNewLine '\10' ;");
 
-	InterpretForth(pExecState, ": dup2 dup dup ;"); // ( m -- m m)
+	InterpretForth(pExecState, ": dup2 dup dup ;"); // ( m -- m m m )
 	InterpretForth(pExecState, ": nip swap drop ;"); // ( m n -- n)
 	InterpretForth(pExecState, ": tuck swap over ;"); // ( m n -- n m n)
 	InterpretForth(pExecState, ": 2dup over over ;"); // ( m n -- m n m n)
@@ -579,11 +582,9 @@ bool PreBuiltWords::BuiltIn_DoCol(ExecState* pExecState) {
 		//  it would compile the EXIT and continue past into undefined behaviour.
 
 
-		bool bExecutePostponed;
-		pExecState->GetVariable("#postponeState", bExecutePostponed);
+		bool bExecutePostponed = pExecState->GetBoolTLSVariable(ExecState::c_postponedExecIndex);
 		if (bExecutePostponed) {
-			int64_t nCompileState;
-			pExecState->GetVariable("#compileState", nCompileState);
+			int64_t nCompileState = pExecState->GetIntTLSVariable(ExecState::c_compileStateIndex);
 
 			if (!pExecState->SetVariable("#postponeState", false)) {
 				return pExecState->CreateException("Could not reset postpone state flag");
@@ -775,8 +776,7 @@ bool PreBuiltWords::BuiltIn_JumpOnFalse(ExecState* pExecState) {
 
 // ( addr:value -- ) *addr=value
 bool PreBuiltWords::BuiltIn_PokeIntegerInWord(ExecState* pExecState) {
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
+	int64_t nCompileState = pExecState->GetIntTLSVariable(ExecState::c_compileStateIndex);
 	if (nCompileState==0) {
 		return pExecState->CreateException("Cannot execute !INWORD when not compiling");
 	}
@@ -878,7 +878,6 @@ bool PreBuiltWords::BuiltIn_LineCommentStart(ExecState* pExecState) {
 	}
 	return true;
 }
-
 
 bool PreBuiltWords::BuiltIn_Allot(ExecState* pExecState) {
 	StackElement* pElementAllotBy = pExecState->pStack->Pull();
@@ -1934,8 +1933,7 @@ bool PreBuiltWords::BuiltIn_LiteralNoPush(ExecState* pExecState) {
 
 
 bool PreBuiltWords::BuiltIn_CharLiteral(ExecState* pExecState) {
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
+	int64_t nCompileState = pExecState->GetIntTLSVariable(ExecState::c_compileStateIndex);
 	if (nCompileState==0) {
 		return true;
 	}
@@ -1965,8 +1963,8 @@ bool PreBuiltWords::BuiltIn_PushUpcomingLiteral(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_UpdateForwardJump(ExecState* pExecState) {
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
+	int64_t nCompileState = pExecState->GetIntTLSVariable(ExecState::c_compileStateIndex);
+	
 	if (nCompileState == 0) {
 		return pExecState->CreateException("Cannot execute UPDATEFORWARDJUMP when not compiling");
 	}
@@ -1983,4 +1981,15 @@ bool PreBuiltWords::BuiltIn_ThrowException(ExecState* pExecState) {
 	else {
 		return pExecState->CreateException("Could not retrieve string to make exception of");
 	}
+}
+
+bool PreBuiltWords::BuiltIn_GetHighResolutionTime(ExecState* pExecState) {
+	int64_t freq = _Query_perf_frequency();
+	int64_t time = _Query_perf_counter();
+
+	double elapsedSeconds = (double)time / (double)freq;
+	if (!pExecState->pStack->Push(elapsedSeconds)) {
+		return pExecState->CreateStackOverflowException("whilst getting high resolution time");
+	}
+	return true;
 }

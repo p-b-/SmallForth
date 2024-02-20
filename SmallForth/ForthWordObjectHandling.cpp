@@ -46,8 +46,7 @@ bool PreBuiltWords::BuiltIn_StringLiteral(ExecState* pExecState) {
 	}
 	ForthString* pForthString = new ForthString(literal);
 
-	int64_t nCompileState;
-	pExecState->GetVariable("#compileState", nCompileState);
+	int64_t nCompileState = pExecState->GetIntTLSVariable(ExecState::c_compileStateIndex);
 
 	if (nCompileState == 1) {
 		pExecState->pCompiler->CompilePushAndLiteralIntoWordBeingCreated(pExecState, pForthString);
