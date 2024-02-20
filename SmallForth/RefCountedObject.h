@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-using namespace std;
 #include "ForthDefs.h"
 class ExecState;
 class ForthWord;
@@ -21,12 +20,12 @@ public:
 	int GetCurrentReferenceCount();
 	uint32_t GetObjectTypeId() const { return objectType; }
 
-	virtual string GetObjectType() = 0;
+	virtual std::string GetObjectType() = 0;
 	virtual bool ToString(ExecState* pExecState) const = 0;
 	virtual bool InvokeFunctionIndex(ExecState* pExecState, ObjectFunction functionToInvoke) = 0;
 
 	void AddWord(ForthWord* pWordToAdd);
-	ForthWord* GetWordWithName(const string& wordName) const;
+	ForthWord* GetWordWithName(const std::string& wordName) const;
 	int GetWordCount() const;
 
 	void MarkForReferenceCounter(bool mark) { this->markedByReferenceCounter = mark; }

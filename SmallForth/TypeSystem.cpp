@@ -6,7 +6,6 @@
 #include "DataStack.h"
 #include <algorithm>
 #include <sstream>
-using namespace std;
 
 TypeSystem* TypeSystem::s_pTypeSystem;
 
@@ -26,7 +25,7 @@ TypeSystem::TypeSystem() {
 	maxUserObjectTypeId = 65535;
 }
 
-bool TypeSystem::RegisterValueType(ExecState* pExecState, string typeName) {
+bool TypeSystem::RegisterValueType(ExecState* pExecState, std::string typeName) {
 	// TODO Interlocked increment of type id
 	int idToUse = nextValueTypeId++;
 	if (!RegisterType(pExecState, typeName, idToUse, nullptr, nullptr, nullptr)) {
@@ -35,7 +34,7 @@ bool TypeSystem::RegisterValueType(ExecState* pExecState, string typeName) {
 	return true;
 }
 
-ForthType TypeSystem::RegisterObjectType(ExecState* pExecState, string typeName, XT constructXT, XT binaryOpsXT) {
+ForthType TypeSystem::RegisterObjectType(ExecState* pExecState, std::string typeName, XT constructXT, XT binaryOpsXT) {
 	// TODO Interlocked increment of type id
 	int idToUse = nextObjectTypeId++;
 	if (!RegisterType(pExecState, typeName, idToUse, constructXT, binaryOpsXT, nullptr)) {
@@ -44,7 +43,7 @@ ForthType TypeSystem::RegisterObjectType(ExecState* pExecState, string typeName,
 	return idToUse;
 }
 
-ForthType TypeSystem::RegisterUserObjectType(ExecState* pExecState, string typeName, UserDefinedObject* pNewObjectDefinition) {
+ForthType TypeSystem::RegisterUserObjectType(ExecState* pExecState, std::string typeName, UserDefinedObject* pNewObjectDefinition) {
 	// TODO Interlocked increment of type id
 	ForthType idToUse = nextUserObjectTypeId++;
 	if (!RegisterType(pExecState, typeName, idToUse, nullptr, nullptr, pNewObjectDefinition)) {
@@ -54,7 +53,7 @@ ForthType TypeSystem::RegisterUserObjectType(ExecState* pExecState, string typeN
 	return idToUse;
 }
 
-bool TypeSystem::RegisterType(ExecState* pExecState, string typeName, int typeId, XT constructXT, XT binaryOpsXT, UserDefinedObject* pDefiningType) {
+bool TypeSystem::RegisterType(ExecState* pExecState, std::string typeName, int typeId, XT constructXT, XT binaryOpsXT, UserDefinedObject* pDefiningType) {
 	std::transform(typeName.begin(), typeName.end(), typeName.begin(),
 		[](unsigned char c) { return std::tolower(c); });
 
@@ -69,11 +68,11 @@ bool TypeSystem::RegisterType(ExecState* pExecState, string typeName, int typeId
 	return true;
 }
 
-unsigned int TypeSystem::GetBaseTypeIdForName(string typeName) const {
+unsigned int TypeSystem::GetBaseTypeIdForName(std::string typeName) const {
 	std::transform(typeName.begin(), typeName.end(), typeName.begin(),
 		[](unsigned char c) { return std::tolower(c); });
 
-	map<string, unsigned int>::const_iterator findType = typeNameToId.find(typeName);
+	std::map<std::string, unsigned int>::const_iterator findType = typeNameToId.find(typeName);
 
 	if (findType == typeNameToId.end()) {
 		return TypeSystem::typeIdInvalid;
@@ -81,8 +80,8 @@ unsigned int TypeSystem::GetBaseTypeIdForName(string typeName) const {
 	return findType->second;
 }
 
-string TypeSystem::GetBaseTypeNameForId(unsigned int typeId) const {
-	map<unsigned int, string >::const_iterator findType = typeIdToName.find(typeId);
+std::string TypeSystem::GetBaseTypeNameForId(unsigned int typeId) const {
+	std::map<unsigned int, std::string >::const_iterator findType = typeIdToName.find(typeId);
 
 	if (findType == typeIdToName.end()) {
 		return "unknown";
@@ -155,17 +154,17 @@ RegisteredType* TypeSystem::GetRegisteredTypeForTypeId(ForthType type) const {
 		return nullptr;
 	}
 	int typeId = type & 0xffff;
-	map<unsigned int, RegisteredType*>::const_iterator foundIterator = typeIdToRegisteredType.find(typeId);
+	std::map<unsigned int, RegisteredType*>::const_iterator foundIterator = typeIdToRegisteredType.find(typeId);
 	if (foundIterator == typeIdToRegisteredType.end()) {
 		return nullptr;
 	}
 	return foundIterator->second;
 }
 
-string TypeSystem::TypeToString(ForthType type) const {
-	string typeName = GetBaseTypeNameForId(type & 0xffff);
+std::string TypeSystem::TypeToString(ForthType type) const {
+	std::string typeName = GetBaseTypeNameForId(type & 0xffff);
 
-	stringstream str;
+	std::stringstream str;
 
 	unsigned int pterCount = type >> 16;
 	for (unsigned int n = 0; n < pterCount; ++n) {
@@ -226,7 +225,7 @@ uint32_t TypeSystem::GetIndirectionLevel(ForthType type) const {
 	return type >> 16;
 }
 
-tuple<ForthType, void*> TypeSystem::DeferencePointer(ForthType type, void* pter) {
+std::tuple<ForthType, void*> TypeSystem::DeferencePointer(ForthType type, void* pter) {
 	int indirectionCount = GetIndirectionLevel(type);
 	if (TypeIsObjectOrObjectPter(type)) {
 		--indirectionCount;
@@ -255,7 +254,7 @@ tuple<ForthType, void*> TypeSystem::DeferencePointer(ForthType type, void* pter)
 	}
 }
 
-tuple<bool, void*> TypeSystem::DeferencePointerToObjectPter(ForthType type, void* pter) const {
+std::tuple<bool, void*> TypeSystem::DeferencePointerToObjectPter(ForthType type, void* pter) const {
 	int indirectionCount = GetIndirectionLevel(type);
 	void** ppValue = reinterpret_cast<void**>(pter);
 	void* pValue = reinterpret_cast<RefCountedObject*>(pter);
@@ -280,7 +279,7 @@ tuple<bool, void*> TypeSystem::DeferencePointerToObjectPter(ForthType type, void
 	}
 }
 
-tuple<bool, const void*> TypeSystem::DeferencePointerToObjectPter(ForthType type, const void* pter) const {
+std::tuple<bool, const void*> TypeSystem::DeferencePointerToObjectPter(ForthType type, const void* pter) const {
 	int indirectionCount = GetIndirectionLevel(type);
 	const void* const* ppValue = reinterpret_cast<const void* const*>(pter);
 	const void* pValue = reinterpret_cast<const RefCountedObject*>(pter);
@@ -305,7 +304,7 @@ tuple<bool, const void*> TypeSystem::DeferencePointerToObjectPter(ForthType type
 	}
 }
 
-tuple<bool, const void*> TypeSystem::DeferencePointerToValuePter(ForthType type, const void* pter) const {
+std::tuple<bool, const void*> TypeSystem::DeferencePointerToValuePter(ForthType type, const void* pter) const {
 	int indirectionCount = GetIndirectionLevel(type);
 	const void* const* ppValue = reinterpret_cast<const void* const*>(pter);
 	const void* pValue = reinterpret_cast<const RefCountedObject*>(pter);
@@ -450,7 +449,7 @@ bool TypeSystem::ValueCompatibleWithAddress(ForthType addressType, ForthType val
 }
 
 bool TypeSystem::VariableToString(ExecState* pExecState, ForthType type, const void* pter) const {
-	ostringstream out;
+	std::ostringstream out;
 
 	if (!IsPter(type)) {
 		bool success;
@@ -463,7 +462,7 @@ bool TypeSystem::VariableToString(ExecState* pExecState, ForthType type, const v
 		if (!success) {
 			return false;
 		}
-		string str;
+		std::string str;
 		tie(success, str) = pExecState->pStack->PullAsString();
 		if (!success) {
 			return pExecState->CreateException(str.c_str());
@@ -471,7 +470,7 @@ bool TypeSystem::VariableToString(ExecState* pExecState, ForthType type, const v
 		out << str;
 	}
 	else {
-		string typeAsString = TypeToString(type);
+		std::string typeAsString = TypeToString(type);
 
 		bool validPter;
 		const void* returnedPter;
@@ -487,7 +486,7 @@ bool TypeSystem::VariableToString(ExecState* pExecState, ForthType type, const v
 				return false;
 			}
 			else {
-				string str;
+				std::string str;
 				bool success;
 				tie(success, str) = pExecState->pStack->PullAsString();
 				if (!success) {
@@ -500,7 +499,7 @@ bool TypeSystem::VariableToString(ExecState* pExecState, ForthType type, const v
 			out << " = null";
 		}
 	}
-	string s = out.str();
+	std::string s = out.str();
 	if (!pExecState->pStack->Push(s)) {
 		return pExecState->CreateStackOverflowException();
 	}
@@ -508,7 +507,7 @@ bool TypeSystem::VariableToString(ExecState* pExecState, ForthType type, const v
 }
 
 bool TypeSystem::ValueTypeToString(ExecState* pExecState, ForthType forthType, const void* pter) const {
-	ostringstream out;
+	std::ostringstream out;
 
 	if (TypeIsObject(forthType)) {
 		const RefCountedObject* pObj = reinterpret_cast<const RefCountedObject*>(pter);
@@ -516,7 +515,7 @@ bool TypeSystem::ValueTypeToString(ExecState* pExecState, ForthType forthType, c
 			return false;
 		}
 		else {
-			string str;
+			std::string str;
 			bool success;
 			tie(success, str) = pExecState->pStack->PullAsString();
 			if (!success) {
@@ -562,7 +561,7 @@ bool TypeSystem::ValueTypeToString(ExecState* pExecState, ForthType forthType, c
 	return true;
 }
 
-bool TypeSystem::TypeExists(string typeName) const {
+bool TypeSystem::TypeExists(std::string typeName) const {
 	unsigned int typeId = GetBaseTypeIdForName(typeName);
 	return typeId != TypeSystem::typeIdInvalid;
 }
@@ -583,7 +582,7 @@ bool TypeSystem::AddWordToObject(ExecState* pExecState, ForthType type, ForthWor
 	return true;
 }
 
-ForthWord* TypeSystem::FindWordWithName(ForthType type, const string& wordName) {
+ForthWord* TypeSystem::FindWordWithName(ForthType type, const std::string& wordName) {
 	RegisteredType* pType = GetRegisteredTypeForTypeId(type);
 
 	if (pType == nullptr || pType->definingObject==nullptr) {
@@ -592,7 +591,7 @@ ForthWord* TypeSystem::FindWordWithName(ForthType type, const string& wordName) 
 	return pType->definingObject->GetWordWithName(wordName);
 }
 
-ForthWord* TypeSystem::FindWordInTOSWord(ExecState* pExecState, const string& wordName) {
+ForthWord* TypeSystem::FindWordInTOSWord(ExecState* pExecState, const std::string& wordName) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	StackElement* pElement = pExecState->pStack->TopElement();
 	if (pElement != nullptr) {

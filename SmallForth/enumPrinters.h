@@ -1,3 +1,3 @@
 #pragma once
 
-string ToString(ValueType valueType);
+std::string ToString(ValueType valueType);

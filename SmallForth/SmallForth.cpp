@@ -1,7 +1,6 @@
 #include "ForthDefs.h"
 #include <iostream>
 #include <sstream>
-using namespace std;
 #include "InputProcessor.h"
 #include "ForthDict.h"
 #include "ForthWord.h"
@@ -17,11 +16,11 @@ using namespace std;
 #include "ForthArray.h"
 
 void initialiseDict(ForthDict* pDict,ExecState* pExecState);
-bool interpretForth(ExecState* pExecState, const string& toExecute);
+bool interpretForth(ExecState* pExecState, const std::string& toExecute);
 void createTypeWords(ExecState* pExecState);
 void createFileTypes(ExecState* pExecState);
-void initialiseWord(ForthDict* pDict, const string& wordName, XT wordCode);
-void initialiseImmediateWord(ForthDict* pDict, const string& wordName, XT wordCode);
+void initialiseWord(ForthDict* pDict, const std::string& wordName, XT wordCode);
+void initialiseImmediateWord(ForthDict* pDict, const std::string& wordName, XT wordCode);
 void initialiseTypeSystem(ExecState* pExecState);
 
 int main()
@@ -77,37 +76,37 @@ void initialiseDict(ForthDict* pDict, ExecState* pExecState) {
     createFileTypes(pExecState);
 }
 
-bool interpretForth(ExecState* pExecState, const string &toExecute) {
+bool interpretForth(ExecState* pExecState, const std::string &toExecute) {
     pExecState->pInputProcessor->SetInputString(toExecute);
     return pExecState->pInputProcessor->Interpret(pExecState);
 }
 
 void createTypeWords(ExecState* pExecState) {
     initialiseWord(pExecState->pDict, "typefromint", PreBuiltWords::BuiltIn_TypeFromInt); // (v addr -- )
-    stringstream ss;
+    std::stringstream ss;
     ss << ": word_type " << ObjectType_Word << " typefromint ; ";
     interpretForth(pExecState, ss.str());
-    ss.str(string());
+    ss.str(std::string());
 
-    ss << ": dict_type " << ObjectType_Dict<< " typefromint ; ";
+    ss << ": dict_type " << ObjectType_Dict << " typefromint ; ";
     interpretForth(pExecState, ss.str());
-    ss.str(string());
+    ss.str(std::string());
 
     ss << ": string_type " << ObjectType_String << " typefromint ; ";
     interpretForth(pExecState, ss.str());
-    ss.str(string());
+    ss.str(std::string());
 
     ss << ": readfile_type " << ObjectType_ReadFile << " typefromint ; ";
     interpretForth(pExecState, ss.str());
-    ss.str(string());
+    ss.str(std::string());
 
     ss << ": writefile_type " << ObjectType_WriteFile << " typefromint ; ";
     interpretForth(pExecState, ss.str());
-    ss.str(string());
+    ss.str(std::string());
 
     ss << ": readwritefile_type " << ObjectType_ReadWriteFile << " typefromint ; ";
     interpretForth(pExecState, ss.str());
-    ss.str(string());
+    ss.str(std::string());
 
     ss << ": array_type " << ObjectType_Array << " typefromint ; ";
     interpretForth(pExecState, ss.str());
@@ -117,32 +116,32 @@ void createTypeWords(ExecState* pExecState) {
 }
 
 void createFileTypes(ExecState* pExecState) {
-    stringstream ss;
+    std::stringstream ss;
     ss << ": #stdout " << forth_stdout << " ; ";
     interpretForth(pExecState, ss.str());
 
-    ss.str(string());
+    ss.str(std::string());
     ss << ": #stderr " << forth_stderr << " ; ";
     interpretForth(pExecState, ss.str());
 
-    ss.str(string());
+    ss.str(std::string());
     ss << ": #stdin " << forth_stdin << " ; ";
     interpretForth(pExecState, ss.str());
 
-    ss.str(string());
+    ss.str(std::string());
 
     interpretForth(pExecState, "#stdout writefile_type construct constant stdout");
     interpretForth(pExecState, "#stderr writefile_type construct constant stderr");
     interpretForth(pExecState, "#stdin readfile_type construct constant stdin");
 }
 
-void initialiseWord(ForthDict* pDict, const string& wordName, XT wordCode) {
+void initialiseWord(ForthDict* pDict, const std::string& wordName, XT wordCode) {
     ForthWord* pForthWord = new ForthWord(wordName, wordCode);
     pForthWord->SetWordVisibility(true);
     pDict->AddWord(pForthWord);
 }
 
-void initialiseImmediateWord(ForthDict* pDict, const string& wordName, XT wordCode) {
+void initialiseImmediateWord(ForthDict* pDict, const std::string& wordName, XT wordCode) {
     ForthWord* pForthWord = new ForthWord(wordName, wordCode);
     pForthWord->SetImmediate(true);
     pForthWord->SetWordVisibility(true);

@@ -4,21 +4,19 @@
 
 #include "RefCountedObject.h"
 
-using namespace std;
-
 class ForthFile :
     public RefCountedObject
 {
 public:
-    ForthFile(ForthType objectType, const string& filename);
+    ForthFile(ForthType objectType, const std::string& filename);
     ForthFile(ForthType objectType, SystemFiles systemFile);
     ~ForthFile();
 
-    fstream* GetContainedStream() { return this->pFile; }
+    std::fstream* GetContainedStream() { return this->pFile; }
     static bool ConstructReadFile(ExecState* pExecState);
     static bool ConstructWriteFile(ExecState* pExecState);
     static bool ConstructReadWriteFile(ExecState* pExecState);
-    virtual string GetObjectType();
+    virtual std::string GetObjectType();
     virtual bool ToString(ExecState* pExecState) const;
     virtual bool InvokeFunctionIndex(ExecState* pExecState, ObjectFunction functionToInvoke);
 private:
@@ -31,14 +29,14 @@ private:
     bool CloseFile(ExecState* pExecState);
 
     static bool ConstructStandardFile(ExecState* pExecState, SystemFiles stdFileToConstruct);
-    static bool ConstructWithPath(ForthType objectType, ExecState* pExecState, const string& filepath);
+    static bool ConstructWithPath(ForthType objectType, ExecState* pExecState, const std::string& filepath);
 
 protected:
-    string filename;
+    std::string filename;
     SystemFiles systemFile;
 
 private:
-    fstream* pFile;
+    std::fstream* pFile;
 
     bool readFile;
     bool writeFile;

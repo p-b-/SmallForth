@@ -16,6 +16,7 @@
 #include "ForthFile.h"
 #include "PreBuiltWords.h"
 
+
 volatile bool InputProcessor::s_executionToHalt = false;
 
 int InputProcessor::HandlerRoutine(unsigned long fdwCtrlType) {
@@ -36,10 +37,10 @@ InputProcessor::InputProcessor() {
 	historySize = 500;
 }
 
-tuple<ForthWord*, bool> InputProcessor::GetForthWordFromVocabOrObject(ExecState* pExecState) {
+std::tuple<ForthWord*, bool> InputProcessor::GetForthWordFromVocabOrObject(ExecState* pExecState) {
 	bool executeOnTOSObject = false;
 	InputWord wordWithDelimiterCount = GetNextWord(pExecState);
-	string wordName = wordWithDelimiterCount.word;
+	std::string wordName = wordWithDelimiterCount.word;
 	bool bInsideCommentLine = pExecState->GetBoolTLSVariable(ExecState::c_insideCommentLineIndex);
 	if (bInsideCommentLine || wordName.length() == 0) {
 		return { nullptr, executeOnTOSObject };
@@ -83,8 +84,8 @@ tuple<ForthWord*, bool> InputProcessor::GetForthWordFromVocabOrObject(ExecState*
 					}
 					else {
 						ClearRestOfLine();
-						ostream* pStderr = pExecState->GetStderr();
-						(*pStderr) << "Unknown word: " << wordName << endl;
+						std::ostream* pStderr = pExecState->GetStderr();
+						(*pStderr) << "Unknown word: " << wordName << std::endl;
 					}
 
 					if (nCompileState == 1) {
@@ -109,7 +110,7 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 	while (true) {
 		ForthWord* pWord;
 		bool executeOnTOSObject;
-		tie(pWord,executeOnTOSObject) = GetForthWordFromVocabOrObject(pExecState);
+		std::tie(pWord,executeOnTOSObject) = GetForthWordFromVocabOrObject(pExecState);
 		if (pWord == nullptr) {
 			if (processingFromStringFinished) {
 				processingFromStringFinished = false;
@@ -131,8 +132,8 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 		// Push address of body, onto stack (for EXECUTE to find)
 		StackElement* pCFAElement = new StackElement(pCFA);
 		if (!pExecState->pStack->Push(pCFAElement)) {
-			ostream* pStderr = pExecState->GetStderr();
-			(*pStderr) << "Stack overflow" << endl;
+			std::ostream* pStderr = pExecState->GetStderr();
+			(*pStderr) << "Stack overflow" << std::endl;
 			continue;
 		}
 
@@ -150,8 +151,8 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 
 					// Compile word
 					if (!pExecState->pCompiler->CompileWordOnStack(pExecState)) {
-						ostream* pStderr = pExecState->GetStderr();
-						(*pStderr) << "Exception: " << pExecState->pzException << endl;
+						std::ostream* pStderr = pExecState->GetStderr();
+						(*pStderr) << "Exception: " << pExecState->pzException << std::endl;
 						// TODO Stop compilation, clear input, execute QUIT (or return it as no stack-control in CPP)
 					}
 				}
@@ -169,8 +170,8 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 
 				if (pExecState->exceptionThrown) {
 					ClearRestOfLine();
-					ostream* pStderr = pExecState->GetStderr();
-					(*pStderr) << "Exception: " << pExecState->pzException << endl;
+					std::ostream* pStderr = pExecState->GetStderr();
+					(*pStderr) << "Exception: " << pExecState->pzException << std::endl;
 
 					pExecState->SetVariable("#postponestate", false);
 					pExecState->SetVariable("#compileState", (int64_t)0);
@@ -219,12 +220,12 @@ InputWord InputProcessor::GetNextWord(ExecState* pExecState) {
 	return wordToReturn;
 }
 
-void InputProcessor::HandleException(ExecState* pExecState, const std::exception* pException, const string& msg) {
+void InputProcessor::HandleException(ExecState* pExecState, const std::exception* pException, const std::string& msg) {
 	pExecState->pStack->Clear();
 	pExecState->pTempStack->Clear();
 	pExecState->pSelfStack->Clear();
 	pExecState->pReturnStack->Clear();
-	ostream* pStderr = pExecState->GetStderr();
+	std::ostream* pStderr = pExecState->GetStderr();
 	(*pStderr) << msg;
 	if (pException != nullptr) {
 		(*pStderr) << pException->what();
@@ -237,8 +238,8 @@ void InputProcessor::ClearRestOfLine() {
 }
 
 void InputProcessor::ReadAndProcess(ExecState* pExecState) {
-	ostream* pStdout = pExecState->GetStdout();
-	istream* pStdin = pExecState->GetStdin();
+	std::ostream* pStdout = pExecState->GetStdout();
+	std::istream* pStdin = pExecState->GetStdin();
 
 	int64_t nCompileState = pExecState->GetIntTLSVariable(ExecState::c_compileStateIndex);
 
@@ -276,12 +277,12 @@ void InputProcessor::ReadAndProcess(ExecState* pExecState) {
 	}
 	catch (...)
 	{
-		ostream* pStderr = pExecState->GetStderr();
+		std::ostream* pStderr = pExecState->GetStderr();
 		(*pStderr) << "Exiting\n";
 	}
 }
 
-void InputProcessor::ProcessLine(const string& line, char delimiter) {
+void InputProcessor::ProcessLine(const std::string& line, char delimiter) {
 	int len = (int) line.length();
 	int currentWordStart = -1;
 	int delimitersAfterCurrentWord = 0;
@@ -301,7 +302,7 @@ void InputProcessor::ProcessLine(const string& line, char delimiter) {
 		}
 		else if (delimitersAfterCurrentWord > 0) {
 			// Found start of next word after delimiters
-			string word = line.substr(currentWordStart, n - currentWordStart - delimitersAfterCurrentWord);
+			std::string word = line.substr(currentWordStart, n - currentWordStart - delimitersAfterCurrentWord);
 			InputWord w;
 			w.postDelimiterCount = delimitersAfterCurrentWord;
 			w.word = word;
@@ -311,7 +312,7 @@ void InputProcessor::ProcessLine(const string& line, char delimiter) {
 		}
 	}
 	if (currentWordStart != -1) {
-		string word = line.substr(currentWordStart, len - currentWordStart - delimitersAfterCurrentWord);
+		std::string word = line.substr(currentWordStart, len - currentWordStart - delimitersAfterCurrentWord);
 		InputWord w;
 		w.postDelimiterCount = delimitersAfterCurrentWord;
 		w.word = word;
@@ -319,19 +320,19 @@ void InputProcessor::ProcessLine(const string& line, char delimiter) {
 	}
 }
 
-string InputProcessor::ReadLine(ostream* pStdout, ExecState* pExecState) {
+std::string InputProcessor::ReadLine(std::ostream* pStdout, ExecState* pExecState) {
 	// Have to process forward/backward arrows, home/end, up and down (through history), insert characters, delete/backspace without relying on the console implementation
 	// This is made more complex by the fact that the console, when told to advance from the last character on a console line (to the next line), actually keeps the cursor before the last 
 	//  character on the line. Doing this prevents the code from calculating the start position of the current line - cannot just store the start position as it moves around on resizing and scrolling
 	int cursorPositionInLine = 0;
-	string line;
+	std::string line;
 	while (true) {
 		int c = _getch();
 		if (c == 3) {
 			// ctrl-c
 			if (line.length() > 0) {
 				(*pStdout) << "^c";
-				line = string();
+				line = std::string();
 				(*pStdout) << "\n";
 				cursorPositionInLine = 0;
 				return line;
@@ -380,7 +381,7 @@ string InputProcessor::ReadLine(ostream* pStdout, ExecState* pExecState) {
 	return line;
 }
 
-int InputProcessor::ProcessScanLineCode(ostream* pStdout, string& line, int cursorPositionInLine, int scanlineCode) {
+int InputProcessor::ProcessScanLineCode(std::ostream* pStdout, std::string& line, int cursorPositionInLine, int scanlineCode) {
 	if (scanlineCode == 0x4b && cursorPositionInLine > 0) {
 		// Left arrow
 		int x;
@@ -452,12 +453,12 @@ int InputProcessor::ProcessScanLineCode(ostream* pStdout, string& line, int curs
 	return cursorPositionInLine;
 }
 
-void InputProcessor::MoveToLineEnd(ostream* pStdout, string& line, int& cursorPositionInLine) {
+void InputProcessor::MoveToLineEnd(std::ostream* pStdout, std::string& line, int& cursorPositionInLine) {
 	MoveToPosition(pStdout, line, cursorPositionInLine, (int)line.length());
 	cursorPositionInLine = (int)line.length();
 }
 
-void InputProcessor::ProcessBackspace(ostream* pStdout, string& line, int& cursorPositionInLine) {
+void InputProcessor::ProcessBackspace(std::ostream* pStdout, std::string& line, int& cursorPositionInLine) {
 	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
 	int startX;
 	int startY;
@@ -484,7 +485,7 @@ void InputProcessor::ProcessBackspace(ostream* pStdout, string& line, int& curso
 	WriteLineFromPosition(pStdout, line, cursorPositionInLine, true);
 }
 
-int InputProcessor::InsertIntoLine(ostream* pStdout, string& line, int cursorPositionInLine, char toInsert) {
+int InputProcessor::InsertIntoLine(std::ostream* pStdout, std::string& line, int cursorPositionInLine, char toInsert) {
 	// First insert the character into the string line
 	if (line.length() == 0) {
 		line += toInsert;
@@ -521,7 +522,7 @@ int InputProcessor::InsertIntoLine(ostream* pStdout, string& line, int cursorPos
 	return ++cursorPositionInLine;
 }
 
-void InputProcessor::WriteLineFromPosition(ostream* pStdout, const string& line, int cursorPosition, bool addExtraSpaceForDeletion) {
+void InputProcessor::WriteLineFromPosition(std::ostream* pStdout, const std::string& line, int cursorPosition, bool addExtraSpaceForDeletion) {
 	int x;
 	int y;
 	GetCursorPosition(x, y);
@@ -548,14 +549,14 @@ void InputProcessor::WriteLineFromPosition(ostream* pStdout, const string& line,
 	SetCursorPosition(x, y);
 }
 
-void InputProcessor::MoveToPosition(ostream* pStdout, const string& line, int currentPosition, int position) {
+void InputProcessor::MoveToPosition(std::ostream* pStdout, const std::string& line, int currentPosition, int position) {
 	int x;
 	int y;
 	this->CalculatePositionInLine(currentPosition, position, x,y);
 	this->SetCursorPosition(x, y);
 }
 
-void InputProcessor::BlankCurrentLine(ostream* pStdout, const string& line, int currentPosition) {
+void InputProcessor::BlankCurrentLine(std::ostream* pStdout, const std::string& line, int currentPosition) {
 
 	int startX;
 	int startY;
@@ -645,22 +646,22 @@ void InputProcessor::SetCursorPosition(int x, int y) {
 	SetConsoleCursorPosition(hStdout, coords);
 }
 
-string InputProcessor::MoveUpInHistory() {
+std::string InputProcessor::MoveUpInHistory() {
 	--commandHistoryLine;
 	return this->commandHistory[commandHistoryLine];
 }
 
-string InputProcessor::MoveDownInHistory() {
+std::string InputProcessor::MoveDownInHistory() {
 	++this->commandHistoryLine;
 	if (this->commandHistoryLine == this->commandHistory.size()) {
-		return string();
+		return std::string();
 	}
 	else {
 		return this->commandHistory[this->commandHistoryLine];
 	}
 }
 
-void InputProcessor::AddLineToHistory(const string& line) {
+void InputProcessor::AddLineToHistory(const std::string& line) {
 	if (commandHistoryLine == this->commandHistory.size()) {
 		this->commandHistory.push_back(line);
 		++commandHistoryLine;
@@ -682,7 +683,7 @@ void InputProcessor::AddLineToHistory(const string& line) {
 
 }
 
-void InputProcessor::SetInputString(const string& line) {
+void InputProcessor::SetInputString(const std::string& line) {
 	this->processFromString = true;
 	this->processingFromStringFinished = false;
 	if (line.length() != 0) {
@@ -691,8 +692,8 @@ void InputProcessor::SetInputString(const string& line) {
 }
 
 // TODO Implement BASE
-bool InputProcessor::ConvertToInt(const string& word, int64_t& n) {
-	if (word.find(".")!=string::npos || word[word.length()-1]=='f') {
+bool InputProcessor::ConvertToInt(const std::string& word, int64_t& n) {
+	if (word.find(".")!= std::string::npos || word[word.length()-1]=='f') {
 		return false;
 	}
 
@@ -704,8 +705,8 @@ bool InputProcessor::ConvertToInt(const string& word, int64_t& n) {
 	return true;
 }
 
-bool InputProcessor::ConvertToFloat(const string& word, double& n) {
-	string convertWord = word;
+bool InputProcessor::ConvertToFloat(const std::string& word, double& n) {
+	std::string convertWord = word;
 	if (word[word.length() - 1] == 'f') {
 		convertWord = word.substr(0, word.length() - 1);
 	}
@@ -717,7 +718,7 @@ bool InputProcessor::ConvertToFloat(const string& word, double& n) {
 	return true;
 }
 
-ForthWord* InputProcessor::FindWordInTOSWord(ExecState* pExecState, const string& wordName) {
+ForthWord* InputProcessor::FindWordInTOSWord(ExecState* pExecState, const std::string& wordName) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	StackElement* pElement = pExecState->pStack->TopElement();
 	int64_t nCompileState = pExecState->GetIntTLSVariable(ExecState::c_compileStateIndex);
@@ -738,7 +739,7 @@ ForthWord* InputProcessor::FindWordInTOSWord(ExecState* pExecState, const string
 	return nullptr;
 }
 
-ForthWord* InputProcessor::FindWordInObjectDefinition(ExecState* pExecState, const string& wordName) {
+ForthWord* InputProcessor::FindWordInObjectDefinition(ExecState* pExecState, const std::string& wordName) {
 	if (!pExecState->PushVariableValueOntoStack("#compileForType")) {
 		pExecState->exceptionThrown = false;
 		return nullptr;

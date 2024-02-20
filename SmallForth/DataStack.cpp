@@ -57,7 +57,7 @@ bool DataStack::Push(RefCountedObject* value) {
 	return Push(pElement);
 }
 
-bool DataStack::Push(const string& value) {
+bool DataStack::Push(const std::string& value) {
 	ForthString* pForthString = new ForthString(value);
 	if (!Push((RefCountedObject*)pForthString)) {
 		pForthString->DecReference();
@@ -77,7 +77,7 @@ StackElement* DataStack::Pull() {
 	return toReturn;
 }
 
-tuple<bool, string> DataStack::PullAsString() {
+std::tuple<bool, std::string> DataStack::PullAsString() {
 	StackElement* pElement = Pull();
 	if (pElement == nullptr) {
 		return { false, "Stack underflow" };
@@ -87,13 +87,13 @@ tuple<bool, string> DataStack::PullAsString() {
 		return { false, "No string on stack" };
 	}
 	ForthString* pForthString = (ForthString* )pElement->GetObject();
-	string containedString = pForthString->GetContainedString();
+	std::string containedString = pForthString->GetContainedString();
 	delete pElement;
 	pElement = nullptr;
 	return { true, containedString };
 }
 
-tuple<bool, StackElement* > DataStack::PullType(ElementType type) {
+std::tuple<bool, StackElement* > DataStack::PullType(ElementType type) {
 	StackElement* pElement = Pull();
 	if (pElement == nullptr) {
 		return { false, nullptr };
@@ -104,7 +104,7 @@ tuple<bool, StackElement* > DataStack::PullType(ElementType type) {
 	return { false, pElement };
 }
 
-tuple<StackElement*, StackElement* > DataStack::PullTwo() {
+std::tuple<StackElement*, StackElement* > DataStack::PullTwo() {
 	StackElement* pElement2 = Pull();
 	if (pElement2 == nullptr) {
 		return { nullptr, nullptr };

@@ -1,6 +1,5 @@
 #include <math.h>
 #include <sstream>
-using namespace std;
 #include "Vector3.h"
 #include "ExecState.h"
 #include "DataStack.h"
@@ -17,12 +16,12 @@ Vector3::Vector3(double x, double y, double z) :
 Vector3::~Vector3() { 
 }
 
-string Vector3::GetObjectType() { 
+std::string Vector3::GetObjectType() {
 	return "vector3";
 }
 
 bool Vector3::ToString(ExecState* pExecState) const {
-	stringstream str;
+	std::stringstream str;
 	str << "(" << x << ", " << y << ", " << z << ")";
 	if (!pExecState->pStack->Push(str.str())) {
 		return pExecState->CreateStackOverflowException();
@@ -45,7 +44,7 @@ bool Vector3::Construct(ExecState* pExecState) {
 bool Vector3::BinaryOps(ExecState* pExecState) {
 	bool incorrectType;
 	StackElement* pElementOperator;
-	tie(incorrectType, pElementOperator) = pExecState->pStack->PullType(StackElement_BinaryOpsType);
+	std::tie(incorrectType, pElementOperator) = pExecState->pStack->PullType(StackElement_BinaryOpsType);
 	if (incorrectType) {
 		return pExecState->CreateException("Binary operator handler must be supplied with a binary operator type");
 	}
@@ -59,7 +58,7 @@ bool Vector3::BinaryOps(ExecState* pExecState) {
 	StackElement* pElementOperand2;
 	StackElement* pElementOperand1;
 
-	tie(pElementOperand1, pElementOperand2) = pExecState->pStack->PullTwo();
+	std::tie(pElementOperand1, pElementOperand2) = pExecState->pStack->PullTwo();
 	if (pElementOperand1 == nullptr) {
 		// If one is null, they will both be null
 		return pExecState->CreateStackUnderflowException();

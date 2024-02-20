@@ -1,8 +1,9 @@
 #include <iostream>
-using namespace std;
 #include "RefCountedObject.h"
 #include "ForthDict.h"
 #include "ForthString.h"
+
+using std::string;
 
 RefCountedObject::RefCountedObject() {
 	this->referenceCount = 0;

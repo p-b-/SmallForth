@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string>
 
-using namespace std;
+using std::int64_t;
 
 class ExecState;
 class RefCountedObject;
@@ -99,6 +99,6 @@ enum SystemFiles {
 };
 
 struct InputWord {
-	string word;
+	std::string word;
 	int postDelimiterCount;
 };

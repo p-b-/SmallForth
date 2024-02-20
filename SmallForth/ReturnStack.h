@@ -1,6 +1,5 @@
 #pragma once
 #include <stack>
-using namespace std;
 #include "ForthDefs.h"
 
 class ReturnStack
@@ -15,6 +14,6 @@ public:
 private:
 	int stackSize;
 
-	stack<int> _stack;
+	std::stack<int> _stack;
 };
 

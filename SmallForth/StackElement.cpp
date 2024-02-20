@@ -5,7 +5,6 @@
 #include "DataStack.h"
 #include "ForthString.h"
 #include <sstream>
-using namespace std;
 
 #include "enumPrinters.h"
 
@@ -196,7 +195,7 @@ RefCountedObject* StackElement::GetObject() const {
 	return nullptr;
 }
 
-tuple<bool, ForthType, void*> StackElement::GetObjectOrObjectPter() const {
+std::tuple<bool, ForthType, void*> StackElement::GetObjectOrObjectPter() const {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (pTS->TypeIsObjectOrObjectPter(this->elementType))
 	{
@@ -323,7 +322,7 @@ bool StackElement::PokeObjectIntoContainedPter(ExecState* pExecState, StackEleme
 	void* addressPter;
 	ForthType addressType;
 
-	tie(success, objectType, objectPter) = pObjectElement->GetObjectOrObjectPter();
+	std::tie(success, objectType, objectPter) = pObjectElement->GetObjectOrObjectPter();
 	addressType = this->elementType;
 	addressPter = this->valuePter;
 

@@ -1,12 +1,11 @@
 #include <iostream>
-using namespace std;
 #include "ForthDefs.h"
 #include "ForthString.h"
 #include "DataStack.h"
 #include "ExecState.h"
 #include "StackElement.h"
 
-ForthString::ForthString(const string& pzString) :
+ForthString::ForthString(const std::string& pzString) :
 	RefCountedObject(nullptr) {
 	containedString = pzString;
 	objectType = ObjectType_String;
@@ -17,7 +16,7 @@ ForthString::~ForthString() {
 
 }
 
-string ForthString::GetObjectType() {
+std::string ForthString::GetObjectType() {
 	return "string";
 }
 
@@ -157,7 +156,7 @@ bool ForthString::Contains(ExecState* pExecState) {
 	delete pElement;
 	pElement = nullptr;
 
-	bool containsChar = this->containedString.find(c, 0) != string::npos;
+	bool containsChar = this->containedString.find(c, 0) != std::string::npos;
 	if (!pExecState->pStack->Push(containsChar)) {
 		return pExecState->CreateStackOverflowException();
 	}
@@ -194,7 +193,7 @@ bool ForthString::IndexOf(ExecState* pExecState) {
 	pElement = nullptr;
 
 	size_t index = this->containedString.find(c, afterIndex);
-	if (index == string::npos) {
+	if (index == std::string::npos) {
 		index = -1;
 	}
 	if (!pExecState->pStack->Push((int64_t)index)) {
@@ -239,7 +238,7 @@ bool ForthString::SubString(ExecState* pExecState) {
 		return pExecState->CreateException("Substring end must not be more than one past the string end");
 	}
 
-	string substring = this->containedString.substr(rangeSt, rangeEnd - rangeSt);
+	std::string substring = this->containedString.substr(rangeSt, rangeEnd - rangeSt);
 
 	ForthString* pNewString = new ForthString(substring);
 	if (!pExecState->pStack->Push(pNewString)) {

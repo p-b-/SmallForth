@@ -1,12 +1,11 @@
 #include <iostream>
-using namespace std;
 #include "ForthFile.h"
 #include "ExecState.h"
 #include "DataStack.h"
 #include "ForthString.h"
 #include "PreBuiltWords.h"
 
-ForthFile::ForthFile(ForthType objectType, const string& filename) :
+ForthFile::ForthFile(ForthType objectType, const std::string& filename) :
 	RefCountedObject(nullptr) {
 	this->pFile = nullptr;
 	this->filename = filename;
@@ -39,12 +38,12 @@ void ForthFile::InitialiseReadWriteFlags() {
 	this->writeFile = this->objectType == ObjectType_WriteFile || this->objectType == ObjectType_ReadWriteFile;
 }
 
-string ForthFile::GetObjectType() {
+std::string ForthFile::GetObjectType() {
 	return "file";
 }
 
 bool ForthFile::ToString(ExecState* pExecState) const {
-	string pushString;
+	std::string pushString;
 	
 	switch (this->objectType) {
 	case ObjectType_ReadFile: pushString = "readfile: " + this->filename; break;
@@ -84,7 +83,7 @@ bool ForthFile::ConstructReadFile(ExecState* pExecState) {
 	}
 	else if (pElementConstructWith->GetType() == ObjectType_String) {
 		ForthString* pFilename = (ForthString* )pElementConstructWith->GetObject();
-		string filename = pFilename->GetContainedString();
+		std::string filename = pFilename->GetContainedString();
 		success = ConstructWithPath(ObjectType_ReadFile, pExecState, filename);
 	}
 	else {
@@ -108,7 +107,7 @@ bool ForthFile::ConstructWriteFile(ExecState* pExecState) {
 	}
 	else if (pElementConstructWith->GetType() == ObjectType_String) {
 		ForthString* pFilename = (ForthString*)pElementConstructWith->GetObject();
-		string filename = pFilename->GetContainedString();
+		std::string filename = pFilename->GetContainedString();
 		success = ConstructWithPath(ObjectType_WriteFile, pExecState, filename);
 	}
 	else {
@@ -128,7 +127,7 @@ bool ForthFile::ConstructReadWriteFile(ExecState* pExecState) {
 	bool success;
 	if (pElementConstructWith->GetType() == ObjectType_String) {
 		ForthString* pFilename = (ForthString*)pElementConstructWith->GetObject();
-		string filename = pFilename->GetContainedString();
+		std::string filename = pFilename->GetContainedString();
 		success = ConstructWithPath(ObjectType_ReadWriteFile, pExecState, filename);
 	}
 	else {
@@ -147,17 +146,17 @@ bool ForthFile::ConstructStandardFile(ExecState* pExecState, SystemFiles stdFile
 	bool success = false;
 	if (stdFileToConstruct == forth_stdout) {
 		pForthFile = new ForthFile(ObjectType_WriteFile, stdFileToConstruct);
-		pForthFile->pFile = new fstream(stdout);
+		pForthFile->pFile = new std::fstream(stdout);
 		success = true;
 	}
 	else if (stdFileToConstruct == forth_stderr) {
 		pForthFile = new ForthFile(ObjectType_WriteFile, stdFileToConstruct);
-		pForthFile->pFile = new fstream(stderr);
+		pForthFile->pFile = new std::fstream(stderr);
 		success = true;
 	}
 	else if (stdFileToConstruct == forth_stdin) {
 		pForthFile = new ForthFile(ObjectType_ReadFile, stdFileToConstruct);
-		pForthFile->pFile = new fstream(stdin);
+		pForthFile->pFile = new std::fstream(stdin);
 		success = true;
 	}
 	else {
@@ -176,22 +175,22 @@ bool ForthFile::ConstructStandardFile(ExecState* pExecState, SystemFiles stdFile
 }
 
 
-bool ForthFile::ConstructWithPath(ForthType objectType, ExecState* pExecState, const string& filepath) {
-	ios::open_mode mode;
+bool ForthFile::ConstructWithPath(ForthType objectType, ExecState* pExecState, const std::string& filepath) {
+	std::ios::open_mode mode;
 
 	switch (objectType) {
-	case ObjectType_ReadFile: mode = ios::in;
+	case ObjectType_ReadFile: mode = std::ios::in;
 		break;
-	case ObjectType_WriteFile: mode = ios::out | ios::app;
+	case ObjectType_WriteFile: mode = std::ios::out | std::ios::app;
 		break;
-	case ObjectType_ReadWriteFile: mode = ios::in | ios::out || ios::app;
+	case ObjectType_ReadWriteFile: mode = std::ios::in | std::ios::out || std::ios::app;
 		break;
 	default:
 		return pExecState->CreateException("Could not open a file as read/write access is unknown");
 	}
 
 	ForthFile* pForthFile = new ForthFile(objectType, filepath);
-	pForthFile->pFile = new fstream();
+	pForthFile->pFile = new std::fstream();
 
 	pForthFile->pFile->open(filepath, mode);
 	bool success = true;
@@ -225,7 +224,7 @@ bool ForthFile::Append(ExecState* pExecState) {
 		return false;
 	}
 
-	string str;
+	std::string str;
 	bool success;
 	tie(success, str) = pExecState->pStack->PullAsString();
 	if (success) {
@@ -257,7 +256,7 @@ bool ForthFile::Read(ExecState* pExecState) {
 		return pExecState->CreateException("Cannot read from a file that is not open with read permissions");
 	}
 
-	string next;
+	std::string next;
 	(*pFile) >> next;
 	if (!pExecState->pStack->Push(next)) {
 		return pExecState->CreateStackOverflowException("whilst pushing the output from reading a file");
@@ -273,7 +272,7 @@ bool ForthFile::ReadLine(ExecState* pExecState) {
 	else if (!this->readFile) {
 		return pExecState->CreateException("Cannot read from a file that is not open with read permissions");
 	}
-	string line;
+	std::string line;
 	// Could use this instead:
 	//getline(*this->pFile, line, '\n');
 	const int buffLen = 10;
@@ -283,7 +282,7 @@ bool ForthFile::ReadLine(ExecState* pExecState) {
 		pFile->getline(buff, buffLen, '\n');
 		int receivedLen = (int)strlen(buff);
 
- 		if (pFile->rdstate() & ios_base::failbit) {
+ 		if (pFile->rdstate() & std::ios_base::failbit) {
 			if (buff[0] == '\0') {
 				// no data read
 				loop = false;
@@ -295,7 +294,7 @@ bool ForthFile::ReadLine(ExecState* pExecState) {
 				}
 				// Fail bit set - clear it and loop to get more charactesr
 				line.append(buff);
-				pFile->clear(pFile->rdstate() & ~ios_base::failbit);
+				pFile->clear(pFile->rdstate() & ~std::ios_base::failbit);
 			}
 		}
 		else if (receivedLen>0) {

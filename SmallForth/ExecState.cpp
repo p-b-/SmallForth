@@ -1,5 +1,4 @@
 #include <iostream>
-using namespace std;
 #include "ForthDefs.h"
 #include "ExecState.h"
 #include "DataStack.h"
@@ -140,7 +139,7 @@ bool ExecState::CreateStackOverflowException() {
 }
 
 bool ExecState::CreateStackOverflowException(const char* pzInfo) {
-	string exceptionString = "Stack overflow: ";
+	std::string exceptionString = "Stack overflow: ";
 	exceptionString.append(pzInfo);
 	return CreateException(exceptionString.c_str());
 }
@@ -151,7 +150,7 @@ bool ExecState::CreateStackUnderflowException() {
 }
 
 bool ExecState::CreateStackUnderflowException(const char* pzInfo) {
-	string exceptionString = "Stack underflow: ";
+	std::string exceptionString = "Stack underflow: ";
 	exceptionString.append(pzInfo);
 	return CreateException(exceptionString.c_str());
 }
@@ -218,9 +217,9 @@ bool ExecState::CreateExceptionUsingErrorNo(const char* pzException) {
 }
 
 
-ostream* ExecState::GetStdout() {
+std::ostream* ExecState::GetStdout() {
 	RefCountedObject* pObj;
-	ostream* pStdoutStream = &cout;
+	std::ostream* pStdoutStream = &std::cout;
 	if (this->GetConstant("stdout", pObj)) {
 		ForthFile* pFile = (ForthFile*)pObj;
 		pStdoutStream = pFile->GetContainedStream();
@@ -230,9 +229,9 @@ ostream* ExecState::GetStdout() {
 	return pStdoutStream;
 }
 
-ostream* ExecState::GetStderr() {
+std::ostream* ExecState::GetStderr() {
 	RefCountedObject* pObj;
-	ostream* pStderrStream = &cerr;
+	std::ostream* pStderrStream = &std::cerr;
 	if (this->GetConstant("stderr", pObj)) {
 		ForthFile* pFile = (ForthFile*)pObj;
 		pStderrStream = pFile->GetContainedStream();
@@ -242,9 +241,9 @@ ostream* ExecState::GetStderr() {
 	return pStderrStream;
 }
 
-istream* ExecState::GetStdin() {
+std::istream* ExecState::GetStdin() {
 	RefCountedObject* pObj;
-	istream* pStdinStream = &cin;
+	std::istream* pStdinStream = &std::cin;
 	if (this->GetConstant("stdin", pObj)) {
 		ForthFile* pFile = (ForthFile*)pObj;
 		pStdinStream = pFile->GetContainedStream();
@@ -254,7 +253,7 @@ istream* ExecState::GetStdin() {
 	return pStdinStream;
 }
 
-bool ExecState::PushVariableValueOntoStack(const string& variableName) {
+bool ExecState::PushVariableValueOntoStack(const std::string& variableName) {
 	if (!this->ExecuteWordDirectly(variableName)) {
 		this->exceptionThrown = false;
 		return false;
@@ -266,7 +265,7 @@ bool ExecState::PushVariableValueOntoStack(const string& variableName) {
 	return true;
 }
 
-bool ExecState::SetVariable(const string& variableName, int64_t setTo) {
+bool ExecState::SetVariable(const std::string& variableName, int64_t setTo) {
 	if (!pStack->Push(setTo)) {
 		return CreateStackOverflowException("whilst setting an integer variable");
 	}
@@ -279,7 +278,7 @@ bool ExecState::SetVariable(const string& variableName, int64_t setTo) {
 	return true;
 }
 
-bool ExecState::SetVariable(const string& variableName, bool setTo) {
+bool ExecState::SetVariable(const std::string& variableName, bool setTo) {
 	if (!pStack->Push(setTo)) {
 		return CreateStackOverflowException("whilst setting a bool variable");
 	}
@@ -292,7 +291,7 @@ bool ExecState::SetVariable(const string& variableName, bool setTo) {
 	return true;
 }
 
-bool ExecState::SetVariable(const string& variableName, double setTo) {
+bool ExecState::SetVariable(const std::string& variableName, double setTo) {
 	if (!pStack->Push(setTo)) {
 		return CreateStackOverflowException("whilst setting a float variable");
 	}
@@ -305,7 +304,7 @@ bool ExecState::SetVariable(const string& variableName, double setTo) {
 	return true;
 }
 
-bool ExecState::SetVariable(const string& variableName, ForthType setTo) {
+bool ExecState::SetVariable(const std::string& variableName, ForthType setTo) {
 	if (!pStack->Push(setTo)) {
 		return CreateStackOverflowException("whilst setting a type variable");
 	}
@@ -318,7 +317,7 @@ bool ExecState::SetVariable(const string& variableName, ForthType setTo) {
 	return true;
 }
 
-bool ExecState::GetVariable(const string& variableName, int64_t& variableValue) { 
+bool ExecState::GetVariable(const std::string& variableName, int64_t& variableValue) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (!this->ExecuteWordDirectly(variableName)) {
 		return false;
@@ -352,7 +351,7 @@ int64_t ExecState::GetIntTLSVariable(int index) {
 	return pWBE->wordElement_int;
 }
 
-bool ExecState::GetVariable(const string& variableName, double& variableValue) {
+bool ExecState::GetVariable(const std::string& variableName, double& variableValue) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (!this->ExecuteWordDirectly(variableName)) {
 		return false;
@@ -376,7 +375,7 @@ bool ExecState::GetVariable(const string& variableName, double& variableValue) {
 	return false;
 }
 
-bool ExecState::GetVariable(const string& variableName, bool& variableValue) {
+bool ExecState::GetVariable(const std::string& variableName, bool& variableValue) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (!this->ExecuteWordDirectly(variableName)) {
 		return false;
@@ -400,7 +399,7 @@ bool ExecState::GetVariable(const string& variableName, bool& variableValue) {
 	return false;
 }
 
-bool ExecState::GetVariable(const string& variableName, ForthType& variableValue) {
+bool ExecState::GetVariable(const std::string& variableName, ForthType& variableValue) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (!this->ExecuteWordDirectly(variableName)) {
 		return false;
@@ -424,7 +423,7 @@ bool ExecState::GetVariable(const string& variableName, ForthType& variableValue
 	return false;
 }
 
-bool ExecState::PushConstantOntoStack(const string& constantName) {
+bool ExecState::PushConstantOntoStack(const std::string& constantName) {
 	if (!this->ExecuteWordDirectly(constantName)) {
 		this->exceptionThrown = false;
 		return false;
@@ -432,7 +431,7 @@ bool ExecState::PushConstantOntoStack(const string& constantName) {
 	return true;
 }
 
-bool ExecState::GetConstant(const string& constantName, int64_t& constantValue) {
+bool ExecState::GetConstant(const std::string& constantName, int64_t& constantValue) {
 	if (!PushConstantOntoStack(constantName)) {
 		return false;
 	}
@@ -449,7 +448,7 @@ bool ExecState::GetConstant(const string& constantName, int64_t& constantValue) 
 	return success;
 }
 
-bool ExecState::GetConstant(const string& constantName, double& constantValue) {
+bool ExecState::GetConstant(const std::string& constantName, double& constantValue) {
 	if (!PushConstantOntoStack(constantName)) {
 		return false;
 	}
@@ -466,7 +465,7 @@ bool ExecState::GetConstant(const string& constantName, double& constantValue) {
 	return success;
 }
 
-bool ExecState::GetConstant(const string& constantName, bool& constantValue) {
+bool ExecState::GetConstant(const std::string& constantName, bool& constantValue) {
 	if (!PushConstantOntoStack(constantName)) {
 		return false;
 	}
@@ -483,7 +482,7 @@ bool ExecState::GetConstant(const string& constantName, bool& constantValue) {
 	return success;
 }
 
-bool ExecState::GetConstant(const string& constantName, ForthType& constantValue) {
+bool ExecState::GetConstant(const std::string& constantName, ForthType& constantValue) {
 	if (!PushConstantOntoStack(constantName)) {
 		return false;
 	}
@@ -500,7 +499,7 @@ bool ExecState::GetConstant(const string& constantName, ForthType& constantValue
 	return success;
 }
 
-bool ExecState::GetConstant(const string& constantName, RefCountedObject*& constantValue) {
+bool ExecState::GetConstant(const std::string& constantName, RefCountedObject*& constantValue) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (!PushConstantOntoStack(constantName)) {
 		return false;
@@ -521,7 +520,7 @@ bool ExecState::GetConstant(const string& constantName, RefCountedObject*& const
 }
 
 
-bool ExecState::ExecuteWordDirectly(const string& word) {
+bool ExecState::ExecuteWordDirectly(const std::string& word) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	ForthWord* pWord = pTS->FindWordInTOSWord(this, word);
 	bool executeOnTOSObject = false;

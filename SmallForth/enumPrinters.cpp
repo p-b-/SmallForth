@@ -1,10 +1,9 @@
 #include "ForthDefs.h"
 #include <sstream>
-using namespace std;
 #include "enumPrinters.h"
 
-string ToString(ValueType valueType) {
-	ostringstream out;
+std::string ToString(ValueType valueType) {
+	std::ostringstream out;
 
 	switch (valueType) {
 	case ValueType_Undefined:
