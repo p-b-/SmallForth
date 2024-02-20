@@ -176,7 +176,7 @@ bool ForthFile::ConstructStandardFile(ExecState* pExecState, SystemFiles stdFile
 
 
 bool ForthFile::ConstructWithPath(ForthType objectType, ExecState* pExecState, const std::string& filepath) {
-	std::ios::open_mode mode;
+	std::ios::openmode mode;
 
 	switch (objectType) {
 	case ObjectType_ReadFile: mode = std::ios::in;
