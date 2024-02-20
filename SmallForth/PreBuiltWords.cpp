@@ -281,7 +281,7 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	InterpretForth(pExecState, ": '\10' 10 tochar ; ");
 	InterpretForth(pExecState, ": pushNewLine '\10' ;");
 
-	InterpretForth(pExecState, ": dup2 dup dup ;"); // ( m -- m m)
+	InterpretForth(pExecState, ": dup2 dup dup ;"); // ( m -- m m m )
 	InterpretForth(pExecState, ": nip swap drop ;"); // ( m n -- n)
 	InterpretForth(pExecState, ": tuck swap over ;"); // ( m n -- n m n)
 	InterpretForth(pExecState, ": 2dup over over ;"); // ( m n -- m n m n)
