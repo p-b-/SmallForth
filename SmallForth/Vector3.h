@@ -8,7 +8,7 @@ class Vector3 :
 public:
     Vector3(double x, double y, double z);
     ~Vector3();
-    virtual string GetObjectType();
+    virtual std::string GetObjectType();
     virtual bool ToString(ExecState* pExecState) const;
     virtual bool InvokeFunctionIndex(ExecState* pExecState, ObjectFunction functionToInvoke);
     static bool Construct(ExecState* pExecState);

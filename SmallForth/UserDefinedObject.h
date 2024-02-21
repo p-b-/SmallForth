@@ -2,7 +2,6 @@
 #include "RefCountedObject.h"
 #include <vector>
 #include <string>
-using namespace std;
 class StackElement;
 class ExecState;
 class ForthDict;
@@ -10,7 +9,7 @@ class ForthDict;
 class UserDefinedObject : public RefCountedObject
 {
 public:
-	UserDefinedObject(string name, int stateCount, ForthDict* pDict);
+	UserDefinedObject(std::string name, int stateCount, ForthDict* pDict);
 	virtual ~UserDefinedObject();
 
 	virtual void IncReference();
@@ -18,7 +17,7 @@ public:
 	virtual void IncReferenceBy(int by);
 	virtual void DecReferenceBy(int by);
 
-	virtual string GetObjectType();
+	virtual std::string GetObjectType();
 	virtual bool ToString(ExecState* pExecState) const;
 	virtual bool InvokeFunctionIndex(ExecState* pExecState, ObjectFunction functionToInvoke);
 
@@ -35,9 +34,9 @@ private:
 	bool DeconstructToStack(ExecState* pExecState);
 
 private:
-	string objectName;
+	std::string objectName;
 	int stateCount;
 	bool defaultObject;
 
-	vector<StackElement*> state;
+	std::vector<StackElement*> state;
 };

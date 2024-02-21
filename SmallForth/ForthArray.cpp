@@ -19,7 +19,7 @@ ForthArray::~ForthArray()
 	this->elements.erase(this->elements.begin(), this->elements.end());
 }
 
-string ForthArray::GetObjectType()
+std::string ForthArray::GetObjectType()
 {
 	return "Array";
 }
@@ -27,8 +27,8 @@ string ForthArray::GetObjectType()
 bool ForthArray::ToString(ExecState* pExecState) const
 {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	string str = "Array: " + pTS->TypeToString(containedType) + " size: ";
-	str += to_string(this->elements.size());
+	std::string str = "Array: " + pTS->TypeToString(containedType) + " size: ";
+	str += std::to_string(this->elements.size());
 
 	if (!pExecState->pStack->Push(str)) {
 		return pExecState->CreateStackOverflowException("whilst creating string description of an array");

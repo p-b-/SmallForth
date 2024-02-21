@@ -10,7 +10,7 @@
 #include "ForthFile.h"
 #include "PreBuiltWords.h"
 
-ForthWord::ForthWord(const string& name) :
+ForthWord::ForthWord(const std::string& name) :
 	RefCountedObject(nullptr) {
 	this->objectType = ObjectType_Word;
 	this->name = name;
@@ -20,7 +20,7 @@ ForthWord::ForthWord(const string& name) :
 	this->visible = false;
 }
 
-ForthWord::ForthWord(const string& name, XT firstXT) :
+ForthWord::ForthWord(const std::string& name, XT firstXT) :
 	RefCountedObject(nullptr) {
 	this->objectType = ObjectType_Word;
 	this->visible = false;
@@ -143,12 +143,12 @@ void ForthWord::GrowByAndAdd(int growBy, WordBodyElement* pElement) {
 	this->bodySize+=growBy;
 }
 
-string ForthWord::GetObjectType() {
+std::string ForthWord::GetObjectType() {
 	return "word";
 }
 
 bool ForthWord::ToString(ExecState* pExecState) const {
-	string str = "Word: " + this->name;
+	std::string str = "Word: " + this->name;
 	if (!pExecState->pStack->Push(str)) {
 		return pExecState->CreateStackOverflowException();
 	}
@@ -163,7 +163,7 @@ bool ForthWord::InvokeFunctionIndex(ExecState* pExecState, ObjectFunction functi
 // TODO Fix this
 //      This runs to either first EXIT word, or the first contained literal.  Needs to consider length of body.
 bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
-	ostream* pStdoutStream = pExecState->GetStdout();
+	std::ostream* pStdoutStream = pExecState->GetStdout();
 
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
@@ -186,7 +186,7 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 
 		int bodySize = -1;
 
-		string firstWord;
+		std::string firstWord;
 		if (pEl->wordElement_XT == PreBuiltWords::BuiltIn_DoCol) {
 			firstWord = "DOCOL";
 		}
@@ -205,7 +205,7 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 			success = pExecState->CreateException("Cannot decompile a level-one word");
 		}
 		if (success) {
-			(*pStdoutStream) << "0: " << firstWord << endl;
+			(*pStdoutStream) << "0: " << firstWord << std::endl;
 			int ip = 0;
 			bool loop = true;
 
@@ -216,14 +216,14 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 				if (pWord == nullptr) {
 					if (upcomingWordIsLiteralType) {
 						upcomingWordType = pEl->forthType;
-						string typeDescription = pTS->TypeToString(upcomingWordType);
-						(*pStdoutStream) << ip << ":  literal type (" << typeDescription << ")" << endl;
+						std::string typeDescription = pTS->TypeToString(upcomingWordType);
+						(*pStdoutStream) << ip << ":  literal type (" << typeDescription << ")" << std::endl;
 						upcomingWordIsLiteralType = false;
 						upcomingWordIsLiteral = true;
 					}
 					else if (upcomingWordIsLiteral) {
 						(*pStdoutStream) << ip << ":  literal value (";
-						string contentsOfLiteral;
+						std::string contentsOfLiteral;
 						bool successAtLiteral;
 						if (pTS->IsValueOrValuePter(upcomingWordType)) {
 							successAtLiteral = pTS->VariableToString(pExecState, upcomingWordType, reinterpret_cast<void*>(pEl->wordElement_int));
@@ -232,7 +232,7 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 							successAtLiteral = pTS->VariableToString(pExecState, upcomingWordType, pEl->pter);
 						}
 						if (!successAtLiteral) {
-							(*pStdoutStream) << " could not retrieve)" << endl;
+							(*pStdoutStream) << " could not retrieve)" << std::endl;
 							return false;
 						}
 						successAtLiteral;
@@ -242,7 +242,7 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 						}
 
 						(*pStdoutStream) << contentsOfLiteral;
-						(*pStdoutStream) << ")" << endl;
+						(*pStdoutStream) << ")" << std::endl;
 						upcomingWordIsLiteral = false;
 					}
 				}
@@ -250,7 +250,7 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 					if (pWord->body[0]->wordElement_XT == PreBuiltWords::BuiltIn_PushUpcomingLiteral) {
 						upcomingWordIsLiteralType = true;
 					}
-					(*pStdoutStream) << ip << ":  " << pWord->GetName() << endl;
+					(*pStdoutStream) << ip << ":  " << pWord->GetName() << std::endl;
 					if (pWord->GetName() == "exit") {
 						loop = false;
 					}

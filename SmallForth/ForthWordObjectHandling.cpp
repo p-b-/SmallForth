@@ -15,14 +15,12 @@
 #include "CompileHelper.h"
 #include "PreBuiltWords.h"
 
-using namespace std;
-
 bool PreBuiltWords::BuiltIn_StringLiteral(ExecState* pExecState) {
 	pExecState->insideStringLiteral = true;
 	InputWord inputWord = pExecState->pInputProcessor->GetNextWord(pExecState);
-	string partOfWord = inputWord.word;
+	std::string partOfWord = inputWord.word;
 
-	string literal;
+	std::string literal;
 	bool firstPart = true;
 	while (partOfWord.compare("\"") != 0) {
 		if (firstPart) {
@@ -88,7 +86,7 @@ bool PreBuiltWords::BuiltIn_Construct(ExecState* pExecState) {
 
 	StackElement* pElementType;
 	bool incorrectType;
-	tie(incorrectType, pElementType) = pExecState->pStack->PullType(StackElement_Type);
+	std::tie(incorrectType, pElementType) = pExecState->pStack->PullType(StackElement_Type);
 	if (incorrectType) {
 		return pExecState->CreateException("Must have a type to construct with");
 	} else if (pElementType == nullptr) {
@@ -119,7 +117,7 @@ bool PreBuiltWords::BuiltIn_DefineObject(ExecState* pExecState) {
 		return pExecState->CreateException("Define objects must be called with ( [state] n $ -- ");
 	}
 	ForthString* pString = (ForthString* )pElementObjectName->GetObject();
-	string newTypeName = pString->GetContainedString();
+	std::string newTypeName = pString->GetContainedString();
 	int stateCount = (int)pElementStateCount->GetInt();
 
 	ForthWord::BuiltInHelper_DeleteOperands(pElementStateCount, pElementObjectName);
@@ -159,7 +157,7 @@ bool PreBuiltWords::BuiltIn_DefineObject(ExecState* pExecState) {
 		return false;
 	}
 
-	stringstream ss;
+	std::stringstream ss;
 	ss << ": " << newTypeName << "_type " << newType << " typefromint ; ";
 	pExecState->pInputProcessor->SetInputString(ss.str());
 	// TODO Capture any exception thrown by interpreter rather than have it display via interpret()

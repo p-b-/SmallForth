@@ -29,6 +29,9 @@ The following need to be added for this implementation to be of any use:
 * Debugger
 * Loading of programs via s" <filename> "
 * Test script. A lot of the Forth is tested when creating Forth-based words, but a test script would be beneficial. The creation of the words for instance does not use all loop types.
+* Unit tests
+* Loading DLLs
+* Connect to SqlLite
 * * UTF8 - ensure str lengths and slicing use code-points rather than code units. Add support via ICU library if necessary.
 * ```Allot``` to allocate space in currently-created word
 * array - find, insert, remove, removeat, sort
@@ -56,7 +59,15 @@ The following need to be added for this implementation to be of any use:
 
 Writing it in C++ as an 'interpreted' version (well, it's not compiled to bytecode or machine code) has made it easy to implement type-safety. However, large parts of this would have been easier if I had output to a byte code and written a virtual machine for it.
 
-A future may attempt this.
+It is possible to move towards this, but it would require:
+* Allocate an amount of memory for dictionary, stack, and heap
+* Create own heap allocation within this, for RefCountedObjects
+* Have all memory addresses be relative to base address, so can reallocate and move (though, OS Memory management may make this unnecessary?)
+* Change stack to be in-place StackElements, rather than pointers to StackElements
+* Words to contain WordBodyElements, rather than pointers to WordBodyElements
+* Dictionary to be based on backwards-linked list, rather than map (could implement the map in forth/assembly)
+* Implement call-outs to operating system directly, rather than use the C++ libraries, for files, console control, memory allocation
+
 
 ## Known bugs
 
@@ -175,48 +186,7 @@ The user-defined object system would need implementing in actual Forth too - imp
 
 ## Defined Words 
 
-* ```EXIT``` the last CFA in a level-2 word. Ends execution of ```DOCOL``` and returns to the calling word
-* ```DOCOL``` level 2 words, compiled for other words, must have this as its first CFA. It ensures the rest of the body will be executed.
-* ```EXECUTE``` executes the word whose pter is on the parameter stack.
-* ```NEXT``` not actually implemented. For assembly version, all machine-code (level 1) words must end with this. It returns to the calling method
-* ``` ` ``` push address of following word
-* ```SEE``` decompile the word pointed at the tos
-* ```.``` pulls the top of the stack and outputs it to the console
-* ```CLEAR``` clears stack
-* ```RCLEAR``` clears return stack
-* ```.s``` prints all elements in stack
-* ```.rs``` prints all elements in return stack
-* ```.ts``` prints all elements in temporary stack
-* ```<max> <start> DO xxxx LOOP ;``` as part of a colon definition, will loop over the words represented by xxxx, max-start times
-* ```<max> <start> DO xxxx ( n -- ) +LOOP ;``` as part of a colon definition, will loop over the words represented by xxxx. Increments the loop counter by n
-* ```BEGIN xxx (f -- ) UNTIL``` as part of a colon definition, loops until the flag is true
-* ```BEGIN xxx AGAIN``` as part of a colon definition, loops indefinitely
-* ```BEGIN xxxx (f -- ) WHILE yyyy REPEAT``` executes xxxx, tests the flag, and if the flag is true, continues to yyyy and repeats. Exits if the flag is false
-* ```UNLOOP``` removed loop values from return stack - used when exiting a word, having to unloop first. Should be called multiple times for nested loops.
-* ```I``` puts iteration variable onto stack. All loops have iteration variables - DO allows its value to be chosen, other loops start at 0
-* ```LEAVE``` leaves a loop prematurely
-* ```5 CONSTANT five``` creates a constant called five, that is set to the number five. Can do this with bools, floats, chars and types too
-  ```five``` pushes the constant 'five' to the stack
-* ```6 VARIABLE six``` creates an integer variable called six, that holds the value 6
-  ```7 six !``` sets the variable six to be equal to seven
-  ```six @``` reads the variable six and pushes it to the stack
-* ```2.5 variable fiveovertwo``` creates a float variable containing 2.5. Can also create bool, char and type variables
-  ```fiveovertwo``` pushes the point to the variable to the stack
-* ``` ( f -- ) if xxx then zzz``` as part of a colon definition, executes xxx (then zzz) if f is true, otherwise executes zzz
-* ``` ( f -- ) if xxx else yyy then zzz``` as part of a colon definition, executes xxx (then zzz) if f is true, otherwise executes yyy (then zzz)
-* nested if/else in a colon definition :
-  ``` ( f -- ) if aaa else 
-      ( f -- ) if ccc else
-      ( f -- ) if eee else
- 	  fff
-      THEN THEN THEN
-
-
-     : helloworld [char] ! [char] d  [char] l [char] r [char] o [char] W space  [char] o  [char] l dup  [char] e  [char] H emitall ;
-* ```NOT``` inverts binary at TOS
-* ```AND```, ```XOR```, ```OR``` binary operations on the top two booleans
-* ```ALLOT``` append additional space to the last defined word, allowing it to be used as a static array. (note, this has to be called immediately after defining the word)
-* ```ELAPSEDSECONDS``` get the number of elapsed seconds from the operating systems high resolution timer, as a double.
+See [Words](https://github.com/p-b-/SmallForth/wiki/Words) for a list of all defined words.
 
 
 ## Defining an object

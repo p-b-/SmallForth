@@ -2,7 +2,6 @@
 #include <vector>
 #include <stack>
 #include <string>
-using namespace std;
 
 class StackElement;
 class DataStack;
@@ -42,28 +41,28 @@ public:
 	bool CreateException(const char* pzException);
 	bool CreateExceptionUsingErrorNo(const char* pzException);
 
-	ostream* GetStdout();
-	ostream* GetStderr();
-	istream* GetStdin();
+	std::ostream* GetStdout();
+	std::ostream* GetStderr();
+	std::istream* GetStdin();
 
-	bool PushVariableValueOntoStack(const string& variableName);
-	bool SetVariable(const string& variableName, int64_t setTo);
-	bool SetVariable(const string& variableName, bool setTo);
-	bool SetVariable(const string& variableName, double setTo);
-	bool SetVariable(const string& variableName, ForthType setTo);
-	bool GetVariable(const string& variableName, int64_t& variableValue);
-	bool GetVariable(const string& variableName, double& variableValue);
-	bool GetVariable(const string& variableName, bool& variableValue);
-	bool GetVariable(const string& variableName, ForthType& variableValue);
+	bool PushVariableValueOntoStack(const std::string& variableName);
+	bool SetVariable(const std::string& variableName, int64_t setTo);
+	bool SetVariable(const std::string& variableName, bool setTo);
+	bool SetVariable(const std::string& variableName, double setTo);
+	bool SetVariable(const std::string& variableName, ForthType setTo);
+	bool GetVariable(const std::string& variableName, int64_t& variableValue);
+	bool GetVariable(const std::string& variableName, double& variableValue);
+	bool GetVariable(const std::string& variableName, bool& variableValue);
+	bool GetVariable(const std::string& variableName, ForthType& variableValue);
 	bool GetBoolTLSVariable(int index);
 	int64_t GetIntTLSVariable(int index);
 
-	bool PushConstantOntoStack(const string& constantName);
-	bool GetConstant(const string& constantName, int64_t& constantValue);
-	bool GetConstant(const string& constantName, double& constantValue);
-	bool GetConstant(const string& constantName, bool& constantValue);
-	bool GetConstant(const string& constantName, ForthType& constantValue);
-	bool GetConstant(const string& constantName, RefCountedObject*& constantValue);
+	bool PushConstantOntoStack(const std::string& constantName);
+	bool GetConstant(const std::string& constantName, int64_t& constantValue);
+	bool GetConstant(const std::string& constantName, double& constantValue);
+	bool GetConstant(const std::string& constantName, bool& constantValue);
+	bool GetConstant(const std::string& constantName, ForthType& constantValue);
+	bool GetConstant(const std::string& constantName, RefCountedObject*& constantValue);
 
 	bool CreateStackOverflowException();
 	bool CreateStackUnderflowException();
@@ -77,7 +76,7 @@ public:
 	bool CreateTempStackOverflowException();
 	bool CreateTempStackUnderflowException();
 
-	bool ExecuteWordDirectly(const string& word);
+	bool ExecuteWordDirectly(const std::string& word);
 	InputWord GetNextWordFromInput();
 
 	bool NestSelfPointer(RefCountedObject* pSelf);
@@ -93,7 +92,7 @@ public:
 	ReturnStack* pReturnStack;
 	DataStack* pSelfStack;
 
-	stack<ExecSubState> subStateStack;
+	std::stack<ExecSubState> subStateStack;
 	WordBodyElement** pExecBody;
 	int ip;
 
@@ -105,10 +104,10 @@ public:
 	int nExceptionIP;
 	InputProcessor* pInputProcessor;
 	bool insideStringLiteral;
-	string commentPrompt;
-	string stringLiteralPrompt;
-	string compilePrompt;
-	string interpetPrompt;
+	std::string commentPrompt;
+	std::string stringLiteralPrompt;
+	std::string compilePrompt;
+	std::string interpetPrompt;
 
 	CompileHelper* pCompiler;
 

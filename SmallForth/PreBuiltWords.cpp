@@ -1,5 +1,4 @@
 #include <iostream>
-using namespace std;
 #include "PreBuiltWords.h"
 #include "ExecState.h"
 #include "ForthString.h"
@@ -8,6 +7,8 @@ using namespace std;
 #include "ForthDict.h"
 #include "ReturnStack.h"
 #include "InputProcessor.h"
+
+using std::ostream;
 
 void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseImmediateWord(pDict, "(", PreBuiltWords::BuiltIn_ParenthesisCommentStart);
@@ -390,25 +391,25 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	InterpretForth(pExecState, ": eof ( object -- $ ) fi_eof swap call ; ");
 }
 
-void PreBuiltWords::InitialiseWord(ForthDict* pDict, const string& wordName, XT wordCode) {
+void PreBuiltWords::InitialiseWord(ForthDict* pDict, const std::string& wordName, XT wordCode) {
 	ForthWord* pForthWord = new ForthWord(wordName, wordCode);
 	pForthWord->SetWordVisibility(true);
 	pDict->AddWord(pForthWord);
 }
 
-void PreBuiltWords::InitialiseImmediateWord(ForthDict* pDict, const string& wordName, XT wordCode) {
+void PreBuiltWords::InitialiseImmediateWord(ForthDict* pDict, const std::string& wordName, XT wordCode) {
 	ForthWord* pForthWord = new ForthWord(wordName, wordCode);
 	pForthWord->SetImmediate(true);
 	pForthWord->SetWordVisibility(true);
 	pDict->AddWord(pForthWord);
 }
 
-bool PreBuiltWords::InterpretForth(ExecState* pExecState, const string& toExecute) {
+bool PreBuiltWords::InterpretForth(ExecState* pExecState, const std::string& toExecute) {
 	pExecState->pInputProcessor->SetInputString(toExecute);
 	return pExecState->pInputProcessor->Interpret(pExecState);
 }
 
-bool PreBuiltWords::CompileWordIntoWord(ForthDict* pDict, ForthWord* pForthWord, const string& wordName) {
+bool PreBuiltWords::CompileWordIntoWord(ForthDict* pDict, ForthWord* pForthWord, const std::string& wordName) {
 	ForthWord* pAdd = pDict->FindWord(wordName);
 	if (pAdd == nullptr) {
 		return false;
@@ -434,7 +435,7 @@ bool PreBuiltWords::BuiltIn_ThreadSafeBoolVariable(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	StackElement* pElementIndex;
 	bool incorrectType;
-	tie(incorrectType, pElementIndex) = pExecState->pStack->PullType(StackElement_Int);
+	std::tie(incorrectType, pElementIndex) = pExecState->pStack->PullType(StackElement_Int);
 	if (incorrectType) {
 		return pExecState->CreateException("Getting thread safe variable must be called with ( n -- ) - need an element index");
 	}
@@ -458,7 +459,7 @@ bool PreBuiltWords::BuiltIn_ThreadSafeIntVariable(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	StackElement* pElementIndex;
 	bool incorrectType;
-	tie(incorrectType, pElementIndex) = pExecState->pStack->PullType(StackElement_Int);
+	std::tie(incorrectType, pElementIndex) = pExecState->pStack->PullType(StackElement_Int);
 	if (incorrectType) {
 		return pExecState->CreateException("Getting thread safe variable must be called with ( n -- ) - need an element index");
 	}
@@ -812,7 +813,7 @@ bool PreBuiltWords::PushRefCount(ExecState* pExecState) {
 	if (pTS->TypeIsObjectOrObjectPter(pElement->GetType())) {
 		int refCount = pTS->GetReferenceCount(pElement->GetType(), pElement->GetContainedPter());
 		ostream* pStdoutStream = pExecState->GetStdout();
-		(*pStdoutStream) << "Reference count is " << refCount << endl;
+		(*pStdoutStream) << "Reference count is " << refCount << std::endl;
 	}
 	else {
 		return pExecState->CreateException("Only object types have reference counts");
@@ -822,7 +823,7 @@ bool PreBuiltWords::PushRefCount(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_WordCFAFromInputStream(ExecState* pExecState) {
 	InputWord iw = pExecState->GetNextWordFromInput();
-	string word = iw.word;
+	std::string word = iw.word;
 	ForthWord* pWord = pExecState->pDict->FindWord(word);
 	if (pWord == nullptr) {
 		return pExecState->CreateException("Cannot find word in dictionary");
@@ -853,7 +854,7 @@ bool PreBuiltWords::Quit(ExecState* pExecState) {
 // Get next word from input stream, and find it in the dictionary
 bool PreBuiltWords::BuiltIn_Find(ExecState* pExecState) {
 	InputWord iw = pExecState->GetNextWordFromInput();
-	string word = iw.word;
+	std::string word = iw.word;
 	return true;
 }
 
@@ -924,7 +925,7 @@ bool PreBuiltWords::BuiltIn_Create(ExecState* pExecState) {
 	// Get next word from input stream
 
 	InputWord iw = pExecState->GetNextWordFromInput();
-	string word = iw.word;
+	std::string word = iw.word;
 
 	pExecState->pCompiler->StartWordCreation(word);
 	pExecState->pCompiler->CompileDoesXT(pExecState, PreBuiltWords::BuiltIn_PushPter);
@@ -996,7 +997,7 @@ bool PreBuiltWords::BuiltIn_EndCompilation(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_Forget(ExecState* pExecState) {
 	InputWord iw = pExecState->GetNextWordFromInput();
-	string word = iw.word;
+	std::string word = iw.word;
 
 	return pExecState->pDict->ForgetWord(word);;
 }
@@ -1093,7 +1094,7 @@ bool PreBuiltWords::ToInt(ExecState* pExecState) {
 	}
 	else if (elementType == ObjectType_String) {
 		ForthString* pString = (ForthString*)pElement->GetObject();
-		string s = pString->GetContainedString();
+		std::string s = pString->GetContainedString();
 
 		char* end;
 		n = strtoll(s.c_str(), &end, 10);
@@ -1136,9 +1137,9 @@ bool PreBuiltWords::ToFloat(ExecState* pExecState) {
 	}
 	else if (elementType == ObjectType_String) {
 		ForthString* pString = (ForthString*)pElement->GetObject();
-		string s = pString->GetContainedString();
+		std::string s = pString->GetContainedString();
 
-		string convertWord = s;
+		std::string convertWord = s;
 		/*if (s[s.length() - 1] == 'f') {
 			convertWord = s.substr(0, s.length() - 1);
 		}*/
@@ -1172,10 +1173,10 @@ bool PreBuiltWords::WordToInt(ExecState* pExecState) {
 
 	int64_t n;
 	ForthString* pString = (ForthString*)pElement->GetObject();
-	string s = pString->GetContainedString();
+	std::string s = pString->GetContainedString();
 	delete pElement;
 	pElement = nullptr;
-	if (s.find(".") != string::npos || s[s.length() - 1] == 'f') {
+	if (s.find(".") != std::string::npos || s[s.length() - 1] == 'f') {
 		return pExecState->CreateException("Could not convert float string to integer");
 	}
 
@@ -1204,11 +1205,11 @@ bool PreBuiltWords::WordToFloat(ExecState* pExecState) {
 	double f;
 
 	ForthString* pString = (ForthString*)pElement->GetObject();
-	string s = pString->GetContainedString();
+	std::string s = pString->GetContainedString();
 	delete pElement;
 	pElement = nullptr;
 
-	string convertWord = s;
+	std::string convertWord = s;
 	if (s[s.length() - 1] == 'f') {
 		convertWord = s.substr(0, s.length() - 1);
 	}
@@ -1439,7 +1440,7 @@ bool PreBuiltWords::BuiltIn_PrintStackTop(ExecState* pExecState) {
 	}
 	delete pTop;
 	pTop = nullptr;
-	string str;
+	std::string str;
 	tie(success, str) = pExecState->pStack->PullAsString();
 	if (success) {
 		ostream* pStdoutStream = pExecState->GetStdout();
@@ -1855,7 +1856,7 @@ bool PreBuiltWords::BuiltIn_PushPter(ExecState* pExecState) {
 	ForthType currentType = (*ppWBE_Type)->forthType;
 	ForthType pointerType = pTS->CreatePointerTypeTo(currentType);
 	//void* pter = reinterpret_cast<void*>(ppWBE_Literal[0]);
-	void* pter = reinterpret_cast<void*>(ppWBE_Literal);
+	void* pter = static_cast<void*>(ppWBE_Literal);
 	StackElement* pNewStackElement = new StackElement(pointerType, pter);
 	if (!pExecState->pStack->Push(pNewStackElement)) {
 		return pExecState->CreateStackOverflowException();
@@ -1972,7 +1973,7 @@ bool PreBuiltWords::BuiltIn_UpdateForwardJump(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_ThrowException(ExecState* pExecState) {
-	string str;
+	std::string str;
 	bool success;
 	tie(success, str) = pExecState->pStack->PullAsString();
 	if (success) {

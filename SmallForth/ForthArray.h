@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-using namespace std;
 #include "RefCountedObject.h"
 
 class ExecState;
@@ -12,7 +11,7 @@ class ForthArray :
 public:
 	ForthArray(ForthDict* pDict);
 	~ForthArray();
-	virtual string GetObjectType();
+	virtual std::string GetObjectType();
 	virtual bool ToString(ExecState* pExecState) const;
 
 	virtual bool InvokeFunctionIndex(ExecState* pExecState, ObjectFunction functionToInvoke);
@@ -29,6 +28,6 @@ private:
 	bool SetElementAtIndex(ExecState* pExecState);
 private:
 	ForthType containedType;
-	vector<StackElement*> elements;
+	std::vector<StackElement*> elements;
 };
 

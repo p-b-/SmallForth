@@ -1,5 +1,4 @@
 #include <iostream>
-using namespace std;
 #include "ForthDefs.h"
 #include "UserDefinedObject.h"
 #include "ExecState.h"
@@ -9,7 +8,7 @@ using namespace std;
 #include "ForthDict.h"
 #include "ForthString.h"
 
-UserDefinedObject::UserDefinedObject(string name, int stateCount, ForthDict* pDict) 
+UserDefinedObject::UserDefinedObject(std::string name, int stateCount, ForthDict* pDict)
 : RefCountedObject(pDict) {
 	this->objectType = 0;
 	this->defaultObject = false;
@@ -91,7 +90,7 @@ void UserDefinedObject::DecReferenceBy(int by) {
 	RefCountedObject::DecReference();
 }
 
-string UserDefinedObject::GetObjectType() {
+std::string UserDefinedObject::GetObjectType() {
 	return this->objectName;
 }
 
@@ -185,7 +184,7 @@ UserDefinedObject* UserDefinedObject::Construct(ExecState* pExecState) {
 bool UserDefinedObject::ElementAtIndex(ExecState* pExecState) {
 	StackElement* pElementIndex;
 	bool incorrectType;
-	tie(incorrectType, pElementIndex) = pExecState->pStack->PullType(StackElement_Int);
+	std::tie(incorrectType, pElementIndex) = pExecState->pStack->PullType(StackElement_Int);
 	if (incorrectType) {
 		return pExecState->CreateException("Need an element index");
 	} else if (pElementIndex == nullptr) {
@@ -212,7 +211,7 @@ bool UserDefinedObject::SetElementAtIndex(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	StackElement* pElementIndex;
 	bool incorrectType;
-	tie(incorrectType, pElementIndex) = pExecState->pStack->PullType(StackElement_Int);
+	std::tie(incorrectType, pElementIndex) = pExecState->pStack->PullType(StackElement_Int);
 	if (incorrectType) {
 		return pExecState->CreateException("Set element must be called with ( e n -- ) - need an element index");
 	}

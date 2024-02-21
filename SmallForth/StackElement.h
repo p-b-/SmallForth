@@ -3,8 +3,6 @@
 #include <string>
 #include "RefCountedObject.h"
 
-using namespace std;
-
 class StackElement
 {
 public:
@@ -32,7 +30,7 @@ public:
 	BinaryOperationType GetBinaryOpsType() const;
 	ForthType GetValueType() const;
 	RefCountedObject* GetObject() const;
-	tuple<bool, ForthType, void*> GetObjectOrObjectPter() const;
+	std::tuple<bool, ForthType, void*> GetObjectOrObjectPter() const;
 
 
 	StackElement* GetDerefedPterValueAsStackElement() const;

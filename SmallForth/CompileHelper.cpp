@@ -155,7 +155,7 @@ void CompileHelper::AbandonWordUnderCreation() {
 	//delete this->pWordUnderCreation;
 }
 
-void CompileHelper::StartWordCreation(const string& wordName) {
+void CompileHelper::StartWordCreation(const std::string& wordName) {
 	this->pWordUnderCreation = new ForthWord(wordName);
 	this->pWordUnderCreation->IncReference();
 }
@@ -251,7 +251,7 @@ bool CompileHelper::CompileWord(ExecState* pExecState, WordBodyElement** pCFA) {
 	return true;
 }
 
-bool CompileHelper::CompileWord(ExecState* pExecState, const string& wordName) {
+bool CompileHelper::CompileWord(ExecState* pExecState, const std::string& wordName) {
 	ForthWord* pWord = pExecState->pDict->FindWord(wordName);
 	if (pWord == nullptr) {
 		return pExecState->CreateException("Could not find word to compile");

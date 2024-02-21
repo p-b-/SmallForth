@@ -2,15 +2,13 @@
 #include <string>
 #include <map>
 #include <tuple>
-using namespace std;
-
 class ExecState;
 class UserDefinedObject;
 class ForthWord;
 
 class RegisteredType {
 public:
-	RegisteredType(const string& name, unsigned int id, XT constructor, XT binaryOps, UserDefinedObject* pDefiningObject) {
+	RegisteredType(const std::string& name, unsigned int id, XT constructor, XT binaryOps, UserDefinedObject* pDefiningObject) {
 		this->id = id;
 		this->name = name;
 		this->constructorXT = constructor;
@@ -18,7 +16,7 @@ public:
 		this->definingObject = pDefiningObject;
 	}
 	unsigned int id;
-	string name;
+	std::string name;
 	XT constructorXT;
 	XT binaryOpsXT;
 	UserDefinedObject* definingObject;
@@ -30,10 +28,10 @@ class TypeSystem
 public:
 	static TypeSystem* GetTypeSystem();
 		
-	bool RegisterValueType(ExecState* pExecState, string typeName);
-	ForthType RegisterObjectType(ExecState* pExecState, string typeName, XT constructXT=nullptr, XT binaryOpsXT = nullptr);
-	ForthType RegisterUserObjectType(ExecState* pExecState, string typeName, UserDefinedObject* pNewObjectDefinition);
-	string TypeToString(ForthType type) const;
+	bool RegisterValueType(ExecState* pExecState, std::string typeName);
+	ForthType RegisterObjectType(ExecState* pExecState, std::string typeName, XT constructXT=nullptr, XT binaryOpsXT = nullptr);
+	ForthType RegisterUserObjectType(ExecState* pExecState, std::string typeName, UserDefinedObject* pNewObjectDefinition);
+	std::string TypeToString(ForthType type) const;
 	
 public:
 	bool Construct(ExecState* pExecState, ForthType type);
@@ -54,19 +52,19 @@ public:
 
 	void DecReferenceForPter(ForthType type, void* pter);
 	void DecReferenceForPterBy(ForthType type, void* pter, int by);
-	tuple<bool, void*> DeferencePointerToObjectPter(ForthType type, void* pter) const;
-	tuple<bool, const void*> DeferencePointerToObjectPter(ForthType type, const void* pter) const;
-	tuple<bool, const void*> DeferencePointerToValuePter(ForthType type, const void* pter) const;
-	tuple<ForthType, void*> DeferencePointer(ForthType type, void* pter);
+	std::tuple<bool, void*> DeferencePointerToObjectPter(ForthType type, void* pter) const;
+	std::tuple<bool, const void*> DeferencePointerToObjectPter(ForthType type, const void* pter) const;
+	std::tuple<bool, const void*> DeferencePointerToValuePter(ForthType type, const void* pter) const;
+	std::tuple<ForthType, void*> DeferencePointer(ForthType type, void* pter);
 	bool ValueCompatibleWithAddress(ForthType addressType, ForthType valueType, bool directAssignment) const;
 	int GetReferenceCount(ForthType type, void* pter);
 
 	bool VariableToString(ExecState* pExecState, ForthType type, const void* pter) const;
-	bool TypeExists(string typeName) const;
+	bool TypeExists(std::string typeName) const;
 	
 	bool AddWordToObject(ExecState* pExecState, ForthType type, ForthWord* pWord);
-	ForthWord* FindWordWithName(ForthType type, const string& wordName);
-	ForthWord* FindWordInTOSWord(ExecState* pExecState, const string& wordName);
+	ForthWord* FindWordWithName(ForthType type, const std::string& wordName);
+	ForthWord* FindWordInTOSWord(ExecState* pExecState, const std::string& wordName);
 
 
 public:
@@ -83,9 +81,9 @@ public:
 	static const unsigned int typeIdInvalid = 1023;
 
 private:
-	bool RegisterType(ExecState* pExecState, string typeName, int typeId, XT constructXT, XT binaryOpsXT, UserDefinedObject* pDefiningType);
-	string GetBaseTypeNameForId(unsigned int typeId) const;
-	unsigned int GetBaseTypeIdForName(string typeName) const;
+	bool RegisterType(ExecState* pExecState, std::string typeName, int typeId, XT constructXT, XT binaryOpsXT, UserDefinedObject* pDefiningType);
+	std::string GetBaseTypeNameForId(unsigned int typeId) const;
+	unsigned int GetBaseTypeIdForName(std::string typeName) const;
 	bool ValueTypeToString(ExecState* pExecState, ForthType forthType, const void* pter) const;
 	RegisteredType* GetRegisteredTypeForTypeId(ForthType type) const;
 	bool ConstructUserType(ExecState* pExecState, ForthType type);
@@ -101,9 +99,9 @@ private:
 	unsigned int maxObjectTypeId;
 	unsigned int maxUserObjectTypeId;
 
-	map<string, unsigned int> typeNameToId;
-	map<unsigned int, string> typeIdToName;
-	map<unsigned int, RegisteredType*> typeIdToRegisteredType;
+	std::map<std::string, unsigned int> typeNameToId;
+	std::map<unsigned int, std::string> typeIdToName;
+	std::map<unsigned int, RegisteredType*> typeIdToRegisteredType;
 
 	static TypeSystem* s_pTypeSystem;
 };

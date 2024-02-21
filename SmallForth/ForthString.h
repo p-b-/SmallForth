@@ -1,22 +1,21 @@
 #pragma once
 #include <string>
-using namespace std;
 #include "RefCountedObject.h"
 class StackElement;
 
 class ForthString : public RefCountedObject
 {
 public:
-	ForthString(const string& pzString);
+	ForthString(const std::string& pzString);
 	~ForthString();
-	virtual string GetObjectType();
+	virtual std::string GetObjectType();
 	virtual bool ToString(ExecState* pExecState) const;
 
 	virtual bool InvokeFunctionIndex(ExecState* pExecState, ObjectFunction functionToInvoke);
 
 	static bool Construct(ExecState* pExecState);
 
-	string GetContainedString() const { return containedString; }
+	std::string GetContainedString() const { return containedString; }
 
 private:
 	bool GetSize(ExecState* pExecState);
@@ -30,6 +29,6 @@ private:
 
 
 private:
-	string containedString;
+	std::string containedString;
 };
 

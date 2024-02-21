@@ -2,7 +2,6 @@
 #include <string>
 #include <vector>
 #include <iostream>
-using namespace std;
 #include "RefCountedObject.h"
 #include "StackElement.h"
 #include "DataStack.h"
@@ -15,10 +14,10 @@ class ForthDict;
 class PreBuiltWords
 {
 private:
-	static void InitialiseWord(ForthDict* pDict, const string& wordName, XT wordCode);
-	static void InitialiseImmediateWord(ForthDict* pDict, const string& wordName, XT wordCode);
-	static bool InterpretForth(ExecState* pExecState, const string& toExecute);
-	static bool CompileWordIntoWord(ForthDict* pDict, ForthWord* pForthWord, const string& wordName);
+	static void InitialiseWord(ForthDict* pDict, const std::string& wordName, XT wordCode);
+	static void InitialiseImmediateWord(ForthDict* pDict, const std::string& wordName, XT wordCode);
+	static bool InterpretForth(ExecState* pExecState, const std::string& toExecute);
+	static bool CompileWordIntoWord(ForthDict* pDict, ForthWord* pForthWord, const std::string& wordName);
 	static void CompileTypeIntoWord(ForthWord* pForthWord, ForthType type);
 	static void CompileLiteralValueIntoWord(ForthWord* pForthWord, int value);
 	static void CompileLiteralValueIntoWord(ForthWord* pForthWord, bool value);

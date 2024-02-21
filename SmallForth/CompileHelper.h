@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-using namespace std;
 class ForthWord;
 class ExecState;
 
@@ -34,11 +33,11 @@ public:
 	bool HasValidLastWordCreated() const { return this->pLastWordCreated != nullptr; }
 
 	void AbandonWordUnderCreation();
-	void StartWordCreation(const string& wordName);
+	void StartWordCreation(const std::string& wordName);
 	bool RevealWord(ExecState* pExecState, bool revealToVocNotStack);
 	bool CompileWordOnStack(ExecState* pExecState);
 	bool CompileWord(ExecState* pExecState, WordBodyElement** pCFA);
-	bool CompileWord(ExecState* pExecState, const string& wordName);
+	bool CompileWord(ExecState* pExecState, const std::string& wordName);
 	bool CompileDoesXT(ExecState* pExecState, XT does);
 
 	bool AlterElementInWordUnderCreation(ExecState* pExecState, int addr, WordBodyElement* pReplacementElement);

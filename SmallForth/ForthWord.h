@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
 #include <vector>
-using namespace std;
 #include "RefCountedObject.h"
 
 class StackElement;
@@ -10,8 +9,8 @@ class ExecState;
 class ForthWord : public RefCountedObject
 {
 public:
-	ForthWord(const string& name);
-	ForthWord(const string& name, XT firstXT);
+	ForthWord(const std::string& name);
+	ForthWord(const std::string& name, XT firstXT);
 	void GrowByAndAdd(int growBy, WordBodyElement* pElement);
 	void GrowBy(int growBy);
 	void CompileXTIntoWord(XT xt, int pos = -1);
@@ -32,11 +31,11 @@ public:
 	WordBodyElement** GetPterToBody() const { return body; }
 	int GetBodySize() const { return bodySize; }
 
-	string GetName() { return this->name; }
+	std::string GetName() { return this->name; }
 	bool GetImmediate() const { return this->immediate; }
 	void SetImmediate(bool flag) { this->immediate = flag; }
 
-	virtual string GetObjectType();
+	virtual std::string GetObjectType();
 	virtual bool ToString(ExecState* pExecState) const;
 	virtual bool InvokeFunctionIndex(ExecState* pExecState, ObjectFunction functionToInvoke);
 
@@ -56,7 +55,7 @@ public:
 	static bool BuiltInHelper_CompileTOSLiteral(ExecState* pExecState, bool includePushWord);
 
 private:
-	string name;
+	std::string name;
 
 	int bodySize;
 	WordBodyElement** body;
