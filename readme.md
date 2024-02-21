@@ -26,7 +26,7 @@ There is no support for the following:
 The following need to be added for this implementation to be of any use:
 
 
-* Debugger
+* Debugger - add breakpoints
 * Loading of programs via s" <filename> "
 * Test script. A lot of the Forth is tested when creating Forth-based words, but a test script would be beneficial. The creation of the words for instance does not use all loop types.
 * Unit tests
@@ -176,6 +176,24 @@ The user-defined object system would need implementing in actual Forth too - imp
 ```3.14159 constant pi```
 ``` : circlearea dup * pi * ;```
 ``` 3 circlearea .```
+
+## Debugging
+
+The debugger can be started with ```startDebugging``` and stopped with ```stopDebugging```.
+
+The current state of the debugger is stored in ```#debugState```:
+* 0 not debugging
+* 1 debugging through statements
+* 2 running through rest of execution back to the next word to be interpreted
+* 3 stepping over a word
+
+The debugger will output words being executed and compiled, unless they are stepped over.
+
+If the word is a level-2 word, 'i' can be pressed to step into it. Otherwise 'r' will run the rest of the execution, or 'o' can be presed to step over. Any other key will step into.
+
+Level 1 words cannot be stepped into.
+
+The (b) option is not yet supported - breakpoints cannot be toggled.
 
 ## Glossary
 
