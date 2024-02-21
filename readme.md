@@ -29,6 +29,9 @@ The following need to be added for this implementation to be of any use:
 * Debugger
 * Loading of programs via s" <filename> "
 * Test script. A lot of the Forth is tested when creating Forth-based words, but a test script would be beneficial. The creation of the words for instance does not use all loop types.
+* Unit tests
+* Loading DLLs
+* Connect to SqlLite
 * * UTF8 - ensure str lengths and slicing use code-points rather than code units. Add support via ICU library if necessary.
 * ```Allot``` to allocate space in currently-created word
 * array - find, insert, remove, removeat, sort
@@ -56,7 +59,15 @@ The following need to be added for this implementation to be of any use:
 
 Writing it in C++ as an 'interpreted' version (well, it's not compiled to bytecode or machine code) has made it easy to implement type-safety. However, large parts of this would have been easier if I had output to a byte code and written a virtual machine for it.
 
-A future may attempt this.
+It is possible to move towards this, but it would require:
+* Allocate an amount of memory for dictionary, stack, and heap
+* Create own heap allocation within this, for RefCountedObjects
+* Have all memory addresses be relative to base address, so can reallocate and move (though, OS Memory management may make this unnecessary?)
+* Change stack to be in-place StackElements, rather than pointers to StackElements
+* Words to contain WordBodyElements, rather than pointers to WordBodyElements
+* Dictionary to be based on backwards-linked list, rather than map (could implement the map in forth/assembly)
+* Implement call-outs to operating system directly, rather than use the C++ libraries, for files, console control, memory allocation
+
 
 ## Known bugs
 
