@@ -654,6 +654,11 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, std::ostream* pSt
 	// Extra code for debugging is highlighted
 	bool exitFound = false;
 
+	// Added for debug code
+	//
+	int64_t nDebugState;
+	//
+	////
 	while (!exitFound) {
 		if (InputProcessor::ExecuteHaltRequested()) {
 			InputProcessor::ResetExecutionHaltFlag();
@@ -661,7 +666,7 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, std::ostream* pSt
 		}
 		// Added for debug code
 		//
-		int64_t nDebugState = pExecState->GetIntTLSVariable(ExecState::c_debugStateIndex);
+		nDebugState = pExecState->GetIntTLSVariable(ExecState::c_debugStateIndex);
 		//
 		////
 
@@ -692,7 +697,7 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, std::ostream* pSt
 
 				// Added for debug code
 				//
-				if (pWord != nullptr) {
+				if (pWord != nullptr && nDebugState>0 && nDebugState<3) {
 					(*pStdoutStream) << std::string(indentation, ' ');
 					(*pStdoutStream) << "Compiling word: " << pWord->GetName() << std::endl;
 				}
@@ -784,6 +789,7 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, std::ostream* pSt
 			}
 			// Added for debug code
 			//
+			nDebugState = pExecState->GetIntTLSVariable(ExecState::c_debugStateIndex);
 			if (stepOver && nDebugState == 3) {
 				// Was stepping over, now continue to debug
 				nDebugState = 1;
@@ -803,7 +809,7 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, std::ostream* pSt
 
 	// Added for debug code
 	//
-	if (indentation == 1) {
+	if (indentation == 1 && nDebugState>1) {
 		// Last return - ensure that anything executed next will debug and not just run through
 		if (!pExecState->SetVariable("#debugState", (int64_t)1)) {
 			return pExecState->CreateException("Could not set debugstate to DEBUG");
