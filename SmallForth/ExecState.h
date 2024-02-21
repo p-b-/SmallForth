@@ -109,13 +109,15 @@ public:
 	std::string compilePrompt;
 	std::string interpetPrompt;
 
+	ForthWord* pWordBeingInterpreted;
+
 	CompileHelper* pCompiler;
 
 	static const int c_compileStateIndex = 0; // Index into int threadlocal variables
+	static const int c_debugStateIndex = 1; // Index into int threadlocal variables
 	static const int c_postponedExecIndex = 0; // Index into bool threadlocal variables
 	static const int c_insideCommentIndex = 1; // Index into bool threadlocal variables
 	static const int c_insideCommentLineIndex = 2; // Index into bool threadlocal variables
-	static const int c_debugStateIndex = 3; // Index into bool threadlocal variables
 
 private:
 	static const int c_maxStates = 10;

@@ -208,9 +208,9 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 
 	InterpretForth(pExecState, "1 type type variable #compileForType");
 
-	// Set to 1 and 4, as already defined compileState (int) and postponeState, insideComment, insideCommentLine, debugState (bool) manually
-	InterpretForth(pExecState, "1 variable #nextIntVarIndex");
-	InterpretForth(pExecState, "4 variable #nextBoolVarIndex");
+	// Set to 2 and 3, as already defined compileState, debugState (int) and postponeState, insideComment, insideCommentLine (bool) manually
+	InterpretForth(pExecState, "2 variable #nextIntVarIndex");
+	InterpretForth(pExecState, "3 variable #nextBoolVarIndex");
 
 	InterpretForth(pExecState, ": #getNextIntVarIndex #nextIntVarIndex dup @ dup 1 + rot ! ; immediate");
 	InterpretForth(pExecState, ": #getNextBoolVarIndex #nextBoolVarIndex dup @ dup 1 + rot ! ; immediate");
@@ -274,6 +274,10 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	pDefineWordForObject->SetImmediate(true);
 	pDefineWordForObject->SetWordVisibility(true);
 	pDict->AddWord(pDefineWordForObject);
+
+	InterpretForth(pExecState, ": startDebugging 1 #debugState ! ; immediate");
+	InterpretForth(pExecState, ": stopDebugging 0 #debugState ! ; immediate");
+
 
 	InterpretForth(pExecState, ": 1+ 1 + ;"); // ( m -- m+1 )
 	InterpretForth(pExecState, ": 1- 1 - ;"); // ( m -- m-1 )
@@ -531,11 +535,11 @@ bool PreBuiltWords::BuiltIn_InsideCommentLineState(ExecState* pExecState) {
 bool PreBuiltWords::BuiltIn_DebugState(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
-	WordBodyElement** ppWBE = pExecState->GetPointerToBoolStateVariable(ExecState::c_debugStateIndex);
-	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Bool);
+	WordBodyElement** ppWBE = pExecState->GetPointerToIntStateVariable(ExecState::c_debugStateIndex);
+	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Int);
 	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
 	if (!pExecState->pStack->Push(pElementVariable)) {
-		return pExecState->CreateStackOverflowException("whilst pushing a state boolean variable");
+		return pExecState->CreateStackOverflowException("whilst pushing a state int variable");
 	}
 	return true;
 }
@@ -561,10 +565,12 @@ bool PreBuiltWords::BuiltIn_IndirectDoCol(ExecState* pExecState) {
 bool PreBuiltWords::BuiltIn_DoCol(ExecState* pExecState) {
 	bool exitFound = false;
 
-	bool bDebugState = pExecState->GetBoolTLSVariable(ExecState::c_debugStateIndex);
+	int64_t nDebugState = pExecState->GetIntTLSVariable(ExecState::c_debugStateIndex);
 
-	if (bDebugState) {
-		return BuiltIn_DoCol_Debug(pExecState, 0);
+	if (nDebugState>0) {
+		ostream* pStdoutStream = pExecState->GetStdout();
+		(*pStdoutStream) << pExecState->pWordBeingInterpreted->GetName() << std::endl;
+		return BuiltIn_DoCol_Debug(pExecState, pStdoutStream, 1);
 	}
 
 	while (!exitFound) {
@@ -643,7 +649,7 @@ bool PreBuiltWords::BuiltIn_DoCol(ExecState* pExecState) {
 	return true;
 }
 
-bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, int indentation) {
+bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, std::ostream* pStdoutStream, int indentation) {
 	// All comments from BuiltIn_DoCol have been removed.
 	// Extra code for debugging is highlighted
 	bool exitFound = false;
@@ -653,6 +659,11 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, int indentation) 
 			InputProcessor::ResetExecutionHaltFlag();
 			return pExecState->CreateException("Halted");
 		}
+		// Added for debug code
+		//
+		int64_t nDebugState = pExecState->GetIntTLSVariable(ExecState::c_debugStateIndex);
+		//
+		////
 
 		WordBodyElement* pWbe = pExecState->pExecBody[pExecState->ip];
 		WordBodyElement** pCFA = pWbe->wordElement_BodyPter;
@@ -661,6 +672,12 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, int indentation) 
 		XT exec = actualCFA->wordElement_XT;
 
 		pExecState->ip++;
+
+		// Added for debug code
+		//
+		ForthWord* pWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
+		//
+		////
 
 		bool bExecutePostponed = pExecState->GetBoolTLSVariable(ExecState::c_postponedExecIndex);
 		if (bExecutePostponed) {
@@ -672,28 +689,83 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, int indentation) 
 
 			if (nCompileState > 0) {
 				// Compile this word
+
+				// Added for debug code
+				//
+				if (pWord != nullptr) {
+					(*pStdoutStream) << std::string(indentation, ' ');
+					(*pStdoutStream) << "Compiling word: " << pWord->GetName() << std::endl;
+				}
+				//
+				////
+
 				pExecState->pCompiler->CompileWord(pExecState, pCFA);
 				if (!pExecState->SetVariable("#postponeState", false)) {
 					return pExecState->CreateException("Could not reset postpone state flag");
 				}
 				continue;
 			}
+			// Added for debug code
+			//
+			else {
+				(*pStdoutStream) << std::string(indentation, ' ');
+				(*pStdoutStream) << "Postpone state is set, when not compiling" << std::endl;
+			}
+			//
+			////
 		}
 		pExecState->NestAndSetCFA(pCFA, 1);
 		try
 		{
 			// Added for debug code
 			//
-			ForthWord* pWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
-			if (pWord != nullptr) {
-				ostream* pStdoutStream = pExecState->GetStdout();
-				for (int n = 0; n < indentation; ++n) {
-					(*pStdoutStream) << " ";
+			bool stepOver = false;
+			if (nDebugState<3 && pWord != nullptr) {
+				(*pStdoutStream) << std::string(indentation, ' ');
+				bool allowStepInto = false;
+				if (exec != PreBuiltWords::BuiltIn_DoCol) {
+					(*pStdoutStream) << pWord->GetName();
+					if (nDebugState == 2) {
+						(*pStdoutStream) << std::endl;
+					}
+					else {
+						(*pStdoutStream) << " (O,R,B) ";
+					}
 				}
-				(*pStdoutStream) << "Executing " << pWord->GetName() << std::endl;
+				else {
+					(*pStdoutStream) << pWord->GetName();
+					if (nDebugState == 2) {
+						(*pStdoutStream) << std::endl;
+					}
+					else {
+						(*pStdoutStream) << " (I,O,R,B) ";
+					}
+					allowStepInto = true;
+				}
+				if (nDebugState == 1) {
+					char c = pExecState->pInputProcessor->GetNextChar();
+					c = std::tolower(c);
+					if (c == 'r') {
+						// RUN!
+						nDebugState = 2;
+						if (!pExecState->SetVariable("#debugState", (int64_t)2)) {
+							return pExecState->CreateException("Could not set debugstate to RUN");
+						}
+					}
+					else if (c == 'o') {
+						// When control returns to this level of recursion, with this flag set the debug state will be set back to 1
+						stepOver = true;
+						nDebugState = 3;
+						if (!pExecState->SetVariable("#debugState", (int64_t)3)) {
+							return pExecState->CreateException("Could not set debugstate to DEBUGOVER");
+						}
+					}
+					(*pStdoutStream) << std::endl;
+				}
+
 			}
 			if (exec == PreBuiltWords::BuiltIn_DoCol) {
-				if (!PreBuiltWords::BuiltIn_DoCol_Debug(pExecState, indentation + 1)) {
+				if (!PreBuiltWords::BuiltIn_DoCol_Debug(pExecState, pStdoutStream, indentation + 1)) {
 					if (pExecState->exceptionThrown) {
 						pExecState->UnnestCFA();
 						return false;
@@ -702,7 +774,7 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, int indentation) 
 				}
 			}
 			//
-			////
+			////  (else on next line is part of debug code)
 			else if (!exec(pExecState)) {
 				if (pExecState->exceptionThrown) {
 					pExecState->UnnestCFA();
@@ -710,6 +782,17 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, int indentation) 
 				}
 				exitFound = true;
 			}
+			// Added for debug code
+			//
+			if (stepOver && nDebugState == 3) {
+				// Was stepping over, now continue to debug
+				nDebugState = 1;
+				if (!pExecState->SetVariable("#debugState", (int64_t)1)) {
+					return pExecState->CreateException("Could not set debugstate to DEBUG");
+				}
+			}
+			//
+			////
 		}
 		catch (...) {
 			pExecState->UnnestCFA();
@@ -718,6 +801,16 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, int indentation) 
 		pExecState->UnnestCFA();
 	}
 
+	// Added for debug code
+	//
+	if (indentation == 1) {
+		// Last return - ensure that anything executed next will debug and not just run through
+		if (!pExecState->SetVariable("#debugState", (int64_t)1)) {
+			return pExecState->CreateException("Could not set debugstate to DEBUG");
+		}
+	}
+	//
+	////
 	return true;
 }
 

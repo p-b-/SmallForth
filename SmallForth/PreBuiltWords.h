@@ -37,7 +37,6 @@ public:
 	static bool BuiltIn_DebugState(ExecState* pExecState);
 
 	static bool BuiltIn_DoCol(ExecState* pExecState);
-	static bool BuiltIn_DoCol_Debug(ExecState* pExecState, int indentation);
 	static bool BuiltIn_Immediate(ExecState* pExecState);
 	static bool BuiltIn_Here(ExecState* pExecState);
 	static bool BuiltIn_Execute(ExecState* pExecState);
@@ -179,5 +178,8 @@ public:
 
 	// Time, timers
 	static bool BuiltIn_GetHighResolutionTime(ExecState* pExecState);
+
+private:
+	static bool BuiltIn_DoCol_Debug(ExecState* pExecState, std::ostream* pStdoutStream, int indentation);
 };
 
