@@ -178,6 +178,9 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 	}
 	else {
 		WordBodyElement** pCFA = pTop->GetWordBodyElement();
+		delete pTop;
+		pTop = nullptr;
+
 		WordBodyElement* pEl = pCFA[0];
 
 		ForthType upcomingWordType = 0;
@@ -261,7 +264,5 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 			}
 		}
 	}
-	delete pTop;
-	pTop = nullptr;
 	return success;
 }
