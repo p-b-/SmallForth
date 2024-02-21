@@ -38,6 +38,7 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 
 	InitialiseWord(pDict, "#insideComment", PreBuiltWords::BuiltIn_InsideCommentState);
 	InitialiseWord(pDict, "#insideCommentLine", PreBuiltWords::BuiltIn_InsideCommentLineState);
+	InitialiseWord(pDict, "#debugState", PreBuiltWords::BuiltIn_DebugState);
 
 	// TODO Delete this
 	//ForthWord* pCompileStateWord = new ForthWord("#compileState", PreBuiltWords::BuiltIn_DoCol);
@@ -207,9 +208,9 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 
 	InterpretForth(pExecState, "1 type type variable #compileForType");
 
-	// Set to 1 and 3, as already defined compileState (int) and postponeState, insideComment, insideCommentLine (bool) manually
+	// Set to 1 and 4, as already defined compileState (int) and postponeState, insideComment, insideCommentLine, debugState (bool) manually
 	InterpretForth(pExecState, "1 variable #nextIntVarIndex");
-	InterpretForth(pExecState, "3 variable #nextBoolVarIndex");
+	InterpretForth(pExecState, "4 variable #nextBoolVarIndex");
 
 	InterpretForth(pExecState, ": #getNextIntVarIndex #nextIntVarIndex dup @ dup 1 + rot ! ; immediate");
 	InterpretForth(pExecState, ": #getNextBoolVarIndex #nextBoolVarIndex dup @ dup 1 + rot ! ; immediate");
@@ -527,6 +528,17 @@ bool PreBuiltWords::BuiltIn_InsideCommentLineState(ExecState* pExecState) {
 	return true;
 }
 
+bool PreBuiltWords::BuiltIn_DebugState(ExecState* pExecState) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	WordBodyElement** ppWBE = pExecState->GetPointerToBoolStateVariable(ExecState::c_debugStateIndex);
+	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Bool);
+	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
+	if (!pExecState->pStack->Push(pElementVariable)) {
+		return pExecState->CreateStackOverflowException("whilst pushing a state boolean variable");
+	}
+	return true;
+}
 
 bool PreBuiltWords::BuiltIn_IndirectDoCol(ExecState* pExecState) {
 	WordBodyElement* pWbe = pExecState->pExecBody[pExecState->ip];
@@ -548,6 +560,12 @@ bool PreBuiltWords::BuiltIn_IndirectDoCol(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_DoCol(ExecState* pExecState) {
 	bool exitFound = false;
+
+	bool bDebugState = pExecState->GetBoolTLSVariable(ExecState::c_debugStateIndex);
+
+	if (bDebugState) {
+		return BuiltIn_DoCol_Debug(pExecState, 0);
+	}
 
 	while (!exitFound) {
 		if (InputProcessor::ExecuteHaltRequested()) {
@@ -609,6 +627,84 @@ bool PreBuiltWords::BuiltIn_DoCol(ExecState* pExecState) {
 					//int prevIP = pExecState->GetPreviousBodyIP() - 1;
 					//pExecState->SetExeptionIP(prevIP);
 					//cout << " Exception IP " << prevIP << endl;
+					pExecState->UnnestCFA();
+					return false;
+				}
+				exitFound = true;
+			}
+		}
+		catch (...) {
+			pExecState->UnnestCFA();
+			throw;
+		}
+		pExecState->UnnestCFA();
+	}
+
+	return true;
+}
+
+bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, int indentation) {
+	// All comments from BuiltIn_DoCol have been removed.
+	// Extra code for debugging is highlighted
+	bool exitFound = false;
+
+	while (!exitFound) {
+		if (InputProcessor::ExecuteHaltRequested()) {
+			InputProcessor::ResetExecutionHaltFlag();
+			return pExecState->CreateException("Halted");
+		}
+
+		WordBodyElement* pWbe = pExecState->pExecBody[pExecState->ip];
+		WordBodyElement** pCFA = pWbe->wordElement_BodyPter;
+		WordBodyElement* actualCFA = pCFA[0];
+
+		XT exec = actualCFA->wordElement_XT;
+
+		pExecState->ip++;
+
+		bool bExecutePostponed = pExecState->GetBoolTLSVariable(ExecState::c_postponedExecIndex);
+		if (bExecutePostponed) {
+			int64_t nCompileState = pExecState->GetIntTLSVariable(ExecState::c_compileStateIndex);
+
+			if (!pExecState->SetVariable("#postponeState", false)) {
+				return pExecState->CreateException("Could not reset postpone state flag");
+			}
+
+			if (nCompileState > 0) {
+				// Compile this word
+				pExecState->pCompiler->CompileWord(pExecState, pCFA);
+				if (!pExecState->SetVariable("#postponeState", false)) {
+					return pExecState->CreateException("Could not reset postpone state flag");
+				}
+				continue;
+			}
+		}
+		pExecState->NestAndSetCFA(pCFA, 1);
+		try
+		{
+			// Added for debug code
+			//
+			ForthWord* pWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
+			if (pWord != nullptr) {
+				ostream* pStdoutStream = pExecState->GetStdout();
+				for (int n = 0; n < indentation; ++n) {
+					(*pStdoutStream) << " ";
+				}
+				(*pStdoutStream) << "Executing " << pWord->GetName() << std::endl;
+			}
+			if (exec == PreBuiltWords::BuiltIn_DoCol) {
+				if (!PreBuiltWords::BuiltIn_DoCol_Debug(pExecState, indentation + 1)) {
+					if (pExecState->exceptionThrown) {
+						pExecState->UnnestCFA();
+						return false;
+					}
+					exitFound = true;
+				}
+			}
+			//
+			////
+			else if (!exec(pExecState)) {
+				if (pExecState->exceptionThrown) {
 					pExecState->UnnestCFA();
 					return false;
 				}
