@@ -178,9 +178,6 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 	}
 	else {
 		WordBodyElement** pCFA = pTop->GetWordBodyElement();
-		ForthWord* pInitialWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
-		(*pStdoutStream) << "Word: " << pInitialWord->GetName() << std::endl;
-
 		WordBodyElement* pEl = pCFA[0];
 
 		ForthType upcomingWordType = 0;
