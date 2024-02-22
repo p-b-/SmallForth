@@ -3,6 +3,7 @@
 #include "ExecState.h"
 #include "ForthString.h"
 #include "CompileHelper.h"
+#include "DebugHelper.h"
 #include "ForthWord.h"
 #include "ForthDict.h"
 #include "ReturnStack.h"
@@ -74,6 +75,9 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseWord(pDict, "!", PreBuiltWords::BuiltIn_Poke);
 	InitialiseWord(pDict, "fetchliteral", PreBuiltWords::BuiltIn_FetchLiteral);
 	InitialiseImmediateWord(pDict, "updateForwardJump", PreBuiltWords::BuiltIn_UpdateForwardJump);
+	InitialiseWord(pDict, "#setbp", PreBuiltWords::BuiltIn_SetBreakpoint);
+	InitialiseWord(pDict, "#rembp", PreBuiltWords::BuiltIn_RemoveBreakpoint);
+	InitialiseWord(pDict, "#togbp", PreBuiltWords::BuiltIn_ToggleBreakpoint);
 
 	InitialiseWord(pDict, "reveal", PreBuiltWords::BuiltIn_Reveal);
 	InitialiseWord(pDict, "stackreveal", PreBuiltWords::BuiltIn_RevealToStack);
@@ -277,7 +281,6 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 
 	InterpretForth(pExecState, ": startDebugging 1 #debugState ! ; immediate");
 	InterpretForth(pExecState, ": stopDebugging 0 #debugState ! ; immediate");
-
 
 	InterpretForth(pExecState, ": 1+ 1 + ;"); // ( m -- m+1 )
 	InterpretForth(pExecState, ": 1- 1 - ;"); // ( m -- m-1 )
@@ -541,6 +544,120 @@ bool PreBuiltWords::BuiltIn_DebugState(ExecState* pExecState) {
 	if (!pExecState->pStack->Push(pElementVariable)) {
 		return pExecState->CreateStackOverflowException("whilst pushing a state int variable");
 	}
+	return true;
+}
+
+bool PreBuiltWords::BuiltIn_SetBreakpoint(ExecState* pExecState) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	StackElement* pElementCFA = pExecState->pStack->Pull();
+	if (pElementCFA == nullptr) {
+		return pExecState->CreateStackUnderflowException();
+	}
+	ForthType t = pElementCFA->GetType();
+	if (t != StackElement_PterToCFA) {
+		delete pElementCFA;
+		pElementCFA = nullptr;
+		return pExecState->CreateException("Cannot set breakpoint for word CFA on stack, as, it is not a pointer to a CFA");
+	}
+
+	WordBodyElement** pCFA = pElementCFA->GetWordBodyElement();
+	delete pElementCFA;
+	pElementCFA = nullptr;
+	ForthWord* pInitialWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
+	if (pInitialWord == nullptr) {
+		return pExecState->CreateException("Cannot find word for that CFA");
+	}
+	StackElement* pElementIP = pExecState->pStack->Pull();
+	if (pElementIP == nullptr) {
+		return pExecState->CreateStackUnderflowException("whilst getting ip to set breakpoint to - setbreakpoint expects ( n cfa -- )");
+	}
+	if (pElementIP->GetType() != StackElement_Int) {
+		delete pElementIP;
+		pElementIP = nullptr;
+		return pExecState->CreateException("whilst getting ip to set breakpoint to - setbreakpoint expects ( n cfa -- )");
+	}
+	int ip = (int)pElementIP->GetInt();
+	delete pElementIP;
+	pElementIP = nullptr;
+	pExecState->pDebugger->AddBreakpoint(pCFA, ip);
+
+	return true;
+}
+
+bool PreBuiltWords::BuiltIn_RemoveBreakpoint(ExecState* pExecState) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	StackElement* pElementCFA = pExecState->pStack->Pull();
+	if (pElementCFA == nullptr) {
+		return pExecState->CreateStackUnderflowException();
+	}
+	ForthType t = pElementCFA->GetType();
+	if (t != StackElement_PterToCFA) {
+		delete pElementCFA;
+		pElementCFA = nullptr;
+		return pExecState->CreateException("Cannot remove breakpoint for word CFA on stack, as, it is not a pointer to a CFA");
+	}
+
+	WordBodyElement** pCFA = pElementCFA->GetWordBodyElement();
+	delete pElementCFA;
+	pElementCFA = nullptr;
+	ForthWord* pInitialWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
+	if (pInitialWord == nullptr) {
+		return pExecState->CreateException("Cannot find word for that CFA");
+	}
+	StackElement* pElementIP = pExecState->pStack->Pull();
+	if (pElementIP == nullptr) {
+		return pExecState->CreateStackUnderflowException("whilst getting ip to remove breakpoint for - setbreakpoint expects ( n cfa -- )");
+	}
+	if (pElementIP->GetType() != StackElement_Int) {
+		delete pElementIP;
+		pElementIP = nullptr;
+		return pExecState->CreateException("whilst getting ip to remove breakpoint for - setbreakpoint expects ( n cfa -- )");
+	}
+	int ip = (int)pElementIP->GetInt();
+	delete pElementIP;
+	pElementIP = nullptr;
+	pExecState->pDebugger->RemoveBreakpoint(pCFA, ip);
+
+	return true;
+}
+
+bool PreBuiltWords::BuiltIn_ToggleBreakpoint(ExecState* pExecState) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	StackElement* pElementCFA = pExecState->pStack->Pull();
+	if (pElementCFA == nullptr) {
+		return pExecState->CreateStackUnderflowException();
+	}
+	ForthType t = pElementCFA->GetType();
+	if (t != StackElement_PterToCFA) {
+		delete pElementCFA;
+		pElementCFA = nullptr;
+		return pExecState->CreateException("Cannot toggle breakpoint for word CFA on stack, as, it is not a pointer to a CFA");
+	}
+
+	WordBodyElement** pCFA = pElementCFA->GetWordBodyElement();
+	delete pElementCFA;
+	pElementCFA = nullptr;
+	ForthWord* pInitialWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
+	if (pInitialWord == nullptr) {
+		return pExecState->CreateException("Cannot find word for that CFA");
+	}
+	StackElement* pElementIP = pExecState->pStack->Pull();
+	if (pElementIP == nullptr) {
+		return pExecState->CreateStackUnderflowException("whilst getting ip to toggle breakpoint for - setbreakpoint expects ( n cfa -- )");
+	}
+	if (pElementIP->GetType() != StackElement_Int) {
+		delete pElementIP;
+		pElementIP = nullptr;
+		return pExecState->CreateException("whilst getting ip to toggle breakpoint for - setbreakpoint expects ( n cfa -- )");
+	}
+	int ip = (int)pElementIP->GetInt();
+	delete pElementIP;
+	pElementIP = nullptr;
+	pExecState->pDebugger->ToggleBreakpoint(pCFA, ip);
+
 	return true;
 }
 

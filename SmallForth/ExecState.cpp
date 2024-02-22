@@ -8,18 +8,21 @@
 #include "TypeSystem.h"
 #include "ForthFile.h"
 #include "CompileHelper.h"
+#include "DebugHelper.h"
 
 ExecState::ExecState() 
-: ExecState(nullptr, nullptr, nullptr, nullptr, nullptr) {
+: ExecState(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr) {
 }
 
-ExecState::ExecState(DataStack* pStack, ForthDict* pDict, InputProcessor* pInput, ReturnStack* pReturnStack, CompileHelper* pCompiler) {
+ExecState::ExecState(DataStack* pStack, ForthDict* pDict, InputProcessor* pInput, ReturnStack* pReturnStack, CompileHelper* pCompiler, DebugHelper* pDebugger) {
 	this->pDict = pDict;
 	this->pDict->IncReference();
 	this->pStack = pStack;
 	this->pInputProcessor = pInput;
 	this->pReturnStack = pReturnStack;
 	this->pCompiler = pCompiler;
+	this->pDebugger = pDebugger;
+
 	this->pExecBody = nullptr;
 	this->ip = 0;
 	this->exceptionThrown = false;

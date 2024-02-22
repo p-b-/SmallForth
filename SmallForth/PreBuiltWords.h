@@ -35,6 +35,9 @@ public:
 	static bool BuiltIn_InsideCommentState(ExecState* pExecState);
 	static bool BuiltIn_InsideCommentLineState(ExecState* pExecState);
 	static bool BuiltIn_DebugState(ExecState* pExecState);
+	static bool BuiltIn_SetBreakpoint(ExecState* pExecState);
+	static bool BuiltIn_RemoveBreakpoint(ExecState* pExecState);
+	static bool BuiltIn_ToggleBreakpoint(ExecState* pExecState);
 
 	static bool BuiltIn_DoCol(ExecState* pExecState);
 	static bool BuiltIn_Immediate(ExecState* pExecState);

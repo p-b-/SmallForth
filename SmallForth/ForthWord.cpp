@@ -1,4 +1,5 @@
 #include <iostream>
+#include <list>
 #include "ForthDefs.h"
 #include "ForthWord.h"
 #include "DataStack.h"
@@ -7,6 +8,7 @@
 #include "ForthDict.h"
 #include "TypeSystem.h"
 #include "CompileHelper.h"
+#include "DebugHelper.h"
 #include "ForthFile.h"
 #include "PreBuiltWords.h"
 
@@ -178,6 +180,7 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 	}
 	else {
 		WordBodyElement** pCFA = pTop->GetWordBodyElement();
+		std::list<Breakpoint>* pBreakpoints = pExecState->pDebugger->GetBreakpointsForWord(pCFA);
 		ForthWord* pInitialWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
 		(*pStdoutStream) << "Word: " << pInitialWord->GetName() << std::endl;
 
@@ -220,12 +223,12 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 					if (upcomingWordIsLiteralType) {
 						upcomingWordType = pEl->forthType;
 						std::string typeDescription = pTS->TypeToString(upcomingWordType);
-						(*pStdoutStream) << ip << ":  literal type (" << typeDescription << ")" << std::endl;
+						(*pStdoutStream) << ip << ":    literal type (" << typeDescription << ")" << std::endl;
 						upcomingWordIsLiteralType = false;
 						upcomingWordIsLiteral = true;
 					}
 					else if (upcomingWordIsLiteral) {
-						(*pStdoutStream) << ip << ":  literal value (";
+						(*pStdoutStream) << ip << ":    literal value (";
 						std::string contentsOfLiteral;
 						bool successAtLiteral;
 						if (pTS->IsValueOrValuePter(upcomingWordType)) {
@@ -253,7 +256,20 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 					if (pWord->body[0]->wordElement_XT == PreBuiltWords::BuiltIn_PushUpcomingLiteral) {
 						upcomingWordIsLiteralType = true;
 					}
-					(*pStdoutStream) << ip << ":  " << pWord->GetName() << std::endl;
+					std::string debugAnnotation = "   ";
+					if (pBreakpoints!=nullptr) {
+						for (auto& bp : *pBreakpoints) {
+							if (bp.GetIP() == ip) {
+								if (bp.IsEnabled()) {
+									debugAnnotation = "+B ";
+								}
+								else {
+									debugAnnotation = "xB ";
+								}
+							}
+						}
+					}
+					(*pStdoutStream) << ip << ": " << debugAnnotation << pWord->GetName() << std::endl;
 					if (pWord->GetName() == "exit") {
 						loop = false;
 					}

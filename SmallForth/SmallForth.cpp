@@ -14,6 +14,7 @@
 #include "PreBuiltWords.h"
 #include "CompileHelper.h"
 #include "ForthArray.h"
+#include "DebugHelper.h"
 
 void initialiseDict(ForthDict* pDict,ExecState* pExecState);
 bool interpretForth(ExecState* pExecState, const std::string& toExecute);
@@ -32,7 +33,9 @@ int main()
     DataStack* pDataStack = new DataStack(40);
     ReturnStack* pReturnStack = new ReturnStack(40);
     CompileHelper* pCompiler = new CompileHelper();
-    ExecState* pExecState = new ExecState(pDataStack, pDict, pProcessor, pReturnStack, pCompiler);
+    DebugHelper* pDebugger = new DebugHelper();
+
+    ExecState* pExecState = new ExecState(pDataStack, pDict, pProcessor, pReturnStack, pCompiler, pDebugger);
 
     initialiseTypeSystem(pExecState);
 

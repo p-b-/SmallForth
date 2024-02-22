@@ -151,7 +151,7 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 				else {
 					pExecState->SetVariable("#postponeState", false);
 
-					int nDebugState = pExecState->GetIntTLSVariable(ExecState::c_debugStateIndex);
+					int nDebugState = (int)pExecState->GetIntTLSVariable(ExecState::c_debugStateIndex);
 					if (nDebugState >= 1 && nDebugState < 3) {
 						std::ostream* pStdout = pExecState->GetStdout();
 						(*pStdout) << "Compiling word: " << pWord->GetName() << std::endl;
