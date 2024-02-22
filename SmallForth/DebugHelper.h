@@ -31,7 +31,7 @@ public:
 	void ToggleBreakpoint(WordBodyElement** word, int ip);
 	void RemoveBreakpoint(WordBodyElement** word, int ip);
 	std::list<Breakpoint>* GetBreakpointsForWord(WordBodyElement** word);
-
+	static const Breakpoint* GetBreakpointForIP(std::list<Breakpoint>* pBreakpoints, int ip);
 
 private:
 	std::map< WordBodyElement**, std::list<Breakpoint>> _breakpoints;

@@ -4,6 +4,7 @@
 #include "ForthString.h"
 #include "CompileHelper.h"
 #include "DebugHelper.h"
+#include "DebugHelper.h"
 #include "ForthWord.h"
 #include "ForthDict.h"
 #include "ReturnStack.h"
@@ -784,6 +785,8 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, std::ostream* pSt
 		// Added for debug code
 		//
 		nDebugState = pExecState->GetIntTLSVariable(ExecState::c_debugStateIndex);
+		std::list<Breakpoint>* pBreakpoints = pExecState->pDebugger->GetBreakpointsForWord(pExecState->pExecBody);
+		int executingIP = pExecState->ip;
 		//
 		////
 
@@ -842,6 +845,19 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, std::ostream* pSt
 			// Added for debug code
 			//
 			bool stepOver = false;
+			bool hitbreakpoint = false;
+			if (pBreakpoints != nullptr) {
+				const Breakpoint* bp = pExecState->pDebugger->GetBreakpointForIP(pBreakpoints, executingIP);
+				if (bp != nullptr && bp->IsEnabled()) {
+					hitbreakpoint = true;
+					if (nDebugState != 1) {
+						nDebugState = 1;
+						if (!pExecState->SetVariable("#debugState", nDebugState)) {
+							return pExecState->CreateException("Could not set debugstate to DEBUG");
+						}
+					}
+				}
+			}
 			if (nDebugState<3 && pWord != nullptr) {
 				(*pStdoutStream) << std::string(indentation, ' ');
 				bool allowStepInto = false;

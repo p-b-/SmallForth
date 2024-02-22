@@ -89,3 +89,12 @@ std::list<Breakpoint>* DebugHelper::GetBreakpointsForWord(WordBodyElement** word
 	}
 }
 
+const Breakpoint* DebugHelper::GetBreakpointForIP(std::list<Breakpoint>* pBreakpoints, int ip) {
+	std::list<Breakpoint> blist = *pBreakpoints;
+	for (auto& bp : blist) {
+		if (bp.GetIP() == ip) {
+			return &bp;
+		}
+	}
+	return nullptr;
+}
