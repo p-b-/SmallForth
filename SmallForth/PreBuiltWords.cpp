@@ -785,7 +785,8 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, std::ostream* pSt
 		// Added for debug code
 		//
 		nDebugState = pExecState->GetIntTLSVariable(ExecState::c_debugStateIndex);
-		std::list<Breakpoint>* pBreakpoints = pExecState->pDebugger->GetBreakpointsForWord(pExecState->pExecBody);
+		WordBodyElement** pWordBeingDebugged = pExecState->pExecBody;
+		std::list<Breakpoint>* pBreakpoints = pExecState->pDebugger->GetBreakpointsForWord(pWordBeingDebugged);
 		int executingIP = pExecState->ip;
 		//
 		////
@@ -844,63 +845,133 @@ bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, std::ostream* pSt
 		{
 			// Added for debug code
 			//
+			bool loopOnDebugLine = true;
 			bool stepOver = false;
-			bool hitbreakpoint = false;
-			if (pBreakpoints != nullptr) {
-				const Breakpoint* bp = pExecState->pDebugger->GetBreakpointForIP(pBreakpoints, executingIP);
-				if (bp != nullptr && bp->IsEnabled()) {
-					hitbreakpoint = true;
-					if (nDebugState != 1) {
-						nDebugState = 1;
-						if (!pExecState->SetVariable("#debugState", nDebugState)) {
-							return pExecState->CreateException("Could not set debugstate to DEBUG");
+
+			while (loopOnDebugLine) {
+				bool hitbreakpoint = false;
+				bool allowEnableBreakpoint = false;
+				bool allowDisableBreakpoint = false;
+				bool allowAddBreakpoint = false;
+				bool allowRemoveBreakpoint = false;
+
+				if (pBreakpoints != nullptr) {
+					const Breakpoint* bp = pExecState->pDebugger->GetBreakpointForIP(pBreakpoints, executingIP);
+					if (bp != nullptr) {
+						if (bp->IsEnabled()) {
+							allowDisableBreakpoint = true;
+							hitbreakpoint = true;
+							if (nDebugState != 1) {
+								nDebugState = 1;
+								if (!pExecState->SetVariable("#debugState", nDebugState)) {
+									return pExecState->CreateException("Could not set debugstate to DEBUG");
+								}
+							}
+						}
+						else {
+							allowEnableBreakpoint = true;
 						}
 					}
 				}
-			}
-			if (nDebugState<3 && pWord != nullptr) {
-				(*pStdoutStream) << std::string(indentation, ' ');
-				bool allowStepInto = false;
-				if (exec != PreBuiltWords::BuiltIn_DoCol) {
-					(*pStdoutStream) << pWord->GetName();
-					if (nDebugState == 2) {
-						(*pStdoutStream) << std::endl;
-					}
-					else {
-						(*pStdoutStream) << " (O,R,B) ";
-					}
+				if (hitbreakpoint || allowEnableBreakpoint) {
+					allowRemoveBreakpoint = true;
 				}
-				else {
-					(*pStdoutStream) << pWord->GetName();
-					if (nDebugState == 2) {
-						(*pStdoutStream) << std::endl;
-					}
-					else {
-						(*pStdoutStream) << " (I,O,R,B) ";
-					}
-					allowStepInto = true;
+				allowAddBreakpoint = !allowRemoveBreakpoint;
+
+				std::string breakpointCommands;
+				if (allowAddBreakpoint) {
+					breakpointCommands += "B";
 				}
-				if (nDebugState == 1) {
-					char c = pExecState->pInputProcessor->GetNextChar();
-					c = std::tolower(c);
-					if (c == 'r') {
-						// RUN!
-						nDebugState = 2;
-						if (!pExecState->SetVariable("#debugState", (int64_t)2)) {
-							return pExecState->CreateException("Could not set debugstate to RUN");
-						}
-					}
-					else if (c == 'o') {
-						// When control returns to this level of recursion, with this flag set the debug state will be set back to 1
-						stepOver = true;
-						nDebugState = 3;
-						if (!pExecState->SetVariable("#debugState", (int64_t)3)) {
-							return pExecState->CreateException("Could not set debugstate to DEBUGOVER");
-						}
-					}
-					(*pStdoutStream) << std::endl;
+				else if (allowRemoveBreakpoint) {
+					breakpointCommands += "X";
+				}
+				if (allowEnableBreakpoint) {
+					breakpointCommands += ",E";
+				}
+				else if (allowDisableBreakpoint) {
+					breakpointCommands += ",D";
 				}
 
+
+				loopOnDebugLine = false;
+				if (nDebugState < 3 && pWord != nullptr) {
+					(*pStdoutStream) << std::string(indentation, ' ');
+					bool allowStepInto = false;
+
+					if (exec != PreBuiltWords::BuiltIn_DoCol) {
+						(*pStdoutStream) << pWord->GetName();
+						if (nDebugState == 2) {
+							(*pStdoutStream) << std::endl;
+						}
+						else {
+							(*pStdoutStream) << " (O,R," << breakpointCommands << ") ";
+						}
+					}
+					else {
+						(*pStdoutStream) << pWord->GetName();
+						if (nDebugState == 2) {
+							(*pStdoutStream) << std::endl;
+						}
+						else {
+							(*pStdoutStream) << " (I,O,R," << breakpointCommands << ") ";
+						}
+						allowStepInto = true;
+					}
+					if (nDebugState == 1) {
+						loopOnDebugLine = true;
+						bool reloadBreakpoints = false;
+						char c = pExecState->pInputProcessor->GetNextChar();
+						c = std::tolower(c);
+						if (c == 'r') {
+							// RUN!
+							nDebugState = 2;
+							if (!pExecState->SetVariable("#debugState", (int64_t)2)) {
+								return pExecState->CreateException("Could not set debugstate to RUN");
+							}
+							loopOnDebugLine = false;
+						}
+						else if (c == 'o') {
+							// When control returns to this level of recursion, with this flag set the debug state will be set back to 1
+							stepOver = true;
+							nDebugState = 3;
+							if (!pExecState->SetVariable("#debugState", (int64_t)3)) {
+								return pExecState->CreateException("Could not set debugstate to DEBUGOVER");
+							}
+							loopOnDebugLine = false;
+						}
+						else if (c == 'b') {
+							if (allowAddBreakpoint) {
+								pExecState->pDebugger->AddBreakpoint(pWordBeingDebugged, executingIP);
+								reloadBreakpoints = true;
+							}
+						}
+						else if (c == 'x') {
+							if (allowRemoveBreakpoint) {
+								pExecState->pDebugger->RemoveBreakpoint(pWordBeingDebugged, executingIP);
+								reloadBreakpoints = true;
+							}
+						}
+						else if (c == 'e') {
+							if (allowEnableBreakpoint) {
+								pExecState->pDebugger->ToggleBreakpoint(pWordBeingDebugged, executingIP);
+								reloadBreakpoints = true;
+							}
+						}
+						else if (c == 'd') {
+							if (allowDisableBreakpoint) {
+								pExecState->pDebugger->ToggleBreakpoint(pWordBeingDebugged, executingIP);
+								reloadBreakpoints = true;
+							}
+						}
+						else {
+							loopOnDebugLine = false;
+						}
+						if (reloadBreakpoints) {
+							pBreakpoints = pExecState->pDebugger->GetBreakpointsForWord(pWordBeingDebugged);
+						}
+						(*pStdoutStream) << std::endl;
+					}
+				}
 			}
 			if (exec == PreBuiltWords::BuiltIn_DoCol) {
 				if (!PreBuiltWords::BuiltIn_DoCol_Debug(pExecState, pStdoutStream, indentation + 1)) {
