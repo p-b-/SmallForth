@@ -25,15 +25,13 @@ There is no support for the following:
 
 The following need to be added for this implementation to be of any use:
 
-
-* Debugger - add breakpoints
 * Loading of programs via s" <filename> "
 * Test script. A lot of the Forth is tested when creating Forth-based words, but a test script would be beneficial. The creation of the words for instance does not use all loop types.
 * Unit tests
+* Threads (need to have an execstate flag that determines the interpreter thread - to prevent other threads creating words and types)
 * Loading DLLs
 * Connect to SqlLite
 * * UTF8 - ensure str lengths and slicing use code-points rather than code units. Add support via ICU library if necessary.
-* ```Allot``` to allocate space in currently-created word
 * array - find, insert, remove, removeat, sort
 * dictionary
 * set
@@ -54,6 +52,9 @@ The following need to be added for this implementation to be of any use:
 * Exception handling and stack freezing (ensuring out of control words don't destroy the stack, allowing code after exception handlers to function correctly)
 * CreateFromStack (create a word with name from stack, allowing the automation of word creation)
 * Remove ValueType enumeration in lieu of StackElement_Type
+* Add flag to all words, for non-debug versions. (when debugger executes .s, it disables debugging first. Add a flag to give all words this ability)
+* Implement console control in forth
+* Implement fullscreen debugger in forth (displaying word being executed and execution point, stack states, words being interpreted, thread state)
 
 ## Future Directions
 
