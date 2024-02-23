@@ -280,8 +280,8 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	pDefineWordForObject->SetWordVisibility(true);
 	pDict->AddWord(pDefineWordForObject);
 
-	InterpretForth(pExecState, ": startDebugging 1 #debugState ! ; immediate");
-	InterpretForth(pExecState, ": stopDebugging 0 #debugState ! ; immediate");
+	InterpretForth(pExecState, ": #debug 1 #debugState ! ; immediate");
+	InterpretForth(pExecState, ": #sdebug 0 #debugState ! ; immediate");
 
 	InterpretForth(pExecState, ": 1+ 1 + ;"); // ( m -- m+1 )
 	InterpretForth(pExecState, ": 1- 1 - ;"); // ( m -- m-1 )
