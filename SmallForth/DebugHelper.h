@@ -28,9 +28,9 @@ public:
 	DebugHelper();
 	~DebugHelper();
 
-	void AddBreakpoint(WordBodyElement** word, int ip);
-	void ToggleBreakpoint(WordBodyElement** word, int ip);
-	void RemoveBreakpoint(WordBodyElement** word, int ip);
+	bool AddBreakpoint(ExecState* pExecState, WordBodyElement** word, int ip);
+	bool ToggleBreakpoint(ExecState* pExecState, WordBodyElement** word, int ip);
+	bool RemoveBreakpoint(ExecState* pExecState, WordBodyElement** word, int ip);
 	bool HasBreakpoints(WordBodyElement** word);
 
 	std::list<Breakpoint>* GetBreakpointsForWord(WordBodyElement** word);

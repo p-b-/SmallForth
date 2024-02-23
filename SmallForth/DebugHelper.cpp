@@ -45,7 +45,7 @@ DebugHelper::~DebugHelper() {
 
 }
 
-void DebugHelper::AddBreakpoint(WordBodyElement** word, int ip) {
+bool DebugHelper::AddBreakpoint(ExecState* pExecState, WordBodyElement** word, int ip) {
 	std::list<Breakpoint>* pBreakpoints = GetBreakpointsForWord(word);
 
 	if (pBreakpoints == nullptr) {
@@ -54,24 +54,38 @@ void DebugHelper::AddBreakpoint(WordBodyElement** word, int ip) {
 		_breakpoints[word] = blist;
 	}
 	else {
+		std::list<Breakpoint>& blist = *pBreakpoints;
+		for (auto& bp : blist) {
+			if (bp.GetIP() == ip) {
+				return pExecState->CreateException("Breakpoint already exists on that IP");
+			}
+		}
 		pBreakpoints->emplace_back(Breakpoint(ip));
 	}
+	return true;
 }
 
-void DebugHelper::ToggleBreakpoint(WordBodyElement** word, int ip) {
+bool DebugHelper::ToggleBreakpoint(ExecState* pExecState, WordBodyElement** word, int ip) {
 	std::list<Breakpoint>* pBreakpoints = GetBreakpointsForWord(word);
+
+	bool found = false;
 
 	if (pBreakpoints != nullptr) {
 		std::list<Breakpoint>& blist = *pBreakpoints;
 		for (auto& bp : blist) {
 			if (bp.GetIP() == ip) {
 				bp.ToggleEnabled();
+				found = true;
 			}
 		}
 	}
+	if (!found) {
+		return pExecState->CreateException("No breakpoint at that IP to toggle");
+	}
+	return true;
 }
 
-void DebugHelper::RemoveBreakpoint(WordBodyElement** word, int ip) {
+bool DebugHelper::RemoveBreakpoint(ExecState* pExecState, WordBodyElement** word, int ip) {
 	std::list<Breakpoint>* pBreakpoints = GetBreakpointsForWord(word);
 
 	if (pBreakpoints!=nullptr) {
@@ -79,10 +93,11 @@ void DebugHelper::RemoveBreakpoint(WordBodyElement** word, int ip) {
 		for (auto& bp : blist) {
 			if (bp.GetIP() == ip) {
 				blist.remove(bp);
-				break;
+				return true;
 			}
 		}
 	}
+	return pExecState->CreateException("No break point at the IP to remove");
 }
 
 std::list<Breakpoint>* DebugHelper::GetBreakpointsForWord(WordBodyElement** word) {
@@ -245,25 +260,41 @@ bool DebugHelper::ProcessDebuggerInput(ExecState* pExecState, char c, WordBodyEl
 	}
 	else if (c == 'b') {
 		if (allowAddBreakpoint) {
-			pExecState->pDebugger->AddBreakpoint(pWordBodyBeingDebugged, executingIP);
+			if (!pExecState->pDebugger->AddBreakpoint(pExecState, pWordBodyBeingDebugged, executingIP)) {
+				if (pExecState->exceptionThrown) {
+					pExecState->exceptionThrown = false;
+				}
+			}
 			reloadBreakpoints = true;
 		}
 	}
 	else if (c == 'x') {
 		if (allowRemoveBreakpoint) {
-			pExecState->pDebugger->RemoveBreakpoint(pWordBodyBeingDebugged, executingIP);
+			if (!pExecState->pDebugger->RemoveBreakpoint(pExecState, pWordBodyBeingDebugged, executingIP)) {
+				if (pExecState->exceptionThrown) {
+					pExecState->exceptionThrown = false;
+				}
+			}
 			reloadBreakpoints = true;
 		}
 	}
 	else if (c == 'e') {
 		if (allowEnableBreakpoint) {
-			pExecState->pDebugger->ToggleBreakpoint(pWordBodyBeingDebugged, executingIP);
+			if (!pExecState->pDebugger->ToggleBreakpoint(pExecState, pWordBodyBeingDebugged, executingIP)) {
+				if (pExecState->exceptionThrown) {
+					pExecState->exceptionThrown = false;
+				}
+			}
 			reloadBreakpoints = true;
 		}
 	}
 	else if (c == 'd') {
 		if (allowDisableBreakpoint) {
-			pExecState->pDebugger->ToggleBreakpoint(pWordBodyBeingDebugged, executingIP);
+			if (!pExecState->pDebugger->ToggleBreakpoint(pExecState, pWordBodyBeingDebugged, executingIP)) {
+				if (pExecState->exceptionThrown) {
+					pExecState->exceptionThrown = false;
+				}
+			}
 			reloadBreakpoints = true;
 		}
 	}

@@ -581,9 +581,7 @@ bool PreBuiltWords::BuiltIn_SetBreakpoint(ExecState* pExecState) {
 	int ip = (int)pElementIP->GetInt();
 	delete pElementIP;
 	pElementIP = nullptr;
-	pExecState->pDebugger->AddBreakpoint(pCFA, ip);
-
-	return true;
+	return pExecState->pDebugger->AddBreakpoint(pExecState, pCFA, ip);
 }
 
 bool PreBuiltWords::BuiltIn_RemoveBreakpoint(ExecState* pExecState) {
@@ -619,9 +617,7 @@ bool PreBuiltWords::BuiltIn_RemoveBreakpoint(ExecState* pExecState) {
 	int ip = (int)pElementIP->GetInt();
 	delete pElementIP;
 	pElementIP = nullptr;
-	pExecState->pDebugger->RemoveBreakpoint(pCFA, ip);
-
-	return true;
+	return pExecState->pDebugger->RemoveBreakpoint(pExecState, pCFA, ip);
 }
 
 bool PreBuiltWords::BuiltIn_ToggleBreakpoint(ExecState* pExecState) {
@@ -657,9 +653,7 @@ bool PreBuiltWords::BuiltIn_ToggleBreakpoint(ExecState* pExecState) {
 	int ip = (int)pElementIP->GetInt();
 	delete pElementIP;
 	pElementIP = nullptr;
-	pExecState->pDebugger->ToggleBreakpoint(pCFA, ip);
-
-	return true;
+	return pExecState->pDebugger->ToggleBreakpoint(pExecState, pCFA, ip);
 }
 
 bool PreBuiltWords::BuiltIn_IndirectDoCol(ExecState* pExecState) {
