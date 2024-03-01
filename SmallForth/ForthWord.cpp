@@ -183,7 +183,8 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 		std::list<Breakpoint>* pBreakpoints = pExecState->pDebugger->GetBreakpointsForWord(pCFA);
 		ForthWord* pInitialWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
 		(*pStdoutStream) << "Word: " << pInitialWord->GetName() << std::endl;
-
+		delete pTop;
+		pTop = nullptr;
 		WordBodyElement* pEl = pCFA[0];
 
 		ForthType upcomingWordType = 0;
@@ -280,7 +281,5 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 			}
 		}
 	}
-	delete pTop;
-	pTop = nullptr;
 	return success;
 }
