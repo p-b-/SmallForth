@@ -177,6 +177,8 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 	bool success = true;
 	if (t != StackElement_PterToCFA) {
 		success = pExecState->CreateException("Cannot describe the word CFA on stack, as, it is not a pointer to a CFA");
+		delete pTop;
+		pTop = nullptr;
 	}
 	else {
 		WordBodyElement** pCFA = pTop->GetWordBodyElement();
