@@ -11,6 +11,7 @@ class InputProcessor;
 class ForthWord;
 class TypeSystem;
 class CompileHelper;
+class DebugHelper;
 
 struct ExecSubState {
 	WordBodyElement** pterToCFA;
@@ -20,7 +21,7 @@ struct ExecSubState {
 class ExecState {
 public:
 	ExecState();
-	ExecState(DataStack* pStack, ForthDict* pDict, InputProcessor* pInput, ReturnStack* pReturnStack, CompileHelper* pCompiler);
+	ExecState(DataStack* pStack, ForthDict* pDict, InputProcessor* pInput, ReturnStack* pReturnStack, CompileHelper* pCompiler, DebugHelper* pDebugHelper);
 	~ExecState();
 
 	void SetCFA(WordBodyElement** pCFA, int ip);
@@ -109,9 +110,13 @@ public:
 	std::string compilePrompt;
 	std::string interpetPrompt;
 
+	ForthWord* pWordBeingInterpreted;
+
 	CompileHelper* pCompiler;
+	DebugHelper* pDebugger;
 
 	static const int c_compileStateIndex = 0; // Index into int threadlocal variables
+	static const int c_debugStateIndex = 1; // Index into int threadlocal variables
 	static const int c_postponedExecIndex = 0; // Index into bool threadlocal variables
 	static const int c_insideCommentIndex = 1; // Index into bool threadlocal variables
 	static const int c_insideCommentLineIndex = 2; // Index into bool threadlocal variables

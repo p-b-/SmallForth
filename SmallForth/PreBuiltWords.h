@@ -34,6 +34,10 @@ public:
 	static bool BuiltIn_PostponeState(ExecState* pExecState);
 	static bool BuiltIn_InsideCommentState(ExecState* pExecState);
 	static bool BuiltIn_InsideCommentLineState(ExecState* pExecState);
+	static bool BuiltIn_DebugState(ExecState* pExecState);
+	static bool BuiltIn_SetBreakpoint(ExecState* pExecState);
+	static bool BuiltIn_RemoveBreakpoint(ExecState* pExecState);
+	static bool BuiltIn_ToggleBreakpoint(ExecState* pExecState);
 
 	static bool BuiltIn_DoCol(ExecState* pExecState);
 	static bool BuiltIn_Immediate(ExecState* pExecState);
@@ -177,5 +181,8 @@ public:
 
 	// Time, timers
 	static bool BuiltIn_GetHighResolutionTime(ExecState* pExecState);
+
+private:
+	static bool BuiltIn_DoCol_Debug(ExecState* pExecState, std::ostream* pStdoutStream, int indentation);
 };
 

@@ -121,6 +121,8 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 			}
 			continue;
 		}
+		pExecState->pWordBeingInterpreted = pWord;
+		pExecState->pWordBeingInterpreted->IncReference();
 		bool bInsideComment = pExecState->GetBoolTLSVariable(ExecState::c_insideCommentIndex);
 
 		if (bInsideComment && WordMatchesXT(pWord, PreBuiltWords::BuiltIn_ParenthesisCommentEnd) == false)
@@ -148,6 +150,12 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 				}
 				else {
 					pExecState->SetVariable("#postponeState", false);
+
+					int nDebugState = (int)pExecState->GetIntTLSVariable(ExecState::c_debugStateIndex);
+					if (nDebugState >= 1 && nDebugState < 3) {
+						std::ostream* pStdout = pExecState->GetStdout();
+						(*pStdout) << "Compiling word: " << pWord->GetName() << std::endl;
+					}
 
 					// Compile word
 					if (!pExecState->pCompiler->CompileWordOnStack(pExecState)) {
@@ -195,6 +203,8 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 		catch (...) {
 			HandleException(pExecState, nullptr, "Non std exception: ");
 		}
+		pExecState->pWordBeingInterpreted->DecReference();
+		pExecState->pWordBeingInterpreted = nullptr;
 	}
 
 	delete pExecState;
@@ -218,6 +228,11 @@ InputWord InputProcessor::GetNextWord(ExecState* pExecState) {
 	InputWord wordToReturn = this->inputWords.front();
 	this->inputWords.pop_front();
 	return wordToReturn;
+}
+
+char InputProcessor::GetNextChar() {
+	int c = _getch();
+	return c;
 }
 
 void InputProcessor::HandleException(ExecState* pExecState, const std::exception* pException, const std::string& msg) {

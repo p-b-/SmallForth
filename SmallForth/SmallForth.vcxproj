@@ -130,6 +130,7 @@
   <ItemGroup>
     <ClCompile Include="CompileHelper.cpp" />
     <ClCompile Include="DataStack.cpp" />
+    <ClCompile Include="DebugHelper.cpp" />
     <ClCompile Include="enumPrinters.cpp" />
     <ClCompile Include="ExecState.cpp" />
     <ClCompile Include="ForthArray.cpp" />
@@ -152,6 +153,7 @@
   <ItemGroup>
     <ClInclude Include="CompileHelper.h" />
     <ClInclude Include="DataStack.h" />
+    <ClInclude Include="DebugHelper.h" />
     <ClInclude Include="enumPrinters.h" />
     <ClInclude Include="ExecState.h" />
     <ClInclude Include="ForthArray.h" />

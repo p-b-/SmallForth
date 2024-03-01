@@ -3,6 +3,8 @@
 #include "ExecState.h"
 #include "ForthString.h"
 #include "CompileHelper.h"
+#include "DebugHelper.h"
+#include "DebugHelper.h"
 #include "ForthWord.h"
 #include "ForthDict.h"
 #include "ReturnStack.h"
@@ -38,6 +40,7 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 
 	InitialiseWord(pDict, "#insideComment", PreBuiltWords::BuiltIn_InsideCommentState);
 	InitialiseWord(pDict, "#insideCommentLine", PreBuiltWords::BuiltIn_InsideCommentLineState);
+	InitialiseWord(pDict, "#debugState", PreBuiltWords::BuiltIn_DebugState);
 
 	// TODO Delete this
 	//ForthWord* pCompileStateWord = new ForthWord("#compileState", PreBuiltWords::BuiltIn_DoCol);
@@ -73,6 +76,9 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseWord(pDict, "!", PreBuiltWords::BuiltIn_Poke);
 	InitialiseWord(pDict, "fetchliteral", PreBuiltWords::BuiltIn_FetchLiteral);
 	InitialiseImmediateWord(pDict, "updateForwardJump", PreBuiltWords::BuiltIn_UpdateForwardJump);
+	InitialiseWord(pDict, "#setbp", PreBuiltWords::BuiltIn_SetBreakpoint);
+	InitialiseWord(pDict, "#rembp", PreBuiltWords::BuiltIn_RemoveBreakpoint);
+	InitialiseWord(pDict, "#togbp", PreBuiltWords::BuiltIn_ToggleBreakpoint);
 
 	InitialiseWord(pDict, "reveal", PreBuiltWords::BuiltIn_Reveal);
 	InitialiseWord(pDict, "stackreveal", PreBuiltWords::BuiltIn_RevealToStack);
@@ -207,8 +213,8 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 
 	InterpretForth(pExecState, "1 type type variable #compileForType");
 
-	// Set to 1 and 3, as already defined compileState (int) and postponeState, insideComment, insideCommentLine (bool) manually
-	InterpretForth(pExecState, "1 variable #nextIntVarIndex");
+	// Set to 2 and 3, as already defined compileState, debugState (int) and postponeState, insideComment, insideCommentLine (bool) manually
+	InterpretForth(pExecState, "2 variable #nextIntVarIndex");
 	InterpretForth(pExecState, "3 variable #nextBoolVarIndex");
 
 	InterpretForth(pExecState, ": #getNextIntVarIndex #nextIntVarIndex dup @ dup 1 + rot ! ; immediate");
@@ -273,6 +279,9 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	pDefineWordForObject->SetImmediate(true);
 	pDefineWordForObject->SetWordVisibility(true);
 	pDict->AddWord(pDefineWordForObject);
+
+	InterpretForth(pExecState, ": #debug 1 #debugState ! ; immediate");
+	InterpretForth(pExecState, ": #sdebug 0 #debugState ! ; immediate");
 
 	InterpretForth(pExecState, ": 1+ 1 + ;"); // ( m -- m+1 )
 	InterpretForth(pExecState, ": 1- 1 - ;"); // ( m -- m-1 )
@@ -527,6 +536,125 @@ bool PreBuiltWords::BuiltIn_InsideCommentLineState(ExecState* pExecState) {
 	return true;
 }
 
+bool PreBuiltWords::BuiltIn_DebugState(ExecState* pExecState) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	WordBodyElement** ppWBE = pExecState->GetPointerToIntStateVariable(ExecState::c_debugStateIndex);
+	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Int);
+	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
+	if (!pExecState->pStack->Push(pElementVariable)) {
+		return pExecState->CreateStackOverflowException("whilst pushing a state int variable");
+	}
+	return true;
+}
+
+bool PreBuiltWords::BuiltIn_SetBreakpoint(ExecState* pExecState) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	StackElement* pElementCFA = pExecState->pStack->Pull();
+	if (pElementCFA == nullptr) {
+		return pExecState->CreateStackUnderflowException();
+	}
+	ForthType t = pElementCFA->GetType();
+	if (t != StackElement_PterToCFA) {
+		delete pElementCFA;
+		pElementCFA = nullptr;
+		return pExecState->CreateException("Cannot set breakpoint for word CFA on stack, as, it is not a pointer to a CFA");
+	}
+
+	WordBodyElement** pCFA = pElementCFA->GetWordBodyElement();
+	delete pElementCFA;
+	pElementCFA = nullptr;
+	ForthWord* pInitialWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
+	if (pInitialWord == nullptr) {
+		return pExecState->CreateException("Cannot find word for that CFA");
+	}
+	StackElement* pElementIP = pExecState->pStack->Pull();
+	if (pElementIP == nullptr) {
+		return pExecState->CreateStackUnderflowException("whilst getting ip to set breakpoint to - setbreakpoint expects ( n cfa -- )");
+	}
+	if (pElementIP->GetType() != StackElement_Int) {
+		delete pElementIP;
+		pElementIP = nullptr;
+		return pExecState->CreateException("whilst getting ip to set breakpoint to - setbreakpoint expects ( n cfa -- )");
+	}
+	int ip = (int)pElementIP->GetInt();
+	delete pElementIP;
+	pElementIP = nullptr;
+	return pExecState->pDebugger->AddBreakpoint(pExecState, pCFA, ip);
+}
+
+bool PreBuiltWords::BuiltIn_RemoveBreakpoint(ExecState* pExecState) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	StackElement* pElementCFA = pExecState->pStack->Pull();
+	if (pElementCFA == nullptr) {
+		return pExecState->CreateStackUnderflowException();
+	}
+	ForthType t = pElementCFA->GetType();
+	if (t != StackElement_PterToCFA) {
+		delete pElementCFA;
+		pElementCFA = nullptr;
+		return pExecState->CreateException("Cannot remove breakpoint for word CFA on stack, as, it is not a pointer to a CFA");
+	}
+
+	WordBodyElement** pCFA = pElementCFA->GetWordBodyElement();
+	delete pElementCFA;
+	pElementCFA = nullptr;
+	ForthWord* pInitialWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
+	if (pInitialWord == nullptr) {
+		return pExecState->CreateException("Cannot find word for that CFA");
+	}
+	StackElement* pElementIP = pExecState->pStack->Pull();
+	if (pElementIP == nullptr) {
+		return pExecState->CreateStackUnderflowException("whilst getting ip to remove breakpoint for - setbreakpoint expects ( n cfa -- )");
+	}
+	if (pElementIP->GetType() != StackElement_Int) {
+		delete pElementIP;
+		pElementIP = nullptr;
+		return pExecState->CreateException("whilst getting ip to remove breakpoint for - setbreakpoint expects ( n cfa -- )");
+	}
+	int ip = (int)pElementIP->GetInt();
+	delete pElementIP;
+	pElementIP = nullptr;
+	return pExecState->pDebugger->RemoveBreakpoint(pExecState, pCFA, ip);
+}
+
+bool PreBuiltWords::BuiltIn_ToggleBreakpoint(ExecState* pExecState) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	StackElement* pElementCFA = pExecState->pStack->Pull();
+	if (pElementCFA == nullptr) {
+		return pExecState->CreateStackUnderflowException();
+	}
+	ForthType t = pElementCFA->GetType();
+	if (t != StackElement_PterToCFA) {
+		delete pElementCFA;
+		pElementCFA = nullptr;
+		return pExecState->CreateException("Cannot toggle breakpoint for word CFA on stack, as, it is not a pointer to a CFA");
+	}
+
+	WordBodyElement** pCFA = pElementCFA->GetWordBodyElement();
+	delete pElementCFA;
+	pElementCFA = nullptr;
+	ForthWord* pInitialWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
+	if (pInitialWord == nullptr) {
+		return pExecState->CreateException("Cannot find word for that CFA");
+	}
+	StackElement* pElementIP = pExecState->pStack->Pull();
+	if (pElementIP == nullptr) {
+		return pExecState->CreateStackUnderflowException("whilst getting ip to toggle breakpoint for - setbreakpoint expects ( n cfa -- )");
+	}
+	if (pElementIP->GetType() != StackElement_Int) {
+		delete pElementIP;
+		pElementIP = nullptr;
+		return pExecState->CreateException("whilst getting ip to toggle breakpoint for - setbreakpoint expects ( n cfa -- )");
+	}
+	int ip = (int)pElementIP->GetInt();
+	delete pElementIP;
+	pElementIP = nullptr;
+	return pExecState->pDebugger->ToggleBreakpoint(pExecState, pCFA, ip);
+}
 
 bool PreBuiltWords::BuiltIn_IndirectDoCol(ExecState* pExecState) {
 	WordBodyElement* pWbe = pExecState->pExecBody[pExecState->ip];
@@ -548,6 +676,14 @@ bool PreBuiltWords::BuiltIn_IndirectDoCol(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_DoCol(ExecState* pExecState) {
 	bool exitFound = false;
+
+	int64_t nDebugState = pExecState->GetIntTLSVariable(ExecState::c_debugStateIndex);
+
+	if (nDebugState>0) {
+		ostream* pStdoutStream = pExecState->GetStdout();
+		(*pStdoutStream) << pExecState->pWordBeingInterpreted->GetName() << std::endl;
+		return BuiltIn_DoCol_Debug(pExecState, pStdoutStream, 1);
+	}
 
 	while (!exitFound) {
 		if (InputProcessor::ExecuteHaltRequested()) {
@@ -622,6 +758,139 @@ bool PreBuiltWords::BuiltIn_DoCol(ExecState* pExecState) {
 		pExecState->UnnestCFA();
 	}
 
+	return true;
+}
+
+bool PreBuiltWords::BuiltIn_DoCol_Debug(ExecState* pExecState, std::ostream* pStdoutStream, int indentation) {
+	// All comments from BuiltIn_DoCol have been removed.
+	// Extra code for debugging is highlighted
+	bool exitFound = false;
+
+	// Added for debug code
+	//
+	int64_t nDebugState;
+	//
+	////
+	while (!exitFound) {
+		if (InputProcessor::ExecuteHaltRequested()) {
+			InputProcessor::ResetExecutionHaltFlag();
+			return pExecState->CreateException("Halted");
+		}
+		// Added for debug code
+		//
+		nDebugState = pExecState->GetIntTLSVariable(ExecState::c_debugStateIndex);
+		WordBodyElement** pWordBodyBeingDebugged = pExecState->pExecBody;
+		int executingIP = pExecState->ip;
+		//
+		////
+
+		WordBodyElement* pWbe = pExecState->pExecBody[pExecState->ip];
+		WordBodyElement** pCFA = pWbe->wordElement_BodyPter;
+		WordBodyElement* actualCFA = pCFA[0];
+
+		XT exec = actualCFA->wordElement_XT;
+
+		pExecState->ip++;
+
+		// Added for debug code
+		//
+		ForthWord* pWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
+		//
+		////
+
+		bool bExecutePostponed = pExecState->GetBoolTLSVariable(ExecState::c_postponedExecIndex);
+		if (bExecutePostponed) {
+			int64_t nCompileState = pExecState->GetIntTLSVariable(ExecState::c_compileStateIndex);
+
+			if (!pExecState->SetVariable("#postponeState", false)) {
+				return pExecState->CreateException("Could not reset postpone state flag");
+			}
+
+			if (nCompileState > 0) {
+				// Compile this word
+
+				// Added for debug code
+				//
+				if (pWord != nullptr && nDebugState>0 && nDebugState<3) {
+					(*pStdoutStream) << std::string(indentation, ' ');
+					(*pStdoutStream) << "Compiling word: " << pWord->GetName() << std::endl;
+				}
+				//
+				////
+
+				pExecState->pCompiler->CompileWord(pExecState, pCFA);
+				if (!pExecState->SetVariable("#postponeState", false)) {
+					return pExecState->CreateException("Could not reset postpone state flag");
+				}
+				continue;
+			}
+			// Added for debug code
+			//
+			else {
+				(*pStdoutStream) << std::string(indentation, ' ');
+				(*pStdoutStream) << "Postpone state is set, when not compiling" << std::endl;
+			}
+			//
+			////
+		}
+		pExecState->NestAndSetCFA(pCFA, 1);
+		try
+		{
+			// Added for debug code
+			//
+			bool stepOver = false;
+			if (!pExecState->pDebugger->ProcessDebuggerInput(pExecState, pWordBodyBeingDebugged, pWord, executingIP, exec, nDebugState, stepOver, pStdoutStream, indentation)) {
+				pExecState->UnnestCFA();
+				return false;
+			}
+			if (exec == PreBuiltWords::BuiltIn_DoCol) {
+				if (!PreBuiltWords::BuiltIn_DoCol_Debug(pExecState, pStdoutStream, indentation + 1)) {
+					if (pExecState->exceptionThrown) {
+						pExecState->UnnestCFA();
+						return false;
+					}
+					exitFound = true;
+				}
+			}
+			//
+			////  (else on next line is part of debug code)
+			else if (!exec(pExecState)) {
+				if (pExecState->exceptionThrown) {
+					pExecState->UnnestCFA();
+					return false;
+				}
+				exitFound = true;
+			}
+			// Added for debug code
+			//
+			nDebugState = pExecState->GetIntTLSVariable(ExecState::c_debugStateIndex);
+			if (stepOver && nDebugState == 3) {
+				// Was stepping over, now continue to debug
+				nDebugState = 1;
+				if (!pExecState->SetVariable("#debugState", (int64_t)1)) {
+					return pExecState->CreateException("Could not set debugstate to DEBUG");
+				}
+			}
+			//
+			////
+		}
+		catch (...) {
+			pExecState->UnnestCFA();
+			throw;
+		}
+		pExecState->UnnestCFA();
+	}
+
+	// Added for debug code
+	//
+	if (indentation == 1 && nDebugState>1) {
+		// Last return - ensure that anything executed next will debug and not just run through
+		if (!pExecState->SetVariable("#debugState", (int64_t)1)) {
+			return pExecState->CreateException("Could not set debugstate to DEBUG");
+		}
+	}
+	//
+	////
 	return true;
 }
 

@@ -14,6 +14,7 @@ public:
 	bool Interpret(ExecState* pExecState);
 	void SetInputString(const std::string& line);
 	InputWord GetNextWord(ExecState* pExecState);
+	char GetNextChar();
 	void ClearRestOfLine();
 
 	static bool ExecuteHaltRequested() { return s_executionToHalt; }
