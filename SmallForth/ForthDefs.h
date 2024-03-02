@@ -10,6 +10,7 @@ class RefCountedObject;
 typedef bool (*XT)(ExecState* pExecState);
 
 enum ElementType {
+	StackElement_Undefined = 0,
 	StackElement_Char = 1,
 	StackElement_Int,
 	StackElement_Float,

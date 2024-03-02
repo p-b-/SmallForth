@@ -6,74 +6,107 @@
 
 DataStack::DataStack(int stackSize) {
 	this->stackSize = stackSize;
+	for (int i = 0; i < this->stackSize; ++i) {
+		StackElement element;
+		this->stack.push_back(element);
+	}
+	this->topOfStack = -1;
 }
 
 DataStack::~DataStack() {
-	while (this->stack.size() > 0) {
-		StackElement* pTopElement = this->stack.top();
-		this->stack.pop();
-		delete pTopElement;
-		pTopElement = nullptr;
-	}
+	//while (this->stack.size() > 0) {
+	//	StackElement* pTopElement = this->stack.top();
+	//	this->stack.pop();
+	//	delete pTopElement;
+	//	pTopElement = nullptr;
+	//}
 }
 
 bool DataStack::Push(int64_t value) {
-	StackElement* pElement = new StackElement(value);
+	if (!MoveToNextSP()) {
+		return false;
+	}
+	this->stack[this->topOfStack].SetTo(value);
+	return true;
+}
 
-	return Push(pElement);
+bool DataStack::MoveToNextSP() {
+	if (this->topOfStack == this->stackSize - 1) {
+		return false;
+	}
+	++this->topOfStack;
+	return true;
 }
 
 bool DataStack::Push(char value) {
-	StackElement* pElement = new StackElement(value);
-
-	return Push(pElement);
+	if (!MoveToNextSP()) {
+		return false;
+	}
+	this->stack[this->topOfStack].SetTo(value);
+	return true;
 }
 
 bool DataStack::Push(double value) {
-	StackElement* pElement = new StackElement(value);
-
-	return Push(pElement);
+	if (!MoveToNextSP()) {
+		return false;
+	}
+	this->stack[this->topOfStack].SetTo(value);
+	return true;
 }
 
 bool DataStack::Push(bool value) {
-	StackElement* pElement = new StackElement(value);
-
-	return Push(pElement);
+	if (!MoveToNextSP()) {
+		return false;
+	}
+	this->stack[this->topOfStack].SetTo(value);
+	return true;
 }
 
 bool DataStack::Push(ForthType value) {
-	StackElement* pElement = new StackElement(value);
-
-	return Push(pElement);
+	if (!MoveToNextSP()) {
+		return false;
+	}
+	this->stack[this->topOfStack].SetTo(value);
+	return true;
 }
 
 bool DataStack::Push(WordBodyElement** wordBodyPter) {
-	StackElement* pElement = new StackElement(wordBodyPter);
-	return Push(pElement);
+	if (!MoveToNextSP()) {
+		return false;
+	}
+	this->stack[this->topOfStack].SetTo(wordBodyPter);
+	return true;
 }
 
 bool DataStack::Push(RefCountedObject* value) {
-	StackElement* pElement = new StackElement(value);
-	return Push(pElement);
+	if (!MoveToNextSP()) {
+		return false;
+	}
+	this->stack[this->topOfStack].SetTo(value);
+	return true;
 }
 
 bool DataStack::Push(const std::string& value) {
 	ForthString* pForthString = new ForthString(value);
-	if (!Push((RefCountedObject*)pForthString)) {
+	if (!MoveToNextSP()) {
 		pForthString->DecReference();
 		return false;
 	}
+	this->stack[this->topOfStack].SetTo((RefCountedObject*)pForthString);
 	pForthString->DecReference();
 	return true;
 }
 
 
 StackElement* DataStack::Pull() {
-	if (this->stack.empty()) {
+	if (this->topOfStack == -1) {
 		return nullptr;
 	}
-	StackElement* toReturn = this->stack.top();
-	this->stack.pop();
+
+	StackElement& toClone = this->stack[this->topOfStack];
+	StackElement* toReturn = new StackElement(toClone);
+	this->stack[this->topOfStack].RelinquishValue();
+	--this->topOfStack;
 	return toReturn;
 }
 
@@ -120,28 +153,27 @@ std::tuple<StackElement*, StackElement* > DataStack::PullTwo() {
 
 
 StackElement* DataStack::TopElement() {
-	if (this->stack.empty()) {
+	if (this->topOfStack == -1) {
 		return nullptr;
 	}
-	StackElement* toReturn = this->stack.top();
+	StackElement* toReturn = &this->stack[this->topOfStack];
 	return toReturn;
-
 }
 
 bool DataStack::Push(StackElement* pElement) {
-	if (this->stack.size() == this->stackSize) {
+	if (this->topOfStack == this->stackSize - 1) {
 		delete pElement;
 		return false;
 	}
-	this->stack.push(pElement);
+	++this->topOfStack;
+	this->stack[this->topOfStack] = *pElement;
+	this->toDelete.push_back(pElement);
 	return true;
 }
 
 void DataStack::Clear() {
-	while (this->stack.empty() == false) {
-		StackElement* pElement = this->stack.top();
-		delete pElement;
-		pElement = nullptr;
-		this->stack.pop();
+	while (this->topOfStack > -1) {
+		this->stack[this->topOfStack].RelinquishValue();
+		--this->topOfStack;
 	}
 }
