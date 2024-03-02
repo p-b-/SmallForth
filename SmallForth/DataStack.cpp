@@ -86,6 +86,24 @@ bool DataStack::Push(RefCountedObject* value) {
 	return true;
 }
 
+bool DataStack::Push(ForthType forthType, WordBodyElement** ppLiteral) {
+	if (!MoveToNextSP()) {
+		return false;
+	}
+	this->stack[this->topOfStack].SetTo(forthType, ppLiteral);
+	return true;
+}
+
+bool DataStack::Push(ForthType forthType, void* pter) {
+	if (!MoveToNextSP()) {
+		return false;
+	}
+
+	this->stack[this->topOfStack].SetTo(forthType, pter);
+	return true;
+}
+
+
 bool DataStack::Push(const std::string& value) {
 	ForthString* pForthString = new ForthString(value);
 	if (!MoveToNextSP()) {
@@ -97,7 +115,6 @@ bool DataStack::Push(const std::string& value) {
 	return true;
 }
 
-
 StackElement* DataStack::Pull() {
 	if (this->topOfStack == -1) {
 		return nullptr;
@@ -105,8 +122,33 @@ StackElement* DataStack::Pull() {
 
 	StackElement& toClone = this->stack[this->topOfStack];
 	StackElement* toReturn = new StackElement(toClone);
-	this->stack[this->topOfStack].RelinquishValue();
-	--this->topOfStack;
+	ShrinkStack();
+	return toReturn;
+}
+
+bool DataStack::PullAsBool() {
+	bool defaultValue = false;
+	if (this->topOfStack == -1) {
+		return defaultValue;
+	}
+
+	StackElement& el = this->stack[this->topOfStack];
+	bool toReturn = el.GetBool();
+	ShrinkStack();
+
+	return toReturn;
+}
+
+int64_t DataStack::PullAsInt() {
+	int64_t defaultValue = 0;
+	if (this->topOfStack == -1) {
+		return defaultValue;
+	}
+
+	StackElement& el = this->stack[this->topOfStack];
+	int64_t toReturn = el.GetInt();
+	ShrinkStack();
+
 	return toReturn;
 }
 
@@ -151,6 +193,13 @@ std::tuple<StackElement*, StackElement* > DataStack::PullTwo() {
 	return { pElement1, pElement2 };
 }
 
+bool DataStack::TOSIsType(ElementType elementType) {
+	if (this->topOfStack == -1) {
+		return false;
+	}
+	StackElement& tos = this->stack[this->topOfStack];
+	return tos.GetType() == elementType;
+}
 
 StackElement* DataStack::TopElement() {
 	if (this->topOfStack == -1) {
