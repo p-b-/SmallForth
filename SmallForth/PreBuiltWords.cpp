@@ -1572,10 +1572,18 @@ bool PreBuiltWords::BuiltIn_Over(ExecState* pExecState) {
 	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElement1, pElement2)) {
 		return false;
 	}
-	pExecState->pStack->Push(pElement1);
-	pExecState->pStack->Push(pElement2);
+	if (!pExecState->pStack->Push(pElement1)) {
+		delete pElement2;
+		pElement2 = nullptr;
+		return pExecState->CreateStackOverflowException("whilst executing OVER");
+	}
+	if (!pExecState->pStack->Push(pElement2)) {
+		return pExecState->CreateStackOverflowException("whilst executing OVER");
+	}
 	StackElement* pElement3 = new StackElement(*pElement1);
-	pExecState->pStack->Push(pElement3);
+	if (!pExecState->pStack->Push(pElement3)) {
+		return pExecState->CreateStackOverflowException("whilst executing OVER");
+	}
 	return true;
 }
 
@@ -1588,9 +1596,21 @@ bool PreBuiltWords::BuiltIn_Rot(ExecState* pExecState) {
 		return false;
 	}
 
-	pExecState->pStack->Push(pElementn);
-	pExecState->pStack->Push(pElementp);
-	pExecState->pStack->Push(pElementm);
+	if (!pExecState->pStack->Push(pElementn)) {
+		delete pElementm;
+		pElementm = nullptr;
+		delete pElementp;
+		pElementp = nullptr;
+		return pExecState->CreateStackOverflowException("whilst executing ROT");
+	}
+	if (!pExecState->pStack->Push(pElementp)) {
+		delete pElementm;
+		pElementm = nullptr;
+		return pExecState->CreateStackOverflowException("whilst executing ROT");
+	}
+	if (!pExecState->pStack->Push(pElementm)) {
+		return pExecState->CreateStackOverflowException("whilst executing ROT");
+	}
 	return true;
 }
 
@@ -1603,9 +1623,21 @@ bool PreBuiltWords::BuiltIn_ReverseRot(ExecState* pExecState) {
 		return false;
 	}
 
-	pExecState->pStack->Push(pElementp);
-	pExecState->pStack->Push(pElementm);
-	pExecState->pStack->Push(pElementn);
+	if (!pExecState->pStack->Push(pElementp)) {
+		delete pElementm;
+		pElementm = nullptr;
+		delete pElementn;
+		pElementp = nullptr;
+		return pExecState->CreateStackOverflowException("whilst executing -ROT");
+	}
+	if (!pExecState->pStack->Push(pElementm)) {
+		delete pElementn;
+		pElementp = nullptr;
+		return pExecState->CreateStackOverflowException("whilst executing -ROT");
+	}
+	if (!pExecState->pStack->Push(pElementn)) {
+		return pExecState->CreateStackOverflowException("whilst executing -ROT");
+	}
 	return true;
 }
 
