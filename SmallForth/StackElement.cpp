@@ -8,6 +8,10 @@
 
 #include "enumPrinters.h"
 
+StackElement::StackElement() {
+	elementType = StackElement_Undefined;
+}
+
 StackElement::StackElement(const StackElement& element) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
@@ -135,6 +139,118 @@ StackElement::StackElement(ForthType forthType, WordBodyElement** ppLiteral) {
 			pTS->IncReferenceForPter(forthType, (static_cast<WordBodyElement**>(this->valuePter)));
 		}
 	}
+}
+
+void StackElement::SetTo(char value) {
+	elementType = StackElement_Char;
+	valueChar = value;
+}
+
+void StackElement::SetTo(int64_t value) {
+	elementType = StackElement_Int;
+	valueInt64 = value;
+}
+
+void StackElement::SetTo(double value) {
+	elementType = StackElement_Float;
+	valueDouble = value;
+}
+
+void StackElement::SetTo(bool value) {
+	elementType = StackElement_Bool;
+	valueBool = value;
+}
+
+void StackElement::SetTo(WordBodyElement** value) {
+	elementType = StackElement_PterToCFA;
+	valueWordBodyPter = value;
+}
+
+void StackElement::SetTo(XT* value) {
+	elementType = StackElement_XT;
+	valueXTPter = value;
+}
+
+void StackElement::SetTo(BinaryOperationType value) {
+	elementType = StackElement_BinaryOpsType;
+	valueBinaryOpsType = value;
+}
+
+void StackElement::SetTo(ForthType value) {
+	elementType = StackElement_Type;
+	valueType = value;
+
+}
+
+void StackElement::SetTo(RefCountedObject* value) {
+	elementType = value ->GetObjectTypeId();
+	valuePter = static_cast<void*>(value);
+	value->IncReference();
+
+}
+
+void StackElement::SetTo(ForthType forthType, WordBodyElement** ppLiteral) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	elementType = forthType;
+	if (!pTS->IsPter(forthType)) {
+		WordBodyElement* pLiteral = *ppLiteral;
+		if (pTS->TypeIsObject(elementType)) {
+			this->valuePter = pLiteral->pter;
+			pTS->IncReferenceForPter(elementType, this->valuePter);
+		}
+		else {
+			switch (forthType) {
+			case StackElement_Bool: this->valueBool = pLiteral->wordElement_bool; break;
+			case StackElement_Char: this->valueChar = pLiteral->wordElement_char; break;
+			case StackElement_Int: this->valueInt64 = pLiteral->wordElement_int; break;
+			case StackElement_Float: this->valueDouble = pLiteral->wordElement_float; break;
+			case StackElement_Type: this->valueType = pLiteral->forthType; break;
+			case StackElement_PterToCFA: this->valueWordBodyPter = pLiteral->wordElement_BodyPter; break;
+			}
+		}
+	}
+	else {
+		this->valuePter = (void*)ppLiteral;
+		// If pointer to a ref-counted object, increment the object (follow the dereference chain)
+		if (!pTS->IsValueOrValuePter(forthType)) {
+			pTS->IncReferenceForPter(forthType, (static_cast<WordBodyElement**>(this->valuePter)));
+		}
+	}
+}
+
+void StackElement::SetTo(ForthType forthType, void* value) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	elementType = forthType;
+	valuePter = value;
+	if (!pTS->IsValueOrValuePter(elementType)) {
+		pTS->IncReferenceForPter(elementType, this->valuePter);
+	}
+}
+
+void StackElement::RelinquishValue() {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+	if (!pTS->IsValueOrValuePter(elementType)) {
+		pTS->DecReferenceForPter(elementType, this->valuePter);
+		this->valuePter = nullptr;
+	}
+	else {
+		switch(elementType) {
+		case StackElement_Char: valueChar = '\0'; break;
+		case StackElement_Int: valueInt64 = 0; break;
+		case StackElement_Float: valueDouble = 0; break;
+		case StackElement_Bool: valueBool = false; break;
+		case StackElement_Type: valueType = ValueType_Undefined; break;
+		case StackElement_XT: valueXTPter = nullptr; break;
+		case StackElement_BinaryOpsType: valueBinaryOpsType = BinaryOp_Undefined; break;
+		case StackElement_PterToCFA: valueWordBodyPter = nullptr; break;
+		default: valuePter = nullptr; break;
+		}
+	}
+
+	this->elementType = StackElement_Undefined;
+
 }
 
 char StackElement::GetChar() const 

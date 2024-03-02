@@ -2098,7 +2098,7 @@ bool PreBuiltWords::BuiltIn_Peek(ExecState* pExecState) {
 	if (!pElementAddress->IsPter()) {
 		return pExecState->CreateException("Cannot load pter value, as top of stack is not a pointer");
 	}
-	pExecState->pStack->Pull();
+	pElementAddress = pExecState->pStack->Pull();
 
 	bool returnValue = true;
 	StackElement* pValueElement = pElementAddress->GetDerefedPterValueAsStackElement();
@@ -2124,7 +2124,7 @@ bool PreBuiltWords::BuiltIn_Poke(ExecState* pExecState) {
 	if (!pAddressElement->IsPter()) {
 		return pExecState->CreateException("Cannot store into pter value, as top of stack is not a pointer");
 	}
-	pExecState->pStack->Pull();
+	pAddressElement = pExecState->pStack->Pull();
 	StackElement* pValueElement = pExecState->pStack->Pull();
 	if (pValueElement == nullptr) {
 		delete pAddressElement;
