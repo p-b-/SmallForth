@@ -16,12 +16,18 @@ public:
 	bool Push(WordBodyElement** wordBodyPter);
 	bool Push(ForthType value);
 	bool Push(RefCountedObject* value);
+	bool Push(ForthType forthType, WordBodyElement** ppLiteral);
+	bool Push(ForthType forthType, void* pter);
 	bool Push(const std::string& value);
 
 	void Clear();
 
+	bool TOSIsType(ElementType elementType);
 	StackElement* TopElement();
 	StackElement* Pull();
+	bool PullAsBool();
+	int64_t PullAsInt();
+
 	std::tuple<bool, std::string> PullAsString();
 	std::tuple<StackElement*, StackElement* > PullTwo();
 	std::tuple<bool, StackElement* > PullType(ElementType type);
@@ -31,7 +37,10 @@ public:
 
 private:
 	bool MoveToNextSP();
-
+	inline void ShrinkStack() {
+		this->stack[this->topOfStack].RelinquishValue();
+		--this->topOfStack;
+	}
 
 private:
 	int stackSize;
