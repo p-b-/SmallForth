@@ -24,7 +24,9 @@ StackElement::StackElement(const StackElement& element) {
 			//  inside a WordBodyElement, and this if-clause ( if (!pTS->IsPter() ) does not get executed, but the next one (past the value type assignments).
 			this->valuePter = element.valuePter;
 			RefCountedObject* pObj = static_cast<RefCountedObject*>(this->valuePter);
-			pObj->IncReference();
+			if (pObj != nullptr) {
+				pObj->IncReference();
+			}
 		}
 		else {
 			switch (elementType) {
@@ -43,9 +45,172 @@ StackElement::StackElement(const StackElement& element) {
 		if (!pTS->IsValueOrValuePter(elementType)) {
 			// Its a pointer to a ref-counted object - increase reference count.  Note, the type system will take care of
 			//  getting the reference out of the WordbodyElement** that the this->valuePter points at
-			pTS->IncReferenceForPter(elementType, this->valuePter);
+			if (this->valuePter != nullptr) {
+				pTS->IncReferenceForPter(elementType, this->valuePter);
+			}
 		}
 	}
+}
+
+StackElement::StackElement(StackElement&& element) {
+	// No need to inc references - taking over the element's data including any reference counting
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	elementType = element.elementType;
+	element.elementType == StackElement_Undefined;
+	if (!pTS->IsPter(elementType)) {
+		if (pTS->TypeIsObject(elementType)) {
+			// See copy constructor for details why the object is copied like this, and not as part of the IsPter()=true clause
+			this->valuePter = element.valuePter;
+			element.valuePter = nullptr;
+		}
+		else {
+			switch (elementType) {
+			case StackElement_Bool: this->valueBool = element.valueBool; element.valueBool = false;  break;
+			case StackElement_Char: this->valueChar = element.valueChar; element.valueChar = '\0'; break;
+			case StackElement_Int: this->valueInt64 = element.valueInt64; element.valueInt64 = 0; break;
+			case StackElement_Float: this->valueDouble = element.valueDouble; element.valueDouble = 0.0; break;
+			case StackElement_Type: this->valueType = element.valueType; element.valueType = StackElement_Undefined; break;
+			case StackElement_PterToCFA: this->valueWordBodyPter = element.valueWordBodyPter; element.valueWordBodyPter = nullptr; break;
+			}
+		}
+	}
+	else {
+		// It's a pointer to something, just copy the pointer.
+		this->valuePter = element.valuePter;
+		element.valuePter = nullptr;
+	}
+}
+
+StackElement& StackElement::operator=(const StackElement& element) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+	if (this != &element) {
+		// Dec reference if currently a ref counted object (or pter to) at the end of this method
+		bool decObject = false;
+		bool decObjectPter = false;
+		void* objectToDec = nullptr;
+		ForthType typeToDec = StackElement_Undefined;
+		if (pTS->TypeIsObject(elementType)) {
+			decObject = true;
+			objectToDec = this->valuePter;
+			typeToDec = element.elementType;
+		}
+		else if (pTS->IsPter(elementType) && !pTS->IsValueOrValuePter(elementType)) {
+			decObjectPter = true;
+			objectToDec = this->valuePter;
+			typeToDec = element.elementType;
+		}
+
+		elementType = element.elementType;
+		if (!pTS->IsPter(elementType)) {
+			if (pTS->TypeIsObject(elementType)) {
+				// See copy constructor for details why the object is copied like this, and not as part of the IsPter()=true clause
+				this->valuePter = element.valuePter;
+				RefCountedObject* pObj = static_cast<RefCountedObject*>(this->valuePter);
+				if (pObj != nullptr) {
+					pObj->IncReference();
+				}
+			}
+			else {
+				switch (elementType) {
+				case StackElement_Bool: this->valueBool = element.valueBool; break;
+				case StackElement_Char: this->valueChar = element.valueChar; break;
+				case StackElement_Int: this->valueInt64 = element.valueInt64; break;
+				case StackElement_Float: this->valueDouble = element.valueDouble; break;
+				case StackElement_Type: this->valueType = element.valueType; break;
+				case StackElement_PterToCFA: this->valueWordBodyPter = element.valueWordBodyPter; break;
+				}
+			}
+		}
+		else {
+			// It's a pointer to something, just copy the pointer.
+			this->valuePter = element.valuePter;
+			if (!pTS->IsValueOrValuePter(elementType)) {
+				// Its a pointer to a ref-counted object - increase reference count.  Note, the type system will take care of
+				//  getting the reference out of the WordbodyElement** that the this->valuePter points at
+				if (this->valuePter != nullptr) {
+					pTS->IncReferenceForPter(elementType, this->valuePter);
+				}
+			}
+		}
+
+		if (decObject) {
+			RefCountedObject* pObj = static_cast<RefCountedObject*>(objectToDec);
+			if (pObj != nullptr) {
+				pObj->DecReference();
+			}
+		}
+		else if (decObjectPter) {
+			// Previous pointer is to a ref-counted object - decrease reference count.  Note, the type system will take care of
+			//  getting the reference out of the WordbodyElement** that the valuePter points at
+			if (objectToDec != nullptr) {
+				pTS->DecReferenceForPter(typeToDec, objectToDec);
+			}
+		}
+	}
+	return *this;
+}
+
+StackElement& StackElement::operator=(StackElement&& element) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+	if (this != &element) {
+		// Dec reference if currently a ref counted object (or pter to) at the end of this method
+		bool decObject = false;
+		bool decObjectPter = false;
+		void* objectToDec = nullptr;
+		ForthType typeToDec = StackElement_Undefined;
+		if (pTS->TypeIsObject(elementType)) {
+			decObject = true;
+			objectToDec = this->valuePter;
+			typeToDec = element.elementType;
+		}
+		else if (pTS->IsPter(elementType) && !pTS->IsValueOrValuePter(elementType)) {
+			decObjectPter = true;
+			objectToDec = this->valuePter;
+			typeToDec = element.elementType;
+		}
+
+
+		elementType = element.elementType;
+		element.elementType == StackElement_Undefined;
+		if (!pTS->IsPter(elementType)) {
+			if (pTS->TypeIsObject(elementType)) {
+				// See copy constructor for details why the object is copied like this, and not as part of the IsPter()=true clause
+				this->valuePter = element.valuePter;
+				element.valuePter = nullptr;
+			}
+			else {
+				switch (elementType) {
+				case StackElement_Bool: this->valueBool = element.valueBool; element.valueBool = false;  break;
+				case StackElement_Char: this->valueChar = element.valueChar; element.valueChar = '\0'; break;
+				case StackElement_Int: this->valueInt64 = element.valueInt64; element.valueInt64 = 0; break;
+				case StackElement_Float: this->valueDouble = element.valueDouble; element.valueDouble = 0.0; break;
+				case StackElement_Type: this->valueType = element.valueType; element.valueType = StackElement_Undefined; break;
+				case StackElement_PterToCFA: this->valueWordBodyPter = element.valueWordBodyPter; element.valueWordBodyPter = nullptr; break;
+				}
+			}
+		}
+		else {
+			// It's a pointer to something, just copy the pointer.
+			this->valuePter = element.valuePter;
+			element.valuePter = nullptr;
+		}
+
+		if (decObject) {
+			RefCountedObject* pObj = static_cast<RefCountedObject*>(objectToDec);
+			if (pObj != nullptr) {
+				pObj->DecReference();
+			}
+		}
+		else if (decObjectPter) {
+			// Previous pointer is to a ref-counted object - decrease reference count.  Note, the type system will take care of
+			//  getting the reference out of the WordbodyElement** that the valuePter points at
+			if (objectToDec != nullptr) {
+				pTS->DecReferenceForPter(typeToDec, objectToDec);
+			}
+		}
+	}
+	return *this;
 }
 
 StackElement::~StackElement() {

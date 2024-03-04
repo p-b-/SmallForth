@@ -201,6 +201,26 @@ bool DataStack::TOSIsType(ElementType elementType) {
 	return tos.GetType() == elementType;
 }
 
+ForthType DataStack::GetTOSType() {
+	if (this->topOfStack == -1) {
+		return StackElement_Undefined;;
+	}
+	StackElement& tos = this->stack[this->topOfStack];
+	return tos.GetType();
+}
+
+bool DataStack::SwapTOS() {
+	if (this->topOfStack == 0) {
+		return false;
+	}
+	StackElement tos = this->stack[this->topOfStack];
+	StackElement nextStackElement = this->stack[this->topOfStack-1];
+	this->stack[this->topOfStack] = nextStackElement;
+	this->stack[this->topOfStack - 1] = tos;
+
+	return true;
+}
+
 StackElement* DataStack::TopElement() {
 	if (this->topOfStack == -1) {
 		return nullptr;

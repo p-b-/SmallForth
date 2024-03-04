@@ -23,6 +23,9 @@ public:
 	void Clear();
 
 	bool TOSIsType(ElementType elementType);
+	ForthType GetTOSType();
+	bool SwapTOS();
+
 	StackElement* TopElement();
 	StackElement* Pull();
 	bool PullAsBool();

@@ -27,6 +27,11 @@ bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOpera
 	ForthType type1 = pElement1->GetType();
 	ForthType type2 = pElement2->GetType();
 
+	//type1 = pExecState->pStack->GetTOSType();
+	//pExecState->pStack->SwapTOS();
+	//type2 = pExecState->pStack->GetTOSType();
+	//pExecState->pStack->SwapTOS();
+
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (pTS->TypeIsObject(type1)) {
 		return BuiltInHelper_ObjectBinaryOperation(pExecState, opType, pElement1, pElement2);
