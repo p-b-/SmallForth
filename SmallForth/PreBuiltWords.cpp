@@ -182,6 +182,7 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 
 	// Timer and time
 	InitialiseWord(pDict, "elapsedSeconds", PreBuiltWords::BuiltIn_GetHighResolutionTime);
+	InitialiseWord(pDict, "#sdc", PreBuiltWords::BuiltIn_StackDeletedCount);
 }
 
 void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
@@ -1523,17 +1524,12 @@ bool PreBuiltWords::IsPter(ExecState* pExecState) {
 
 // ( n -- n n )
 bool PreBuiltWords::BuiltIn_Dup(ExecState* pExecState) {
-	StackElement* pElement = pExecState->pStack->Pull();
-
-	if (pElement == nullptr) {
-		return pExecState->CreateException("Stack underflow");
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("whilst executing DUP");
 	}
-
-	StackElement* pClonedElement = new StackElement(*pElement);
-
-	pExecState->pStack->Push(pElement);
-	pExecState->pStack->Push(pClonedElement);
-
+	if (!pExecState->pStack->DupTOS()) {
+		return pExecState->CreateStackOverflowException("whilst executing DUP");
+	}
 	return true;
 }
 
@@ -1547,12 +1543,9 @@ bool PreBuiltWords::BuiltIn_Swap(ExecState* pExecState) {
 
 // ( n -- )
 bool PreBuiltWords::BuiltIn_Drop(ExecState* pExecState) {
-	StackElement* pElement1 = nullptr;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement1)) {
-		return false;
+	if (!pExecState->pStack->DropTOS()) {
+		return pExecState->CreateStackUnderflowException("when executing DROP");
 	}
-	delete pElement1;
-	pElement1 = nullptr;
 	return true;
 }
 
@@ -1604,19 +1597,14 @@ bool PreBuiltWords::BuiltIn_ReverseRot(ExecState* pExecState) {
 
 // >R ( a -- R: a )
 bool PreBuiltWords::BuiltIn_PushDataStackToReturnStack(ExecState* pExecState) {
-	StackElement* pElement = nullptr;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("whilst executing >R");
 	}
-	if (pElement->GetType() != StackElement_Int) {
-		delete pElement;
-		pElement = nullptr;
+	else if (!pExecState->pStack->TOSIsType(StackElement_Int)) {
 		return pExecState->CreateException("Cannot push a non-integer to the return stack");
 	}
-	int nToPush = (int)pElement->GetInt();
-	delete pElement;
-	pElement = nullptr;
-	if (!pExecState->pReturnStack->Push(nToPush)) {
+	int64_t nToPush = pExecState->pStack->PullAsInt();
+	if (!pExecState->pReturnStack->Push((int)nToPush)) {
 		return pExecState->CreateReturnStackOverflowException();
 	}
 	return true;
@@ -2244,6 +2232,15 @@ bool PreBuiltWords::BuiltIn_GetHighResolutionTime(ExecState* pExecState) {
 	double elapsedSeconds = (double)time / (double)freq;
 	if (!pExecState->pStack->Push(elapsedSeconds)) {
 		return pExecState->CreateStackOverflowException("whilst getting high resolution time");
+	}
+	return true;
+}
+
+bool PreBuiltWords::BuiltIn_StackDeletedCount(ExecState* pExecState) {
+	int n = pExecState->pStack->DeletedCount();
+
+	if (!pExecState->pStack->Push((int64_t)n)) {
+		return pExecState->CreateStackOverflowException("whilst getting stack deleted count");
 	}
 	return true;
 }

@@ -221,6 +221,24 @@ bool DataStack::SwapTOS() {
 	return true;
 }
 
+bool DataStack::DropTOS() {
+	if (this->topOfStack == -1) {
+		return false;
+	}
+	ShrinkStack();
+	return true;
+}
+
+bool DataStack::DupTOS() {
+	if (this->topOfStack == -1 || !MoveToNextSP()) {
+		return false;
+	}
+	StackElement tos = this->stack[this->topOfStack-1];
+	this->stack[this->topOfStack]=tos;
+	return true;
+}
+
+
 StackElement* DataStack::TopElement() {
 	if (this->topOfStack == -1) {
 		return nullptr;
