@@ -15,6 +15,10 @@ public:
 	StackElement(XT* pXt);
 	StackElement(BinaryOperationType opsType);
 	StackElement(const StackElement& element);
+	StackElement(StackElement&& element);
+	StackElement& operator=(const StackElement& element);
+	StackElement& operator=(StackElement&& element);
+
 //	StackElement(WordBodyElement*** pppWbe);
 	StackElement(ForthType v);
 	StackElement(RefCountedObject* pObject);

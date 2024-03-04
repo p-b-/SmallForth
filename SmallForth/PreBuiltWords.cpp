@@ -1539,17 +1539,9 @@ bool PreBuiltWords::BuiltIn_Dup(ExecState* pExecState) {
 
 // ( n m -- m n )
 bool PreBuiltWords::BuiltIn_Swap(ExecState* pExecState) {
-	StackElement* pElement1 = nullptr;
-	StackElement* pElement2 = nullptr;
-	// Element1 is further in the stack than element2
-	// ( Element1 Element2 -- Element2 Element1)
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElement1, pElement2)) {
-		return false;
+	if (!pExecState->pStack->SwapTOS()) {
+		return pExecState->CreateStackUnderflowException("when executing SWAP");
 	}
-
-	pExecState->pStack->Push(pElement2);
-	pExecState->pStack->Push(pElement1);
-
 	return true;
 }
 
