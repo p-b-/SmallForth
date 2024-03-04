@@ -57,7 +57,7 @@ StackElement::StackElement(StackElement&& element) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
 	elementType = element.elementType;
-	element.elementType == StackElement_Undefined;
+	element.elementType = StackElement_Undefined;
 	if (!pTS->IsPter(elementType)) {
 		if (pTS->TypeIsObject(elementType)) {
 			// See copy constructor for details why the object is copied like this, and not as part of the IsPter()=true clause
@@ -172,7 +172,7 @@ StackElement& StackElement::operator=(StackElement&& element) {
 
 
 		elementType = element.elementType;
-		element.elementType == StackElement_Undefined;
+		element.elementType = StackElement_Undefined;
 		if (!pTS->IsPter(elementType)) {
 			if (pTS->TypeIsObject(elementType)) {
 				// See copy constructor for details why the object is copied like this, and not as part of the IsPter()=true clause

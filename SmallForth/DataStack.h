@@ -25,6 +25,8 @@ public:
 	bool TOSIsType(ElementType elementType);
 	ForthType GetTOSType();
 	bool SwapTOS();
+	bool DropTOS();
+	bool DupTOS();
 
 	StackElement* TopElement();
 	StackElement* Pull();
@@ -37,6 +39,8 @@ public:
 
 	bool Push(StackElement* pElement);
 	int Count() const { return topOfStack+1; }
+
+	int DeletedCount() const { return (int)this->toDelete.size(); }
 
 private:
 	bool MoveToNextSP();

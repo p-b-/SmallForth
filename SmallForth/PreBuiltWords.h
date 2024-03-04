@@ -182,6 +182,9 @@ public:
 	// Time, timers
 	static bool BuiltIn_GetHighResolutionTime(ExecState* pExecState);
 
+	// Temporary whilst optimising data stack
+	static bool BuiltIn_StackDeletedCount(ExecState* pExecState);
+
 private:
 	static bool BuiltIn_DoCol_Debug(ExecState* pExecState, std::ostream* pStdoutStream, int indentation);
 };
