@@ -168,6 +168,21 @@ std::tuple<bool, std::string> DataStack::PullAsString() {
 	return { true, containedString };
 }
 
+StackElement DataStack::PullAsRef() {
+	if (this->topOfStack == -1) {
+		stack[0].RelinquishValue();
+		return stack[0];
+	}
+
+	StackElement& el = this->stack[this->topOfStack];
+	StackElement toReturn = std::move(el);
+
+	ShrinkStack();
+
+	return toReturn;
+
+}
+
 std::tuple<bool, StackElement* > DataStack::PullType(ElementType type) {
 	StackElement* pElement = Pull();
 	if (pElement == nullptr) {
@@ -254,7 +269,15 @@ bool DataStack::Push(StackElement* pElement) {
 	}
 	++this->topOfStack;
 	this->stack[this->topOfStack] = *pElement;
-	this->toDelete.push_back(pElement);
+	delete pElement;
+	return true;
+}
+
+bool DataStack::Push(const StackElement& element) {
+	if (!MoveToNextSP()) {
+		return false;
+	}
+	this->stack[this->topOfStack] = element;
 	return true;
 }
 
