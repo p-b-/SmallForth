@@ -32,15 +32,16 @@ public:
 	StackElement* Pull();
 	bool PullAsBool();
 	int64_t PullAsInt();
+	StackElement PullAsRef();
 
 	std::tuple<bool, std::string> PullAsString();
 	std::tuple<StackElement*, StackElement* > PullTwo();
 	std::tuple<bool, StackElement* > PullType(ElementType type);
 
 	bool Push(StackElement* pElement);
-	int Count() const { return topOfStack+1; }
+	bool Push(const StackElement& pElement);
 
-	int DeletedCount() const { return (int)this->toDelete.size(); }
+	int Count() const { return topOfStack+1; }
 
 private:
 	bool MoveToNextSP();
@@ -54,7 +55,6 @@ private:
 
 	std::vector<StackElement> stack;
 	int topOfStack;
-	std::vector<StackElement* > toDelete;
 
 //	std::stack<StackElement* > stack;
 };

@@ -182,7 +182,6 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 
 	// Timer and time
 	InitialiseWord(pDict, "elapsedSeconds", PreBuiltWords::BuiltIn_GetHighResolutionTime);
-	InitialiseWord(pDict, "#sdc", PreBuiltWords::BuiltIn_StackDeletedCount);
 }
 
 void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
@@ -1500,26 +1499,39 @@ bool PreBuiltWords::WordToFloat(ExecState* pExecState) {
 // ( [e] -- b ) true if [e] is object, false if [e] is pter to anything or value
 bool PreBuiltWords::IsObject(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement = pExecState->pStack->Pull();
+	StackElement element = pExecState->pStack->PullAsRef();
+	ForthType t = element.GetType();
+	if (!pExecState->pStack->Push(pTS->TypeIsObject(t))) {
+		return pExecState->CreateStackOverflowException("whilst determining if a type is an object");
+	}
+	return true;
+
+/*	StackElement* pElement = pExecState->pStack->Pull();
 	ForthType t = pElement->GetType();
 	delete pElement;
 	pElement = nullptr;
 	if (!pExecState->pStack->Push(pTS->TypeIsObject(t))) {
 		return pExecState->CreateStackOverflowException("whilst determining if a type is an object");
 	}
-	return true;
+	return true; */
 };
 
 // ( [e] -- b ) true if [e] is pter to object or value, false otherwise
 bool PreBuiltWords::IsPter(ExecState* pExecState) {
-	StackElement* pElement = pExecState->pStack->Pull();
-	ForthType t = pElement->GetType();
-	delete pElement;
-	pElement = nullptr;
+	StackElement element = pExecState->pStack->PullAsRef();
+	ForthType t = element.GetType();
 	if (!pExecState->pStack->Push(TypeSystem::IsPter(t))) {
 		return pExecState->CreateStackOverflowException("whilst determining if a type is a pter");
 	}
 	return true;
+	//StackElement* pElement = pExecState->pStack->Pull();
+	//ForthType t = pElement->GetType();
+	//delete pElement;
+	//pElement = nullptr;
+	//if (!pExecState->pStack->Push(TypeSystem::IsPter(t))) {
+	//	return pExecState->CreateStackOverflowException("whilst determining if a type is a pter");
+	//}
+	//return true;
 };
 
 // ( n -- n n )
@@ -1551,80 +1563,73 @@ bool PreBuiltWords::BuiltIn_Drop(ExecState* pExecState) {
 
 // ( n m -- n m n)
 bool PreBuiltWords::BuiltIn_Over(ExecState* pExecState) {
-	StackElement* pElement1 = nullptr;
-	StackElement* pElement2 = nullptr;
+	if (pExecState->pStack->Count() < 2) {
+		return pExecState->CreateStackUnderflowException("whilst executing OVER");
+	}
 	// Element1 is further in the stack than element2
 	// ( Element1 Element2 -- Element2 Element1)
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElement1, pElement2)) {
-		return false;
-	}
-	if (!pExecState->pStack->Push(pElement1)) {
-		delete pElement2;
-		pElement2 = nullptr;
+	StackElement element2 = pExecState->pStack->PullAsRef();
+	StackElement element1 = pExecState->pStack->PullAsRef();
+
+	pExecState->pStack->Push(element1);
+	pExecState->pStack->Push(element2);
+	if (!pExecState->pStack->Push(element1)) {
 		return pExecState->CreateStackOverflowException("whilst executing OVER");
 	}
-	if (!pExecState->pStack->Push(pElement2)) {
-		return pExecState->CreateStackOverflowException("whilst executing OVER");
-	}
-	StackElement* pElement3 = new StackElement(*pElement1);
-	if (!pExecState->pStack->Push(pElement3)) {
-		return pExecState->CreateStackOverflowException("whilst executing OVER");
-	}
+
 	return true;
 }
 
 // ( m n p -- n p m)
 bool PreBuiltWords::BuiltIn_Rot(ExecState* pExecState) {
-	StackElement* pElementm = nullptr;
-	StackElement* pElementn = nullptr;
-	StackElement* pElementp = nullptr;
-	if (!ForthWord::BuiltInHelper_GetThreeStackElements(pExecState, pElementm, pElementn, pElementp)) {
-		return false;
+	if (pExecState->pStack->Count() < 3) {
+		return pExecState->CreateStackUnderflowException("whilst executing ROT");
 	}
-
-	if (!pExecState->pStack->Push(pElementn)) {
-		delete pElementm;
-		pElementm = nullptr;
-		delete pElementp;
-		pElementp = nullptr;
-		return pExecState->CreateStackOverflowException("whilst executing ROT");
-	}
-	if (!pExecState->pStack->Push(pElementp)) {
-		delete pElementm;
-		pElementm = nullptr;
-		return pExecState->CreateStackOverflowException("whilst executing ROT");
-	}
-	if (!pExecState->pStack->Push(pElementm)) {
-		return pExecState->CreateStackOverflowException("whilst executing ROT");
-	}
+	StackElement elementp = pExecState->pStack->PullAsRef();
+	StackElement elementn = pExecState->pStack->PullAsRef();
+	StackElement elementm = pExecState->pStack->PullAsRef();
+	pExecState->pStack->Push(elementn);
+	pExecState->pStack->Push(elementp);
+	pExecState->pStack->Push(elementm);
 	return true;
+
+	//StackElement* pElementm = nullptr;
+	//StackElement* pElementn = nullptr;
+	//StackElement* pElementp = nullptr;
+	//if (!ForthWord::BuiltInHelper_GetThreeStackElements(pExecState, pElementm, pElementn, pElementp)) {
+	//	return false;
+	//}
+
+	//pExecState->pStack->Push(pElementn);
+	//pExecState->pStack->Push(pElementp);
+	//pExecState->pStack->Push(pElementm);
+	//return true;
 }
 
 // ( m n p -- p m n)
 bool PreBuiltWords::BuiltIn_ReverseRot(ExecState* pExecState) {
-	StackElement* pElementm = nullptr;
-	StackElement* pElementn = nullptr;
-	StackElement* pElementp = nullptr;
-	if (!ForthWord::BuiltInHelper_GetThreeStackElements(pExecState, pElementm, pElementn, pElementp)) {
-		return false;
+	if (pExecState->pStack->Count() < 3) {
+		return pExecState->CreateStackUnderflowException("whilst executing -ROT");
 	}
-
-	if (!pExecState->pStack->Push(pElementp)) {
-		delete pElementm;
-		pElementm = nullptr;
-		delete pElementn;
-		pElementp = nullptr;
-		return pExecState->CreateStackOverflowException("whilst executing -ROT");
-	}
-	if (!pExecState->pStack->Push(pElementm)) {
-		delete pElementn;
-		pElementp = nullptr;
-		return pExecState->CreateStackOverflowException("whilst executing -ROT");
-	}
-	if (!pExecState->pStack->Push(pElementn)) {
-		return pExecState->CreateStackOverflowException("whilst executing -ROT");
-	}
+	StackElement elementp = pExecState->pStack->PullAsRef();
+	StackElement elementn = pExecState->pStack->PullAsRef();
+	StackElement elementm = pExecState->pStack->PullAsRef();
+	pExecState->pStack->Push(elementp);
+	pExecState->pStack->Push(elementm);
+	pExecState->pStack->Push(elementn);
 	return true;
+
+	//StackElement* pElementm = nullptr;
+	//StackElement* pElementn = nullptr;
+	//StackElement* pElementp = nullptr;
+	//if (!ForthWord::BuiltInHelper_GetThreeStackElements(pExecState, pElementm, pElementn, pElementp)) {
+	//	return false;
+	//}
+
+	//pExecState->pStack->Push(pElementp);
+	//pExecState->pStack->Push(pElementm);
+	//pExecState->pStack->Push(pElementn);
+	//return true;
 }
 
 // >R ( a -- R: a )
@@ -2264,15 +2269,6 @@ bool PreBuiltWords::BuiltIn_GetHighResolutionTime(ExecState* pExecState) {
 	double elapsedSeconds = (double)time / (double)freq;
 	if (!pExecState->pStack->Push(elapsedSeconds)) {
 		return pExecState->CreateStackOverflowException("whilst getting high resolution time");
-	}
-	return true;
-}
-
-bool PreBuiltWords::BuiltIn_StackDeletedCount(ExecState* pExecState) {
-	int n = pExecState->pStack->DeletedCount();
-
-	if (!pExecState->pStack->Push((int64_t)n)) {
-		return pExecState->CreateStackOverflowException("whilst getting stack deleted count");
 	}
 	return true;
 }

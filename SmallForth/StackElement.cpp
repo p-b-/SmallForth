@@ -93,12 +93,12 @@ StackElement& StackElement::operator=(const StackElement& element) {
 		if (pTS->TypeIsObject(elementType)) {
 			decObject = true;
 			objectToDec = this->valuePter;
-			typeToDec = element.elementType;
+			typeToDec = this->elementType;
 		}
 		else if (pTS->IsPter(elementType) && !pTS->IsValueOrValuePter(elementType)) {
 			decObjectPter = true;
 			objectToDec = this->valuePter;
-			typeToDec = element.elementType;
+			typeToDec = this->elementType;
 		}
 
 		elementType = element.elementType;
@@ -162,12 +162,12 @@ StackElement& StackElement::operator=(StackElement&& element) {
 		if (pTS->TypeIsObject(elementType)) {
 			decObject = true;
 			objectToDec = this->valuePter;
-			typeToDec = element.elementType;
+			typeToDec = this->elementType;
 		}
 		else if (pTS->IsPter(elementType) && !pTS->IsValueOrValuePter(elementType)) {
 			decObjectPter = true;
 			objectToDec = this->valuePter;
-			typeToDec = element.elementType;
+			typeToDec = this->elementType;
 		}
 
 
@@ -395,6 +395,9 @@ void StackElement::SetTo(ForthType forthType, void* value) {
 }
 
 void StackElement::RelinquishValue() {
+	if (elementType == StackElement_Undefined) {
+		return;
+	}
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (!pTS->IsValueOrValuePter(elementType)) {
 		pTS->DecReferenceForPter(elementType, this->valuePter);
