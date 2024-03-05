@@ -60,24 +60,23 @@ bool PreBuiltWords::BuiltIn_StringLiteral(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_CallObject(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-
-	StackElement* pElementAddress;
-	StackElement* pElementFunctionIndex;
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElementFunctionIndex, pElementAddress)) {
-		return pExecState->CreateStackUnderflowException();
+	if (pExecState->pStack->Count() < 2) {
+		return pExecState->CreateStackUnderflowException("whilst calling object");
 	}
+	ForthType addressType = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	ForthType indexType = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
 
-	ForthType addressType = pElementAddress->GetType();
-	ForthType indexType = pElementFunctionIndex->GetType();
 	if (!pTS->TypeIsObject(addressType) || indexType != StackElement_Int) {
-		ForthWord::BuiltInHelper_DeleteOperands(pElementFunctionIndex, pElementAddress);
 		return pExecState->CreateException("Invoking call must have ( index objaddr -- )");
 	}
-	RefCountedObject* pObj = pElementAddress->GetObject();
-	int n = (int)pElementFunctionIndex->GetInt();
-	bool success = pObj->InvokeFunctionIndex(pExecState, (ObjectFunction)n);
 
-	ForthWord::BuiltInHelper_DeleteOperands(pElementFunctionIndex, pElementAddress);
+	RefCountedObject* pObj = pExecState->pStack->PullAsObject();
+	int n = (int)pExecState->pStack->PullAsInt();
+	bool success = pObj->InvokeFunctionIndex(pExecState, (ObjectFunction)n);
+	pObj->DecReference();
+	pObj = nullptr;
 	return success;
 }
 

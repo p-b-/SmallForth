@@ -1,6 +1,7 @@
 #include "ForthDefs.h"
 #include "DataStack.h"
 #include "ForthString.h"
+#include "TypeSystem.h"
 
 // TODO Implement stack using forth
 
@@ -211,8 +212,25 @@ void* DataStack::PullAsVoidPter() {
 	return toReturn;
 }
 
+RefCountedObject* DataStack::PullAsObject() {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	if (this->topOfStack == -1) {
+		return nullptr;
+	}
+	StackElement& el = this->stack[this->topOfStack];
+	RefCountedObject* pToReturn = nullptr;
+	if (!pTS->TypeIsObject(el.GetType())) {
+		return nullptr;
+	}
+	pToReturn = el.GetObject();
+	pToReturn->IncReference();
+	ShrinkStack();
+
+	return pToReturn;
+}
+
 std::tuple<bool, std::string> DataStack::PullAsString() {
-	double defaultValue = 0.0;
 	if (this->topOfStack == -1) {
 		return { false, "Stack underflow" };;
 	}
