@@ -13,6 +13,7 @@ public:
 	bool Push(char value);
 	bool Push(double value);
 	bool Push(bool value);
+	bool Push(BinaryOperationType value);
 	bool Push(WordBodyElement** wordBodyPter);
 	bool Push(ForthType value);
 	bool Push(RefCountedObject* value);
@@ -35,6 +36,7 @@ public:
 	char PullAsChar();
 	double PullAsFloat();
 	ForthType PullAsType();
+	void* PullAsVoidPter();
 	StackElement PullAsRef();
 
 	std::tuple<bool, std::string> PullAsString();

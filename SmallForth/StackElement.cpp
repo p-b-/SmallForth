@@ -36,6 +36,7 @@ StackElement::StackElement(const StackElement& element) {
 			case StackElement_Float: this->valueDouble = element.valueDouble; break;
 			case StackElement_Type: this->valueType = element.valueType; break;
 			case StackElement_PterToCFA: this->valueWordBodyPter = element.valueWordBodyPter; break;
+			case StackElement_BinaryOpsType: this->valueBinaryOpsType = element.valueBinaryOpsType; break;
 			}
 		}
 	}
@@ -72,6 +73,7 @@ StackElement::StackElement(StackElement&& element) {
 			case StackElement_Float: this->valueDouble = element.valueDouble; element.valueDouble = 0.0; break;
 			case StackElement_Type: this->valueType = element.valueType; element.valueType = StackElement_Undefined; break;
 			case StackElement_PterToCFA: this->valueWordBodyPter = element.valueWordBodyPter; element.valueWordBodyPter = nullptr; break;
+			case StackElement_BinaryOpsType: this->valueBinaryOpsType = element.valueBinaryOpsType; element.valueBinaryOpsType = BinaryOp_Undefined; break;
 			}
 		}
 	}
@@ -119,6 +121,7 @@ StackElement& StackElement::operator=(const StackElement& element) {
 				case StackElement_Float: this->valueDouble = element.valueDouble; break;
 				case StackElement_Type: this->valueType = element.valueType; break;
 				case StackElement_PterToCFA: this->valueWordBodyPter = element.valueWordBodyPter; break;
+				case StackElement_BinaryOpsType: this->valueBinaryOpsType = element.valueBinaryOpsType; break;
 				}
 			}
 		}
@@ -187,6 +190,7 @@ StackElement& StackElement::operator=(StackElement&& element) {
 				case StackElement_Float: this->valueDouble = element.valueDouble; element.valueDouble = 0.0; break;
 				case StackElement_Type: this->valueType = element.valueType; element.valueType = StackElement_Undefined; break;
 				case StackElement_PterToCFA: this->valueWordBodyPter = element.valueWordBodyPter; element.valueWordBodyPter = nullptr; break;
+				case StackElement_BinaryOpsType: this->valueBinaryOpsType = element.valueBinaryOpsType; element.valueBinaryOpsType = BinaryOp_Undefined; break;
 				}
 			}
 		}
