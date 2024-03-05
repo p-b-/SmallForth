@@ -13,36 +13,40 @@
 //      This will be altered when changing the way binary operations function.  Simple types will still have code from here, but if type1 (further down the stack) is an object, it
 //       will have a binary-operation WORD called on it
 bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOperationType opType) {
-	StackElement* pElement2 = pExecState->pStack->Pull();
-	StackElement* pElement1 = pExecState->pStack->Pull();
+	if (pExecState->pStack->Count() < 2) {
+		return pExecState->CreateStackUnderflowException("need two operands for a binary operation");
+	}
+	StackElement* pElement2 = nullptr;// = pExecState->pStack->Pull();
+	StackElement* pElement1 = nullptr; // = pExecState->pStack->Pull();
 
-	if (pElement1 == nullptr || pElement2 == nullptr) {
+	/*if (pElement1 == nullptr || pElement2 == nullptr) {
 		delete pElement1;
 		delete pElement2;
 		return pExecState->CreateStackUnderflowException();
-	}
+	}*/
 
 	StackElement* pNewElement = nullptr;
 
-	ForthType type1 = pElement1->GetType();
-	ForthType type2 = pElement2->GetType();
+	//ForthType type1 = pElement1->GetType();
+	//ForthType type2 = pElement2->GetType();
 
-	//type1 = pExecState->pStack->GetTOSType();
-	//pExecState->pStack->SwapTOS();
-	//type2 = pExecState->pStack->GetTOSType();
-	//pExecState->pStack->SwapTOS();
+	ForthType type2 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	ForthType type1 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
 
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (pTS->TypeIsObject(type1)) {
+		pElement2 = pExecState->pStack->Pull();
+		pElement1 = pExecState->pStack->Pull();
 		return BuiltInHelper_ObjectBinaryOperation(pExecState, opType, pElement1, pElement2);
 	}
 	else if (type1 == StackElement_Float || type2 == StackElement_Float) {
 		if (!TypeSystem::IsNumeric(type1) || !TypeSystem::IsNumeric(type2)) {
-			BuiltInHelper_DeleteOperands(pElement1, pElement2);
 			return pExecState->CreateException("Binary operation not supported between those types");
 		}
-		double n1 = pElement1->GetFloat();
-		double n2 = pElement2->GetFloat();
+		double n2 = pExecState->pStack->PullAsFloat();
+		double n1 = pExecState->pStack->PullAsFloat();
 
 		switch (opType) {
 		case BinaryOp_Add: pNewElement = new StackElement(n1 + n2); break;
@@ -50,12 +54,10 @@ bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOpera
 		case BinaryOp_Multiply:pNewElement = new StackElement(n1 * n2); break;
 		case BinaryOp_Divide:
 			if (n2 == 0) {
-				BuiltInHelper_DeleteOperands(pElement1, pElement2);
 				return pExecState->CreateException("Divide by zero");
 			}
 			pNewElement = new StackElement(n1 / n2); break;
 		case BinaryOp_Modulus:
-			BuiltInHelper_DeleteOperands(pElement1, pElement2);
 			return pExecState->CreateException("Modulus must have integers as operands");
 		case BinaryOp_LessThan: pNewElement = new StackElement(n1 < n2); break;
 		case BinaryOp_LessThanOrEquals: pNewElement = new StackElement(n1 <= n2); break;
@@ -64,11 +66,12 @@ bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOpera
 		case BinaryOp_GreaterThanOrEquals: pNewElement = new StackElement(n1 >= n2); break;
 		case BinaryOp_GreaterThan: pNewElement = new StackElement(n1 > n2); break;
 		default:
-			BuiltInHelper_DeleteOperands(pElement1, pElement2);
 			return pExecState->CreateException("Unsupported operation on types");
 		}
 	}
 	else if (pTS->IsPter(type1) && type2 == StackElement_Int) {
+		pElement2 = pExecState->pStack->Pull();
+		pElement1 = pExecState->pStack->Pull();
 		int64_t n2 = pElement2->GetInt();
 		// Cannot do pointer arithmetic on a void*
 		int64_t* pObject1 = (int64_t*)pElement1->GetContainedPter();
@@ -82,25 +85,22 @@ bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOpera
 	}
 	else if (type1 == StackElement_Int || type2 == StackElement_Int) {
 		if (!TypeSystem::CanConvertToInt(type1) || !TypeSystem::CanConvertToInt(type2)) {
-			BuiltInHelper_DeleteOperands(pElement1, pElement2);
 			return pExecState->CreateException("Binary operation not supported between those types");
 		}
+		int64_t n2 = pExecState->pStack->PullAsInt();
+		int64_t n1 = pExecState->pStack->PullAsInt();
 
-		int64_t n1 = pElement1->GetInt();
-		int64_t n2 = pElement2->GetInt();
 		switch (opType) {
 		case BinaryOp_Add: pNewElement = new StackElement(n1 + n2); break;
 		case BinaryOp_Subtract:pNewElement = new StackElement(n1 - n2); break;
 		case BinaryOp_Multiply:pNewElement = new StackElement(n1 * n2); break;
 		case BinaryOp_Divide:
 			if (n2 == 0) {
-				BuiltInHelper_DeleteOperands(pElement1, pElement2);
 				return pExecState->CreateException("Divide by zero");
 			}
 			pNewElement = new StackElement(n1 / n2); break;
 		case BinaryOp_Modulus:
 			if (type2 != StackElement_Int) {
-				BuiltInHelper_DeleteOperands(pElement1, pElement2);
 				return pExecState->CreateException("Modulus must have integer as divisor");
 			}
 			pNewElement = new StackElement(n1 % n2); break;
@@ -111,35 +111,32 @@ bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOpera
 		case BinaryOp_GreaterThanOrEquals: pNewElement = new StackElement(n1 >= n2); break;
 		case BinaryOp_GreaterThan: pNewElement = new StackElement(n1 > n2); break;
 		default:
-			BuiltInHelper_DeleteOperands(pElement1, pElement2);
 			return pExecState->CreateException("Unsupported operation on types");
 		}
 	}
 	else if (type1 == StackElement_Bool && type2 == StackElement_Bool) {
-		bool b1 = pElement1->GetBool();
-		bool b2 = pElement2->GetBool();
+		bool b2 = pExecState->pStack->PullAsBool();
+		bool b1 = pExecState->pStack->PullAsBool();
 		switch (opType) {
 		case BinaryOp_Equals: pNewElement = new StackElement(b1 == b2); break;
 		case BinaryOp_NotEquals: pNewElement = new StackElement(b1 != b2); break;
 		default:
-			BuiltInHelper_DeleteOperands(pElement1, pElement2);
 			return pExecState->CreateException("Unsupported operation on booleans");
 		}
 	}
 	else if (type1 == StackElement_Type && type2 == StackElement_Type) {
-		ForthType t1 = pElement1->GetValueType();
-		ForthType t2 = pElement2->GetValueType();
+		ForthType t2 = pExecState->pStack->PullAsType();
+		ForthType t1 = pExecState->pStack->PullAsType();
 		switch (opType) {
 		case BinaryOp_Equals: pNewElement = new StackElement(t1 == t2); break;
 		case BinaryOp_NotEquals: pNewElement = new StackElement(t1 != t2); break;
 		default:
-			BuiltInHelper_DeleteOperands(pElement1, pElement2);
 			return pExecState->CreateException("Unsupported operation on types");
 		}
 	}
 	else if (type1 == StackElement_Char && type2 == StackElement_Char) {
-		char c1 = pElement1->GetChar();
-		char c2 = pElement2->GetChar();
+		char c2 = pExecState->pStack->PullAsChar();
+		char c1 = pExecState->pStack->PullAsChar();
 		switch (opType) {
 		case BinaryOp_LessThan: pNewElement = new StackElement(c1 < c2); break;
 		case BinaryOp_LessThanOrEquals: pNewElement = new StackElement(c1 <= c2); break;
@@ -148,9 +145,11 @@ bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOpera
 		case BinaryOp_GreaterThanOrEquals: pNewElement = new StackElement(c1 >= c2); break;
 		case BinaryOp_GreaterThan: pNewElement = new StackElement(c1 > c2); break;
 		default:
-			BuiltInHelper_DeleteOperands(pElement1, pElement2);
 			return pExecState->CreateException("Unsupported operation on chars");
 		}
+	}
+	else {
+		return pExecState->CreateException("Binary operations unsupported on these types");
 	}
 	BuiltInHelper_DeleteOperands(pElement1, pElement2);
 

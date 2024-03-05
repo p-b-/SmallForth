@@ -32,6 +32,9 @@ public:
 	StackElement* Pull();
 	bool PullAsBool();
 	int64_t PullAsInt();
+	char PullAsChar();
+	double PullAsFloat();
+	ForthType PullAsType();
 	StackElement PullAsRef();
 
 	std::tuple<bool, std::string> PullAsString();

@@ -152,6 +152,45 @@ int64_t DataStack::PullAsInt() {
 	return toReturn;
 }
 
+char DataStack::PullAsChar() {
+	char defaultValue = '\0';
+	if (this->topOfStack == -1) {
+		return defaultValue;
+	}
+
+	StackElement& el = this->stack[this->topOfStack];
+	char toReturn = el.GetChar();
+	ShrinkStack();
+
+	return toReturn;
+}
+
+double DataStack::PullAsFloat() {
+	double defaultValue = 0.0;
+	if (this->topOfStack == -1) {
+		return defaultValue;
+	}
+
+	StackElement& el = this->stack[this->topOfStack];
+	double toReturn = el.GetFloat();
+	ShrinkStack();
+
+	return toReturn;
+}
+
+ForthType DataStack::PullAsType() {
+	ForthType  defaultValue = StackElement_Undefined;
+	if (this->topOfStack == -1) {
+		return defaultValue;
+	}
+
+	StackElement& el = this->stack[this->topOfStack];
+	ForthType toReturn = el.GetValueType();
+	ShrinkStack();
+
+	return toReturn;
+}
+
 std::tuple<bool, std::string> DataStack::PullAsString() {
 	StackElement* pElement = Pull();
 	if (pElement == nullptr) {
