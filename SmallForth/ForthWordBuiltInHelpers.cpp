@@ -25,8 +25,8 @@ bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOpera
 
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (pTS->TypeIsObject(type1)) {
-		StackElement element2 = pExecState->pStack->PullAsRef();
-		StackElement element1 = pExecState->pStack->PullAsRef();
+		StackElement element2 = pExecState->pStack->PullNoPter();
+		StackElement element1 = pExecState->pStack->PullNoPter();
 		return BuiltInHelper_ObjectBinaryOperation(pExecState, opType, element1, element2);
 	}
 	else if (type1 == StackElement_Float || type2 == StackElement_Float) {

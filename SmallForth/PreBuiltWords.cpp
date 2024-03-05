@@ -1499,7 +1499,7 @@ bool PreBuiltWords::WordToFloat(ExecState* pExecState) {
 // ( [e] -- b ) true if [e] is object, false if [e] is pter to anything or value
 bool PreBuiltWords::IsObject(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement element = pExecState->pStack->PullAsRef();
+	StackElement element = pExecState->pStack->PullNoPter();
 	ForthType t = element.GetType();
 	if (!pExecState->pStack->Push(pTS->TypeIsObject(t))) {
 		return pExecState->CreateStackOverflowException("whilst determining if a type is an object");
@@ -1518,7 +1518,7 @@ bool PreBuiltWords::IsObject(ExecState* pExecState) {
 
 // ( [e] -- b ) true if [e] is pter to object or value, false otherwise
 bool PreBuiltWords::IsPter(ExecState* pExecState) {
-	StackElement element = pExecState->pStack->PullAsRef();
+	StackElement element = pExecState->pStack->PullNoPter();
 	ForthType t = element.GetType();
 	if (!pExecState->pStack->Push(TypeSystem::IsPter(t))) {
 		return pExecState->CreateStackOverflowException("whilst determining if a type is a pter");
@@ -1568,8 +1568,8 @@ bool PreBuiltWords::BuiltIn_Over(ExecState* pExecState) {
 	}
 	// Element1 is further in the stack than element2
 	// ( Element1 Element2 -- Element2 Element1)
-	StackElement element2 = pExecState->pStack->PullAsRef();
-	StackElement element1 = pExecState->pStack->PullAsRef();
+	StackElement element2 = pExecState->pStack->PullNoPter();
+	StackElement element1 = pExecState->pStack->PullNoPter();
 
 	pExecState->pStack->Push(element1);
 	pExecState->pStack->Push(element2);
@@ -1585,9 +1585,9 @@ bool PreBuiltWords::BuiltIn_Rot(ExecState* pExecState) {
 	if (pExecState->pStack->Count() < 3) {
 		return pExecState->CreateStackUnderflowException("whilst executing ROT");
 	}
-	StackElement elementp = pExecState->pStack->PullAsRef();
-	StackElement elementn = pExecState->pStack->PullAsRef();
-	StackElement elementm = pExecState->pStack->PullAsRef();
+	StackElement elementp = pExecState->pStack->PullNoPter();
+	StackElement elementn = pExecState->pStack->PullNoPter();
+	StackElement elementm = pExecState->pStack->PullNoPter();
 	pExecState->pStack->Push(elementn);
 	pExecState->pStack->Push(elementp);
 	pExecState->pStack->Push(elementm);
@@ -1611,9 +1611,9 @@ bool PreBuiltWords::BuiltIn_ReverseRot(ExecState* pExecState) {
 	if (pExecState->pStack->Count() < 3) {
 		return pExecState->CreateStackUnderflowException("whilst executing -ROT");
 	}
-	StackElement elementp = pExecState->pStack->PullAsRef();
-	StackElement elementn = pExecState->pStack->PullAsRef();
-	StackElement elementm = pExecState->pStack->PullAsRef();
+	StackElement elementp = pExecState->pStack->PullNoPter();
+	StackElement elementn = pExecState->pStack->PullNoPter();
+	StackElement elementm = pExecState->pStack->PullNoPter();
 	pExecState->pStack->Push(elementp);
 	pExecState->pStack->Push(elementm);
 	pExecState->pStack->Push(elementn);

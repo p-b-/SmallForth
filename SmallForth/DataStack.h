@@ -37,7 +37,7 @@ public:
 	double PullAsFloat();
 	ForthType PullAsType();
 	void* PullAsVoidPter();
-	StackElement PullAsRef();
+	StackElement PullNoPter();
 
 	std::tuple<bool, std::string> PullAsString();
 	std::tuple<StackElement*, StackElement* > PullTwo();
