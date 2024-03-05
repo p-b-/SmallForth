@@ -38,6 +38,8 @@ public:
 	ForthType PullAsType();
 	void* PullAsVoidPter();
 	StackElement PullNoPter();
+	RefCountedObject* PullAsObject();
+
 
 	std::tuple<bool, std::string> PullAsString();
 	std::tuple<StackElement*, StackElement* > PullTwo();
