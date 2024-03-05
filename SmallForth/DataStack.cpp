@@ -62,6 +62,14 @@ bool DataStack::Push(bool value) {
 	return true;
 }
 
+bool DataStack::Push(BinaryOperationType value) {
+	if (!MoveToNextSP()) {
+		return false;
+	}
+	this->stack[this->topOfStack].SetTo(value);
+	return true;
+}
+
 bool DataStack::Push(ForthType value) {
 	if (!MoveToNextSP()) {
 		return false;
@@ -190,6 +198,19 @@ ForthType DataStack::PullAsType() {
 
 	return toReturn;
 }
+
+void* DataStack::PullAsVoidPter() {
+	void* defaultValue = nullptr;
+	if (this->topOfStack == -1) {
+		return defaultValue;
+	}
+
+	StackElement& el = this->stack[this->topOfStack];
+	void* toReturn = el.GetContainedPter();
+	ShrinkStack();
+	return toReturn;
+}
+
 
 std::tuple<bool, std::string> DataStack::PullAsString() {
 	StackElement* pElement = Pull();

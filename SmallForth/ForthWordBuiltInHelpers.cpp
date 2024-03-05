@@ -16,19 +16,7 @@ bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOpera
 	if (pExecState->pStack->Count() < 2) {
 		return pExecState->CreateStackUnderflowException("need two operands for a binary operation");
 	}
-	StackElement* pElement2 = nullptr;// = pExecState->pStack->Pull();
-	StackElement* pElement1 = nullptr; // = pExecState->pStack->Pull();
-
-	/*if (pElement1 == nullptr || pElement2 == nullptr) {
-		delete pElement1;
-		delete pElement2;
-		return pExecState->CreateStackUnderflowException();
-	}*/
-
 	StackElement* pNewElement = nullptr;
-
-	//ForthType type1 = pElement1->GetType();
-	//ForthType type2 = pElement2->GetType();
 
 	ForthType type2 = pExecState->pStack->GetTOSType();
 	pExecState->pStack->SwapTOS();
@@ -37,9 +25,9 @@ bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOpera
 
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	if (pTS->TypeIsObject(type1)) {
-		pElement2 = pExecState->pStack->Pull();
-		pElement1 = pExecState->pStack->Pull();
-		return BuiltInHelper_ObjectBinaryOperation(pExecState, opType, pElement1, pElement2);
+		StackElement element2 = pExecState->pStack->PullAsRef();
+		StackElement element1 = pExecState->pStack->PullAsRef();
+		return BuiltInHelper_ObjectBinaryOperation(pExecState, opType, element1, element2);
 	}
 	else if (type1 == StackElement_Float || type2 == StackElement_Float) {
 		if (!TypeSystem::IsNumeric(type1) || !TypeSystem::IsNumeric(type2)) {
@@ -70,16 +58,15 @@ bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOpera
 		}
 	}
 	else if (pTS->IsPter(type1) && type2 == StackElement_Int) {
-		pElement2 = pExecState->pStack->Pull();
-		pElement1 = pExecState->pStack->Pull();
-		int64_t n2 = pElement2->GetInt();
+		int64_t n2 = pExecState->pStack->PullAsInt();
+		void* pVoid = pExecState->pStack->PullAsVoidPter();
+
 		// Cannot do pointer arithmetic on a void*
-		int64_t* pObject1 = (int64_t*)pElement1->GetContainedPter();
+		int64_t* pObject1 = (int64_t*)pVoid;
 		switch (opType) {
 		case BinaryOp_Add: pNewElement = new StackElement(type1, pObject1 + n2); break;
 		case BinaryOp_Subtract: pNewElement = new StackElement(type1, pObject1 - n2); break;
 		default:
-			BuiltInHelper_DeleteOperands(pElement1, pElement2);
 			return pExecState->CreateException("Unsupported operation on pter");
 		}
 	}
@@ -151,7 +138,6 @@ bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOpera
 	else {
 		return pExecState->CreateException("Binary operations unsupported on these types");
 	}
-	BuiltInHelper_DeleteOperands(pElement1, pElement2);
 
 	if (pNewElement == nullptr) {
 		return pExecState->CreateException("Could not perform operation on the types on the stack");
@@ -160,30 +146,24 @@ bool ForthWord::BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOpera
 	return true;
 }
 
-bool ForthWord::BuiltInHelper_ObjectBinaryOperation(ExecState* pExecState, BinaryOperationType opType, StackElement* pElement1, StackElement* pElement2) {
+bool ForthWord::BuiltInHelper_ObjectBinaryOperation(ExecState* pExecState, BinaryOperationType opType, const StackElement& element1, const StackElement& element2) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
-	ForthType type1 = pElement1->GetType();
+	ForthType type1 = element1.GetType();
 
 	XT binaryOpsHandler = pTS->GetBinaryOpsHandlerForType(type1);
 	if (binaryOpsHandler == nullptr) {
-		BuiltInHelper_DeleteOperands(pElement1, pElement2);
 		return pExecState->CreateException("Type does not support binary operations");
 	}
 	// Push element1, element2, operator
-	if (!pExecState->pStack->Push(pElement1) || 
-		!pExecState->pStack->Push(pElement2) ||
-		!pExecState->pStack->Push(new StackElement(opType))) {
-		BuiltInHelper_DeleteOperands(pElement1, pElement2);
+	if (!pExecState->pStack->Push(element1) ||
+		!pExecState->pStack->Push(element2) ||
+		!pExecState->pStack->Push(opType)) {
 		return pExecState->CreateStackOverflowException();
 	}
-	pElement1 = nullptr;
-	pElement2 = nullptr;
 	if (!binaryOpsHandler(pExecState)) {
-		BuiltInHelper_DeleteOperands(pElement1, pElement2);
 		return pExecState->CreateException("Could not perform binary operation on those types");
 	}
-	BuiltInHelper_DeleteOperands(pElement1, pElement2);
 	return true;
 }
 

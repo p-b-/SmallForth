@@ -43,7 +43,7 @@ public:
 	static bool BuiltIn_DescribeWord(ExecState* pExecState);
 
 	static bool BuiltInHelper_BinaryOperation(ExecState* pExecState, BinaryOperationType opType);
-	static bool BuiltInHelper_ObjectBinaryOperation(ExecState* pExecState, BinaryOperationType opType, StackElement* pElement1, StackElement* pElement2);
+	static bool BuiltInHelper_ObjectBinaryOperation(ExecState* pExecState, BinaryOperationType opType, const StackElement& element1, const StackElement& element2);
 	static void BuiltInHelper_DeleteOperands(StackElement*& pElement1, StackElement*& pElement2);
 	static void BuiltInHelper_DeleteStackElement(StackElement*& pElement);
 	static bool BuiltInHelper_GetOneTempStackElement(ExecState* pExecState, StackElement*& pElement1);
