@@ -211,24 +211,23 @@ void* DataStack::PullAsVoidPter() {
 	return toReturn;
 }
 
-
 std::tuple<bool, std::string> DataStack::PullAsString() {
-	StackElement* pElement = Pull();
-	if (pElement == nullptr) {
-		return { false, "Stack underflow" };
+	double defaultValue = 0.0;
+	if (this->topOfStack == -1) {
+		return { false, "Stack underflow" };;
 	}
-	if (pElement->GetType() != ObjectType_String) {
-		delete pElement;
+
+	StackElement& el = this->stack[this->topOfStack];
+	if (el.GetType() != ObjectType_String) {
 		return { false, "No string on stack" };
 	}
-	ForthString* pForthString = (ForthString* )pElement->GetObject();
+	ForthString* pForthString = (ForthString*)el.GetObject();
 	std::string containedString = pForthString->GetContainedString();
-	delete pElement;
-	pElement = nullptr;
+	ShrinkStack();
 	return { true, containedString };
 }
 
-StackElement DataStack::PullAsRef() {
+StackElement DataStack::PullNoPter() {
 	if (this->topOfStack == -1) {
 		stack[0].RelinquishValue();
 		return stack[0];
@@ -240,7 +239,6 @@ StackElement DataStack::PullAsRef() {
 	ShrinkStack();
 
 	return toReturn;
-
 }
 
 std::tuple<bool, StackElement* > DataStack::PullType(ElementType type) {

@@ -203,8 +203,10 @@ bool InputProcessor::Interpret(ExecState* pExecState) {
 		catch (...) {
 			HandleException(pExecState, nullptr, "Non std exception: ");
 		}
-		pExecState->pWordBeingInterpreted->DecReference();
-		pExecState->pWordBeingInterpreted = nullptr;
+		if (pExecState->pWordBeingInterpreted != nullptr) {
+			pExecState->pWordBeingInterpreted->DecReference();
+			pExecState->pWordBeingInterpreted = nullptr;
+		}
 	}
 
 	delete pExecState;
