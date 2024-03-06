@@ -1892,22 +1892,19 @@ bool PreBuiltWords::BuiltIn_Xor(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_Power(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement1;
-	StackElement* pElement2;
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElement1, pElement2)) {
-		return false;
+
+	if (pExecState->pStack->Count() < 2) {
+		return pExecState->CreateStackUnderflowException("whlst executing XOR");
 	}
-	ForthType type1 = pElement1->GetType();
-	ForthType type2 = pElement2->GetType();
-	if (!pTS->IsNumeric(type1) || !pTS->IsNumeric(type2)) {
-		ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
+	ForthType t1 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	ForthType t2 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	if (!pTS->IsNumeric(t1) || !pTS->IsNumeric(t2)) {
 		return pExecState->CreateException("Power function needs to numeric elements to operate on");
 	}
-	// Return x ^ y
-	double x = pElement1->GetFloat();
-	double y = pElement2->GetFloat();
-	ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
-
+	double y = pExecState->pStack->PullAsFloat();
+	double x = pExecState->pStack->PullAsFloat();
 	double toReturn = pow(x, y);
 	if (!pExecState->pStack->Push(toReturn)) {
 		return pExecState->CreateStackOverflowException("whilst pushing result of power function");
@@ -1917,6 +1914,20 @@ bool PreBuiltWords::BuiltIn_Power(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_Cos(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing COS");
+	}
+	ForthType type = pExecState->pStack->GetTOSType();
+	if (!pTS->IsNumeric(type)) {
+		return pExecState->CreateException("Cos function needs a numeric to operate on");
+	}
+	double theta = pExecState->pStack->PullAsFloat();
+	double toReturn = cos(theta);
+	if (!pExecState->pStack->Push(toReturn)) {
+		return pExecState->CreateStackOverflowException("whilst pushing result of cosine function");
+	}
+	return true;
+
 	StackElement* pElement;
 	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
 		return false;
@@ -1926,32 +1937,19 @@ bool PreBuiltWords::BuiltIn_Cos(ExecState* pExecState) {
 		pElement = nullptr;
 		return pExecState->CreateException("Cos function needs a numeric to operate on");
 	}
-
-	double theta = pElement->GetFloat();
-	delete pElement;
-	pElement = nullptr;
-	double toReturn = cos(theta);
-	if (!pExecState->pStack->Push(toReturn)) {
-		return pExecState->CreateStackOverflowException("whilst pushing result of cosine function");
-	}
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_Sin(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing SIN");
 	}
-	if (!pTS->IsNumeric(pElement->GetType())) {
-		delete pElement;
-		pElement = nullptr;
-		return pExecState->CreateException("Sin function needs a numeric to operate on");
+	ForthType type = pExecState->pStack->GetTOSType();
+	if (!pTS->IsNumeric(type)) {
+		return pExecState->CreateException("SIN function needs a numeric to operate on");
 	}
-
-	double theta = pElement->GetFloat();
-	delete pElement;
-	pElement = nullptr;
+	double theta = pExecState->pStack->PullAsFloat();
 	double toReturn = sin(theta);
 	if (!pExecState->pStack->Push(toReturn)) {
 		return pExecState->CreateStackOverflowException("whilst pushing result of sine function");
@@ -1961,18 +1959,14 @@ bool PreBuiltWords::BuiltIn_Sin(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_Tan(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing TAN");
 	}
-	if (!pTS->IsNumeric(pElement->GetType())) {
-		delete pElement;
-		pElement = nullptr;
-		return pExecState->CreateException("Tan function needs a numeric to operate on");
+	ForthType type = pExecState->pStack->GetTOSType();
+	if (!pTS->IsNumeric(type)) {
+		return pExecState->CreateException("TAN function needs a numeric to operate on");
 	}
-	double theta = pElement->GetFloat();
-	delete pElement;
-	pElement = nullptr;
+	double theta = pExecState->pStack->PullAsFloat();
 	double toReturn = tan(theta);
 	if (!pExecState->pStack->Push(toReturn)) {
 		return pExecState->CreateStackOverflowException("whilst pushing result of tan function");
@@ -1982,83 +1976,65 @@ bool PreBuiltWords::BuiltIn_Tan(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_Arccosine(ExecState* pExecState) { 
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing ARCCOS");
 	}
-	if (!pTS->IsNumeric(pElement->GetType())) {
-		delete pElement;
-		pElement = nullptr;
-		return pExecState->CreateException("Cos-1 function needs a numeric to operate on");
+	ForthType type = pExecState->pStack->GetTOSType();
+	if (!pTS->IsNumeric(type)) {
+		return pExecState->CreateException("ARCOS function needs a numeric to operate on");
 	}
-
-	double theta = pElement->GetFloat();
-	delete pElement;
-	pElement = nullptr;
+	double theta = pExecState->pStack->PullAsFloat();
 	double toReturn = acos(theta);
 	if (!pExecState->pStack->Push(toReturn)) {
-		return pExecState->CreateStackOverflowException("whilst pushing result of arccosine function");
+		return pExecState->CreateStackOverflowException("whilst pushing result of arccos function");
 	}
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_Arcsine(ExecState* pExecState) { 
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing ARCSINE");
 	}
-	if (!pTS->IsNumeric(pElement->GetType())) {
-		delete pElement;
-		pElement = nullptr;
-		return pExecState->CreateException("Sin-1 function needs a numeric to operate on");
+	ForthType type = pExecState->pStack->GetTOSType();
+	if (!pTS->IsNumeric(type)) {
+		return pExecState->CreateException("ARCSINE function needs a numeric to operate on");
 	}
-
-	double theta = pElement->GetFloat();
-	delete pElement;
-	pElement = nullptr;
+	double theta = pExecState->pStack->PullAsFloat();
 	double toReturn = asin(theta);
 	if (!pExecState->pStack->Push(toReturn)) {
-		return pExecState->CreateStackOverflowException("whilst pushing result of a4rcsine function");
+		return pExecState->CreateStackOverflowException("whilst pushing result of arcsine function");
 	}
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_Arctan(ExecState* pExecState) { 
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing ARCTAN");
 	}
-	if (!pTS->IsNumeric(pElement->GetType())) {
-		delete pElement;
-		pElement = nullptr;
-		return pExecState->CreateException("Tan-1 function needs a numeric to operate on");
+	ForthType type = pExecState->pStack->GetTOSType();
+	if (!pTS->IsNumeric(type)) {
+		return pExecState->CreateException("ATAN function needs a numeric to operate on");
 	}
-	double theta = pElement->GetFloat();
-	delete pElement;
-	pElement = nullptr;
+	double theta = pExecState->pStack->PullAsFloat();
 	double toReturn = atan(theta);
 	if (!pExecState->pStack->Push(toReturn)) {
-		return pExecState->CreateStackOverflowException("whilst pushing result of arctan function");
+		return pExecState->CreateStackOverflowException("whilst pushing result of atan function");
 	}
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_Sqrt(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing SQRT");
 	}
-	if (!pTS->IsNumeric(pElement->GetType())) {
-		delete pElement;
-		pElement = nullptr;
-		return pExecState->CreateException("Sqrt function needs a numeric to operate on");
+	ForthType type = pExecState->pStack->GetTOSType();
+	if (!pTS->IsNumeric(type)) {
+		return pExecState->CreateException("SQRT function needs a numeric to operate on");
 	}
-	double x = pElement->GetFloat();
-	delete pElement;
-	pElement = nullptr;
+	double x = pExecState->pStack->PullAsFloat();
 	double toReturn = sqrt(x);
 	if (!pExecState->pStack->Push(toReturn)) {
 		return pExecState->CreateStackOverflowException("whilst pushing result of sqrt function");
