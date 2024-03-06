@@ -48,8 +48,6 @@ public:
 	static void BuiltInHelper_DeleteStackElement(StackElement*& pElement);
 	static bool BuiltInHelper_GetOneTempStackElement(ExecState* pExecState, StackElement*& pElement1);
 	static bool BuiltInHelper_GetOneStackElement(ExecState* pExecState, StackElement*& pElement1);
-	static bool BuiltInHelper_GetTwoStackElements(ExecState* pExecState, StackElement*& pElement1, StackElement*& pElement2);
-	static bool BuiltInHelper_GetThreeStackElements(ExecState* pExecState, StackElement*& pElement1, StackElement*& pElement2, StackElement*& pElement3);
 	static bool BuiltInHelper_UpdateForwardJump(ExecState* pExecState);
 	static bool BuiltInHelper_FetchLiteralWithOffset(ExecState* pExecState, int offset);
 	static bool BuiltInHelper_CompileTOSLiteral(ExecState* pExecState, bool includePushWord);

@@ -198,32 +198,6 @@ bool ForthWord::BuiltInHelper_GetOneStackElement(ExecState* pExecState, StackEle
 	return true;
 }
 
-bool ForthWord::BuiltInHelper_GetTwoStackElements(ExecState* pExecState, StackElement*& pElement1, StackElement*& pElement2) {
-	pElement2 = pExecState->pStack->Pull();
-	pElement1 = pExecState->pStack->Pull();
-
-	if (pElement1 == nullptr || pElement2 == nullptr) {
-		delete pElement1;
-		delete pElement2;
-		return pExecState->CreateStackUnderflowException();
-	}
-	return true;
-}
-
-bool ForthWord::BuiltInHelper_GetThreeStackElements(ExecState* pExecState, StackElement*& pElement1, StackElement*& pElement2, StackElement*& pElement3) {
-	pElement3 = pExecState->pStack->Pull();
-	pElement2 = pExecState->pStack->Pull();
-	pElement1 = pExecState->pStack->Pull();
-
-	if (pElement1 == nullptr || pElement2 == nullptr || pElement3 == nullptr) {
-		delete pElement1;
-		delete pElement2;
-		delete pElement3;
-		return pExecState->CreateStackUnderflowException();
-	}
-	return true;
-}
-
 // Relies on return stack TOS have the index into the word being defines literal element
 //  (The actual pushlit that preceeds the actual value - it will have 1 added to it)
 bool ForthWord::BuiltInHelper_UpdateForwardJump(ExecState* pExecState) {

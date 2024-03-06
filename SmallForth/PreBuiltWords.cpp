@@ -1054,23 +1054,18 @@ bool PreBuiltWords::BuiltIn_PokeIntegerInWord(ExecState* pExecState) {
 	if (nCompileState==0) {
 		return pExecState->CreateException("Cannot execute !INWORD when not compiling");
 	}
-	StackElement* pAddressElement = nullptr;
-	StackElement* pValueElement = nullptr;
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pAddressElement, pValueElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 2) {
+		return pExecState->CreateStackUnderflowException("whlst executing XOR");
 	}
-	if (pValueElement->GetType() != StackElement_Int) {
-		ForthWord::BuiltInHelper_DeleteOperands(pValueElement, pAddressElement);
-		return pExecState->CreateException("Need an integer value to poke into word");
+	ForthType t1 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	ForthType t2 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	if (t1!=StackElement_Int || t2!=StackElement_Int) {
+		return pExecState->CreateException("Need an integer value to for address, and to poke into word ( nAddr n -- )");
 	}
-	if (pAddressElement->GetType() != StackElement_Int) {
-		ForthWord::BuiltInHelper_DeleteOperands(pValueElement, pAddressElement);
-		return pExecState->CreateException("Need an integer address to poke into word");
-	}
-	int v = (int)pValueElement->GetInt();
-	int addr = (int)pAddressElement->GetInt();
-	ForthWord::BuiltInHelper_DeleteOperands(pValueElement, pAddressElement);
-
+	int v = (int)pExecState->pStack->PullAsInt();
+	int addr = (int)pExecState->pStack->PullAsInt();
 	WordBodyElement* pLiteral = new WordBodyElement();
 	pLiteral->wordElement_int = v;
 	return pExecState->pCompiler->AlterElementInWordUnderCreation(pExecState, addr, pLiteral);
@@ -1927,17 +1922,6 @@ bool PreBuiltWords::BuiltIn_Cos(ExecState* pExecState) {
 		return pExecState->CreateStackOverflowException("whilst pushing result of cosine function");
 	}
 	return true;
-
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
-	}
-	if (!pTS->IsNumeric(pElement->GetType())) {
-		delete pElement;
-		pElement = nullptr;
-		return pExecState->CreateException("Cos function needs a numeric to operate on");
-	}
-	return true;
 }
 
 bool PreBuiltWords::BuiltIn_Sin(ExecState* pExecState) {
@@ -2160,16 +2144,13 @@ bool PreBuiltWords::BuiltIn_PushType(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_TypeFromInt(ExecState* pExecState) {
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing TYPEFROMINT");
 	}
-	if (pElement->GetType() != ValueType_Int) {
+	if (!pExecState->pStack->TOSIsType(StackElement_Int)) {
 		return pExecState->CreateException("Only ints can be cast to types");
 	}
-	int64_t typeAsInt = pElement->GetInt();
-	ForthWord::BuiltInHelper_DeleteStackElement(pElement);
-
+	int64_t typeAsInt = pExecState->pStack->PullAsInt();
 	ForthType typeAsType = (ForthType)typeAsInt;
 	pExecState->pStack->Push(typeAsType);
 
