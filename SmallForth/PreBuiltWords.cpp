@@ -1827,63 +1827,61 @@ bool PreBuiltWords::BuiltIn_Not(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_Or(ExecState* pExecState) {
-	StackElement* pElement1;
-	StackElement* pElement2;
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElement1, pElement2)) {
-		return false;
+	if (pExecState->pStack->Count() < 2) {
+		return pExecState->CreateStackUnderflowException("whlst executing OR");
 	}
-	if (pElement1->GetType() != StackElement_Bool ||
-		pElement2->GetType() != StackElement_Bool) {
-		ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
-		return pExecState->CreateException("OR operation needs two booleans");
+	ForthType t1 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	ForthType t2 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	if (t1 != StackElement_Bool ||
+		t2 != StackElement_Bool) {
+		return pExecState->CreateException("OR expects two bools ( b b -- b )");
 	}
-	bool value1 = pElement1->GetBool();
-	bool value2 = pElement2->GetBool();
-	ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
+	bool value2 = pExecState->pStack->PullAsBool();
+	bool value1 = pExecState->pStack->PullAsBool();
 
 	if (!pExecState->pStack->Push(value1 || value2)) {
 		return pExecState->CreateStackUnderflowException();
 	}
-
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_And(ExecState* pExecState) {
-	StackElement* pElement1;
-	StackElement* pElement2;
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElement1, pElement2)) {
-		return false;
+	if (pExecState->pStack->Count() < 2) {
+		return pExecState->CreateStackUnderflowException("whlst executing AND");
 	}
-	if (pElement1->GetType() != StackElement_Bool ||
-		pElement2->GetType() != StackElement_Bool) {
-		ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
-		return pExecState->CreateException("AMD operation needs two booleans");
+	ForthType t1 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	ForthType t2 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	if (t1 != StackElement_Bool ||
+		t2 != StackElement_Bool) {
+		return pExecState->CreateException("AND expects two bools ( b b -- b )");
 	}
-	bool value1 = pElement1->GetBool();
-	bool value2 = pElement2->GetBool();
-	ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
+	bool value2 = pExecState->pStack->PullAsBool();
+	bool value1 = pExecState->pStack->PullAsBool();
 
 	if (!pExecState->pStack->Push(value1 && value2)) {
 		return pExecState->CreateStackUnderflowException();
 	}
-
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_Xor(ExecState* pExecState) {
-	StackElement* pElement1;
-	StackElement* pElement2;
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElement1, pElement2)) {
-		return false;
+	if (pExecState->pStack->Count() < 2) {
+		return pExecState->CreateStackUnderflowException("whlst executing XOR");
 	}
-	if (pElement1->GetType() != StackElement_Bool ||
-		pElement2->GetType() != StackElement_Bool) {
-		ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
-		return pExecState->CreateException("XOR operation needs two booleans");
+	ForthType t1 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	ForthType t2 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	if (t1 != StackElement_Bool ||
+		t2 != StackElement_Bool) {
+		return pExecState->CreateException("XOR expects two bools ( b b -- b )");
 	}
-	bool value1 = pElement1->GetBool();
-	bool value2 = pElement2->GetBool();
-	ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
+	bool value2 = pExecState->pStack->PullAsBool();
+	bool value1 = pExecState->pStack->PullAsBool();
 
 	if (!pExecState->pStack->Push(value1 != value2)) {
 		return pExecState->CreateStackUnderflowException();
