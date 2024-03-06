@@ -36,6 +36,7 @@ public:
 	char PullAsChar();
 	double PullAsFloat();
 	ForthType PullAsType();
+	WordBodyElement** PullAsCFA();
 	void* PullAsVoidPter();
 	StackElement PullNoPter();
 	RefCountedObject* PullAsObject();

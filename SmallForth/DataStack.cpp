@@ -188,7 +188,7 @@ double DataStack::PullAsFloat() {
 }
 
 ForthType DataStack::PullAsType() {
-	ForthType  defaultValue = StackElement_Undefined;
+	ForthType defaultValue = StackElement_Undefined;
 	if (this->topOfStack == -1) {
 		return defaultValue;
 	}
@@ -197,6 +197,17 @@ ForthType DataStack::PullAsType() {
 	ForthType toReturn = el.GetValueType();
 	ShrinkStack();
 
+	return toReturn;
+}
+
+WordBodyElement** DataStack::PullAsCFA() {
+	WordBodyElement** defaultValue = nullptr;
+	if (this->topOfStack == -1) {
+		return defaultValue;
+	}
+	StackElement& el = this->stack[this->topOfStack];
+	WordBodyElement** toReturn = el.GetWordBodyElement();
+	ShrinkStack();
 	return toReturn;
 }
 
