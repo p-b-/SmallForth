@@ -28,6 +28,6 @@ private:
 	bool SetElementAtIndex(ExecState* pExecState);
 private:
 	ForthType containedType;
-	std::vector<StackElement*> elements;
+	std::vector<StackElement> elements;
 };
 
