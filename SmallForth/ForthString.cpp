@@ -249,35 +249,34 @@ bool ForthString::SubString(ExecState* pExecState) {
 
 // ( element object -- )
 bool ForthString::Append(ExecState* pExecState) {
-	StackElement* pElementToAppend = pExecState->pStack->Pull();
-	if (pElementToAppend == nullptr) {
-		return pExecState->CreateStackUnderflowException("cannot get char or codepoint element to appen to string");
+	if (pExecState->pStack->Count() ==0 ) {
+		return pExecState->CreateStackUnderflowException("cannot get char or codepoint element to append to string");
 	}
+	ForthType appendType = pExecState->pStack->GetTOSType();
+
 	char toAppend;
 	ForthString* pAppendString;
-	switch(pElementToAppend->GetType()) {
+
+	switch (appendType) {
 	case ObjectType_String:
-		pAppendString = (ForthString*)pElementToAppend->GetObject();
+		pAppendString = (ForthString*)pExecState->pStack->PullAsObject();
 		this->containedString += pAppendString->containedString;
 		break;
 	case StackElement_Char:
-		toAppend = pElementToAppend->GetChar();
+		toAppend = pExecState->pStack->PullAsChar();
 		this->containedString += toAppend;
 		break;
 	case ObjectType_ReadWriteFile:
 	case ObjectType_WriteFile:
+	{
+		StackElement* pElementToAppend = pExecState->pStack->Pull();
+
 		return AppendToFile(pExecState, pElementToAppend);
+	}
 	default:
-		delete pElementToAppend;
-		pElementToAppend = nullptr;
 		return pExecState->CreateException("Can only directly append characters and strings, to strings");
 	}
-
-	delete pElementToAppend;
-	pElementToAppend = nullptr;
-
-	StackElement* pElementNewString = new StackElement((RefCountedObject*)this);
-	if (!pExecState->pStack->Push(pElementNewString)) {
+	if (!pExecState->pStack->Push((RefCountedObject*)this)) {
 		return pExecState->CreateStackOverflowException();
 	}
 	return true;
