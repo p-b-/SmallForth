@@ -8,6 +8,10 @@
 
 #include "enumPrinters.h"
 
+StackElement::StackElement() {
+	elementType = StackElement_Undefined;
+}
+
 StackElement::StackElement(const StackElement& element) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
@@ -20,7 +24,9 @@ StackElement::StackElement(const StackElement& element) {
 			//  inside a WordBodyElement, and this if-clause ( if (!pTS->IsPter() ) does not get executed, but the next one (past the value type assignments).
 			this->valuePter = element.valuePter;
 			RefCountedObject* pObj = static_cast<RefCountedObject*>(this->valuePter);
-			pObj->IncReference();
+			if (pObj != nullptr) {
+				pObj->IncReference();
+			}
 		}
 		else {
 			switch (elementType) {
@@ -30,6 +36,7 @@ StackElement::StackElement(const StackElement& element) {
 			case StackElement_Float: this->valueDouble = element.valueDouble; break;
 			case StackElement_Type: this->valueType = element.valueType; break;
 			case StackElement_PterToCFA: this->valueWordBodyPter = element.valueWordBodyPter; break;
+			case StackElement_BinaryOpsType: this->valueBinaryOpsType = element.valueBinaryOpsType; break;
 			}
 		}
 	}
@@ -39,9 +46,175 @@ StackElement::StackElement(const StackElement& element) {
 		if (!pTS->IsValueOrValuePter(elementType)) {
 			// Its a pointer to a ref-counted object - increase reference count.  Note, the type system will take care of
 			//  getting the reference out of the WordbodyElement** that the this->valuePter points at
-			pTS->IncReferenceForPter(elementType, this->valuePter);
+			if (this->valuePter != nullptr) {
+				pTS->IncReferenceForPter(elementType, this->valuePter);
+			}
 		}
 	}
+}
+
+StackElement::StackElement(StackElement&& element) {
+	// No need to inc references - taking over the element's data including any reference counting
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	elementType = element.elementType;
+	element.elementType = StackElement_Undefined;
+	if (!pTS->IsPter(elementType)) {
+		if (pTS->TypeIsObject(elementType)) {
+			// See copy constructor for details why the object is copied like this, and not as part of the IsPter()=true clause
+			this->valuePter = element.valuePter;
+			element.valuePter = nullptr;
+		}
+		else {
+			switch (elementType) {
+			case StackElement_Bool: this->valueBool = element.valueBool; element.valueBool = false;  break;
+			case StackElement_Char: this->valueChar = element.valueChar; element.valueChar = '\0'; break;
+			case StackElement_Int: this->valueInt64 = element.valueInt64; element.valueInt64 = 0; break;
+			case StackElement_Float: this->valueDouble = element.valueDouble; element.valueDouble = 0.0; break;
+			case StackElement_Type: this->valueType = element.valueType; element.valueType = StackElement_Undefined; break;
+			case StackElement_PterToCFA: this->valueWordBodyPter = element.valueWordBodyPter; element.valueWordBodyPter = nullptr; break;
+			case StackElement_BinaryOpsType: this->valueBinaryOpsType = element.valueBinaryOpsType; element.valueBinaryOpsType = BinaryOp_Undefined; break;
+			}
+		}
+	}
+	else {
+		// It's a pointer to something, just copy the pointer.
+		this->valuePter = element.valuePter;
+		element.valuePter = nullptr;
+	}
+}
+
+StackElement& StackElement::operator=(const StackElement& element) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+	if (this != &element) {
+		// Dec reference if currently a ref counted object (or pter to) at the end of this method
+		bool decObject = false;
+		bool decObjectPter = false;
+		void* objectToDec = nullptr;
+		ForthType typeToDec = StackElement_Undefined;
+		if (pTS->TypeIsObject(elementType)) {
+			decObject = true;
+			objectToDec = this->valuePter;
+			typeToDec = this->elementType;
+		}
+		else if (pTS->IsPter(elementType) && !pTS->IsValueOrValuePter(elementType)) {
+			decObjectPter = true;
+			objectToDec = this->valuePter;
+			typeToDec = this->elementType;
+		}
+
+		elementType = element.elementType;
+		if (!pTS->IsPter(elementType)) {
+			if (pTS->TypeIsObject(elementType)) {
+				// See copy constructor for details why the object is copied like this, and not as part of the IsPter()=true clause
+				this->valuePter = element.valuePter;
+				RefCountedObject* pObj = static_cast<RefCountedObject*>(this->valuePter);
+				if (pObj != nullptr) {
+					pObj->IncReference();
+				}
+			}
+			else {
+				switch (elementType) {
+				case StackElement_Bool: this->valueBool = element.valueBool; break;
+				case StackElement_Char: this->valueChar = element.valueChar; break;
+				case StackElement_Int: this->valueInt64 = element.valueInt64; break;
+				case StackElement_Float: this->valueDouble = element.valueDouble; break;
+				case StackElement_Type: this->valueType = element.valueType; break;
+				case StackElement_PterToCFA: this->valueWordBodyPter = element.valueWordBodyPter; break;
+				case StackElement_BinaryOpsType: this->valueBinaryOpsType = element.valueBinaryOpsType; break;
+				}
+			}
+		}
+		else {
+			// It's a pointer to something, just copy the pointer.
+			this->valuePter = element.valuePter;
+			if (!pTS->IsValueOrValuePter(elementType)) {
+				// Its a pointer to a ref-counted object - increase reference count.  Note, the type system will take care of
+				//  getting the reference out of the WordbodyElement** that the this->valuePter points at
+				if (this->valuePter != nullptr) {
+					pTS->IncReferenceForPter(elementType, this->valuePter);
+				}
+			}
+		}
+
+		if (decObject) {
+			RefCountedObject* pObj = static_cast<RefCountedObject*>(objectToDec);
+			if (pObj != nullptr) {
+				pObj->DecReference();
+			}
+		}
+		else if (decObjectPter) {
+			// Previous pointer is to a ref-counted object - decrease reference count.  Note, the type system will take care of
+			//  getting the reference out of the WordbodyElement** that the valuePter points at
+			if (objectToDec != nullptr) {
+				pTS->DecReferenceForPter(typeToDec, objectToDec);
+			}
+		}
+	}
+	return *this;
+}
+
+StackElement& StackElement::operator=(StackElement&& element) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+	if (this != &element) {
+		// Dec reference if currently a ref counted object (or pter to) at the end of this method
+		bool decObject = false;
+		bool decObjectPter = false;
+		void* objectToDec = nullptr;
+		ForthType typeToDec = StackElement_Undefined;
+		if (pTS->TypeIsObject(elementType)) {
+			decObject = true;
+			objectToDec = this->valuePter;
+			typeToDec = this->elementType;
+		}
+		else if (pTS->IsPter(elementType) && !pTS->IsValueOrValuePter(elementType)) {
+			decObjectPter = true;
+			objectToDec = this->valuePter;
+			typeToDec = this->elementType;
+		}
+
+
+		elementType = element.elementType;
+		element.elementType = StackElement_Undefined;
+		if (!pTS->IsPter(elementType)) {
+			if (pTS->TypeIsObject(elementType)) {
+				// See copy constructor for details why the object is copied like this, and not as part of the IsPter()=true clause
+				this->valuePter = element.valuePter;
+				element.valuePter = nullptr;
+			}
+			else {
+				switch (elementType) {
+				case StackElement_Bool: this->valueBool = element.valueBool; element.valueBool = false;  break;
+				case StackElement_Char: this->valueChar = element.valueChar; element.valueChar = '\0'; break;
+				case StackElement_Int: this->valueInt64 = element.valueInt64; element.valueInt64 = 0; break;
+				case StackElement_Float: this->valueDouble = element.valueDouble; element.valueDouble = 0.0; break;
+				case StackElement_Type: this->valueType = element.valueType; element.valueType = StackElement_Undefined; break;
+				case StackElement_PterToCFA: this->valueWordBodyPter = element.valueWordBodyPter; element.valueWordBodyPter = nullptr; break;
+				case StackElement_BinaryOpsType: this->valueBinaryOpsType = element.valueBinaryOpsType; element.valueBinaryOpsType = BinaryOp_Undefined; break;
+				}
+			}
+		}
+		else {
+			// It's a pointer to something, just copy the pointer.
+			this->valuePter = element.valuePter;
+			element.valuePter = nullptr;
+		}
+
+		if (decObject) {
+			RefCountedObject* pObj = static_cast<RefCountedObject*>(objectToDec);
+			if (pObj != nullptr) {
+				pObj->DecReference();
+			}
+		}
+		else if (decObjectPter) {
+			// Previous pointer is to a ref-counted object - decrease reference count.  Note, the type system will take care of
+			//  getting the reference out of the WordbodyElement** that the valuePter points at
+			if (objectToDec != nullptr) {
+				pTS->DecReferenceForPter(typeToDec, objectToDec);
+			}
+		}
+	}
+	return *this;
 }
 
 StackElement::~StackElement() {
@@ -135,6 +308,121 @@ StackElement::StackElement(ForthType forthType, WordBodyElement** ppLiteral) {
 			pTS->IncReferenceForPter(forthType, (static_cast<WordBodyElement**>(this->valuePter)));
 		}
 	}
+}
+
+void StackElement::SetTo(char value) {
+	elementType = StackElement_Char;
+	valueChar = value;
+}
+
+void StackElement::SetTo(int64_t value) {
+	elementType = StackElement_Int;
+	valueInt64 = value;
+}
+
+void StackElement::SetTo(double value) {
+	elementType = StackElement_Float;
+	valueDouble = value;
+}
+
+void StackElement::SetTo(bool value) {
+	elementType = StackElement_Bool;
+	valueBool = value;
+}
+
+void StackElement::SetTo(WordBodyElement** value) {
+	elementType = StackElement_PterToCFA;
+	valueWordBodyPter = value;
+}
+
+void StackElement::SetTo(XT* value) {
+	elementType = StackElement_XT;
+	valueXTPter = value;
+}
+
+void StackElement::SetTo(BinaryOperationType value) {
+	elementType = StackElement_BinaryOpsType;
+	valueBinaryOpsType = value;
+}
+
+void StackElement::SetTo(ForthType value) {
+	elementType = StackElement_Type;
+	valueType = value;
+
+}
+
+void StackElement::SetTo(RefCountedObject* value) {
+	elementType = value ->GetObjectTypeId();
+	valuePter = static_cast<void*>(value);
+	value->IncReference();
+
+}
+
+void StackElement::SetTo(ForthType forthType, WordBodyElement** ppLiteral) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	elementType = forthType;
+	if (!pTS->IsPter(forthType)) {
+		WordBodyElement* pLiteral = *ppLiteral;
+		if (pTS->TypeIsObject(elementType)) {
+			this->valuePter = pLiteral->pter;
+			pTS->IncReferenceForPter(elementType, this->valuePter);
+		}
+		else {
+			switch (forthType) {
+			case StackElement_Bool: this->valueBool = pLiteral->wordElement_bool; break;
+			case StackElement_Char: this->valueChar = pLiteral->wordElement_char; break;
+			case StackElement_Int: this->valueInt64 = pLiteral->wordElement_int; break;
+			case StackElement_Float: this->valueDouble = pLiteral->wordElement_float; break;
+			case StackElement_Type: this->valueType = pLiteral->forthType; break;
+			case StackElement_PterToCFA: this->valueWordBodyPter = pLiteral->wordElement_BodyPter; break;
+			}
+		}
+	}
+	else {
+		this->valuePter = (void*)ppLiteral;
+		// If pointer to a ref-counted object, increment the object (follow the dereference chain)
+		if (!pTS->IsValueOrValuePter(forthType)) {
+			pTS->IncReferenceForPter(forthType, (static_cast<WordBodyElement**>(this->valuePter)));
+		}
+	}
+}
+
+void StackElement::SetTo(ForthType forthType, void* value) {
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+
+	elementType = forthType;
+	valuePter = value;
+	if (!pTS->IsValueOrValuePter(elementType)) {
+		pTS->IncReferenceForPter(elementType, this->valuePter);
+	}
+}
+
+void StackElement::RelinquishValue() {
+	if (elementType == StackElement_Undefined) {
+		return;
+	}
+	TypeSystem* pTS = TypeSystem::GetTypeSystem();
+	if (!pTS->IsValueOrValuePter(elementType)) {
+		pTS->DecReferenceForPter(elementType, this->valuePter);
+		this->valuePter = nullptr;
+	}
+	else {
+		switch(elementType) {
+		case StackElement_Char: valueChar = '\0'; break;
+		case StackElement_Int: valueInt64 = 0; break;
+		case StackElement_Float: valueDouble = 0; break;
+		case StackElement_Bool: valueBool = false; break;
+		case StackElement_Type: valueType = ValueType_Undefined; break;
+		case StackElement_XT: valueXTPter = nullptr; break;
+		case StackElement_BinaryOpsType: valueBinaryOpsType = BinaryOp_Undefined; break;
+		case StackElement_PterToCFA: valueWordBodyPter = nullptr; break;
+		default: valuePter = nullptr; break;
+		}
+	}
+
+	this->elementType = StackElement_Undefined;
+
 }
 
 char StackElement::GetChar() const 

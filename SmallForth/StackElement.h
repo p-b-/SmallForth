@@ -6,6 +6,7 @@
 class StackElement
 {
 public:
+	StackElement();
 	StackElement(char c);
 	StackElement(int64_t n);
 	StackElement(double d);
@@ -14,12 +15,29 @@ public:
 	StackElement(XT* pXt);
 	StackElement(BinaryOperationType opsType);
 	StackElement(const StackElement& element);
+	StackElement(StackElement&& element);
+	StackElement& operator=(const StackElement& element);
+	StackElement& operator=(StackElement&& element);
+
 //	StackElement(WordBodyElement*** pppWbe);
 	StackElement(ForthType v);
 	StackElement(RefCountedObject* pObject);
 	StackElement(ForthType forthType, WordBodyElement** ppLiteral);
 	StackElement(ForthType forthType, void* pter);
 	~StackElement();
+
+	void SetTo(char value);
+	void SetTo(int64_t value);
+	void SetTo(double value);
+	void SetTo(bool value);
+	void SetTo(WordBodyElement** value);
+	void SetTo(XT* value);
+	void SetTo(BinaryOperationType value);
+	void SetTo(ForthType value);
+	void SetTo(RefCountedObject* value);
+	void SetTo(ForthType forthType, WordBodyElement** value);
+	void SetTo(ForthType forthType, void* value);
+	void RelinquishValue();
 
 
 	ForthType GetType() const { return elementType; }

@@ -325,19 +325,18 @@ bool ExecState::GetVariable(const std::string& variableName, int64_t& variableVa
 	if (!this->ExecuteWordDirectly(variableName)) {
 		return false;
 	}
-	StackElement* pElementVariableValuePter = this->pStack->TopElement();
+	ForthType topElementType = this->pStack->GetTOSType();
 	
-	if (pElementVariableValuePter->GetType() == pTS->CreatePointerTypeTo(StackElement_Int)) {
-		pElementVariableValuePter = nullptr;
+	if (topElementType == pTS->CreatePointerTypeTo(StackElement_Int)) {
 		if (this->ExecuteWordDirectly("@")) {
-			StackElement* pElementVariableValue;
-			pElementVariableValue = pStack->Pull();
-			if (pElementVariableValue == nullptr) {
-				return CreateStackOverflowException("whilst getting variable");
+			if (this->pStack->Count() == 0) {
+				return CreateStackOverflowException("whilst getting int variable");
 			}
-			variableValue = pElementVariableValue->GetInt();
-			delete pElementVariableValue;
-			pElementVariableValue = nullptr;
+			ForthType tosType = this->pStack->GetTOSType();
+			if (tosType != StackElement_Int && tosType != StackElement_Float && tosType != StackElement_Bool) {
+				return CreateException("Variable does not evaluate to an integer");
+			}
+			variableValue = pStack->PullAsInt();
 			return true;
 		}
 	}
@@ -359,19 +358,18 @@ bool ExecState::GetVariable(const std::string& variableName, double& variableVal
 	if (!this->ExecuteWordDirectly(variableName)) {
 		return false;
 	}
-	StackElement* pElementVariableValuePter = this->pStack->TopElement();
+	ForthType topElementType = this->pStack->GetTOSType();
 
-	if (pElementVariableValuePter->GetType() == pTS->CreatePointerTypeTo(StackElement_Float)) {
-		pElementVariableValuePter = nullptr;
+	if (topElementType ==  pTS->CreatePointerTypeTo(StackElement_Float)) {
 		if (this->ExecuteWordDirectly("@")) {
-			StackElement* pElementVariableValue;
-			pElementVariableValue = pStack->Pull();
-			if (pElementVariableValue == nullptr) {
-				return CreateStackOverflowException("whilst getting variable");
+			if (this->pStack->Count() == 0) {
+				return CreateStackOverflowException("whilst getting float variable");
 			}
-			variableValue = pElementVariableValue->GetFloat();
-			delete pElementVariableValue;
-			pElementVariableValue = nullptr;
+			ForthType tosType = this->pStack->GetTOSType();
+			if (tosType != StackElement_Int && tosType != StackElement_Float && tosType != StackElement_Bool) {
+				return CreateException("Variable does not evaluate to an float");
+			}
+			variableValue = pStack->PullAsFloat();
 			return true;
 		}
 	}
@@ -383,19 +381,18 @@ bool ExecState::GetVariable(const std::string& variableName, bool& variableValue
 	if (!this->ExecuteWordDirectly(variableName)) {
 		return false;
 	}
-	StackElement* pElementVariableValuePter = this->pStack->TopElement();
+	ForthType topElementType = this->pStack->GetTOSType();
 
-	if (pElementVariableValuePter->GetType() == pTS->CreatePointerTypeTo(StackElement_Bool)) {
-		pElementVariableValuePter = nullptr;
+	if (topElementType == pTS->CreatePointerTypeTo(StackElement_Bool)) {
 		if (this->ExecuteWordDirectly("@")) {
-			StackElement* pElementVariableValue;
-			pElementVariableValue = pStack->Pull();
-			if (pElementVariableValue == nullptr) {
-				return CreateStackOverflowException("whilst getting variable");
+			if (this->pStack->Count() == 0) {
+				return CreateStackOverflowException("whilst getting bool variable");
 			}
-			variableValue = pElementVariableValue->GetBool();
-			delete pElementVariableValue;
-			pElementVariableValue = nullptr;
+			ForthType tosType = this->pStack->GetTOSType();
+			if (tosType != StackElement_Bool) {
+				return CreateException("Variable does not evaluate to an bool");
+			}
+			variableValue = pStack->PullAsBool();
 			return true;
 		}
 	}
@@ -409,17 +406,18 @@ bool ExecState::GetVariable(const std::string& variableName, ForthType& variable
 	}
 	StackElement* pElementVariableValuePter = this->pStack->TopElement();
 
-	if (pElementVariableValuePter->GetType() == pTS->CreatePointerTypeTo(StackElement_Type)) {
-		pElementVariableValuePter = nullptr;
+	ForthType topElementType = this->pStack->GetTOSType();
+
+	if (topElementType == pTS->CreatePointerTypeTo(StackElement_Type)) {
 		if (this->ExecuteWordDirectly("@")) {
-			StackElement* pElementVariableValue;
-			pElementVariableValue = pStack->Pull();
-			if (pElementVariableValue == nullptr) {
-				return CreateStackOverflowException("whilst getting variable");
+			if (this->pStack->Count() == 0) {
+				return CreateStackOverflowException("whilst getting type variable");
 			}
-			variableValue = pElementVariableValue->GetValueType();
-			delete pElementVariableValue;
-			pElementVariableValue = nullptr;
+			ForthType tosType = this->pStack->GetTOSType();
+			if (tosType != StackElement_Type) {
+				return CreateException("Variable does not evaluate to an type");
+			}
+			variableValue = pStack->PullAsType();
 			return true;
 		}
 	}
@@ -438,68 +436,63 @@ bool ExecState::GetConstant(const std::string& constantName, int64_t& constantVa
 	if (!PushConstantOntoStack(constantName)) {
 		return false;
 	}
-	StackElement* pElementConstantValue = this->pStack->Pull();
-	bool success = false;
-	if (pElementConstantValue->GetType() == StackElement_Int)
-	{
-		constantValue = pElementConstantValue->GetInt();
-		success = true;
-	}
-	delete pElementConstantValue;
-	pElementConstantValue = nullptr;
 
-	return success;
+	if (this->pStack->Count() == 0) {
+		return CreateStackOverflowException("whilst getting int constant");
+	}
+	ForthType tosType = this->pStack->GetTOSType();
+	if (tosType != StackElement_Int && tosType != StackElement_Float && tosType != StackElement_Bool) {
+		return CreateException("Constant does not evaluate to an integer");
+	}
+	constantValue = this->pStack->PullAsInt();
+
+	return true;
 }
 
 bool ExecState::GetConstant(const std::string& constantName, double& constantValue) {
 	if (!PushConstantOntoStack(constantName)) {
 		return false;
 	}
-	StackElement* pElementConstantValue = this->pStack->Pull();
-	bool success = false;
-	if (pElementConstantValue->GetType() == StackElement_Float)
-	{
-		constantValue = pElementConstantValue->GetFloat();
-		success = true;
+	if (this->pStack->Count() == 0) {
+		return CreateStackOverflowException("whilst getting float constant");
 	}
-	delete pElementConstantValue;
-	pElementConstantValue = nullptr;
-
-	return success;
+	ForthType tosType = this->pStack->GetTOSType();
+	if (tosType != StackElement_Int && tosType != StackElement_Float && tosType != StackElement_Bool) {
+		return CreateException("Constant does not evaluate to a float");
+	}
+	constantValue = this->pStack->PullAsFloat();
+	return true;
 }
 
 bool ExecState::GetConstant(const std::string& constantName, bool& constantValue) {
 	if (!PushConstantOntoStack(constantName)) {
 		return false;
 	}
-	StackElement* pElementConstantValue = this->pStack->Pull();
-	bool success = false;
-	if (pElementConstantValue->GetType() == StackElement_Bool)
-	{
-		constantValue = pElementConstantValue->GetBool();
-		success = true;
+	if (this->pStack->Count() == 0) {
+		return CreateStackOverflowException("whilst getting bool constant");
 	}
-	delete pElementConstantValue;
-	pElementConstantValue = nullptr;
-
-	return success;
+	ForthType tosType = this->pStack->GetTOSType();
+	if (tosType != StackElement_Bool) {
+		return CreateException("Constant does not evaluate to a bool ");
+	}
+	constantValue = this->pStack->PullAsBool();
+	return true;
 }
 
 bool ExecState::GetConstant(const std::string& constantName, ForthType& constantValue) {
 	if (!PushConstantOntoStack(constantName)) {
 		return false;
 	}
-	StackElement* pElementConstantValue = this->pStack->Pull();
-	bool success = false;
-	if (pElementConstantValue->GetType() == StackElement_Type)
-	{
-		constantValue = pElementConstantValue->GetValueType();
-		success = true;
-	}
-	delete pElementConstantValue;
-	pElementConstantValue = nullptr;
 
-	return success;
+	if (this->pStack->Count() == 0) {
+		return CreateStackOverflowException("whilst getting type constant");
+	}
+	ForthType tosType = this->pStack->GetTOSType();
+	if (tosType != StackElement_Type) {
+		return CreateException("Constant does not evaluate to a type");
+	}
+	constantValue = this->pStack->PullAsType();
+	return true;
 }
 
 bool ExecState::GetConstant(const std::string& constantName, RefCountedObject*& constantValue) {
@@ -507,19 +500,16 @@ bool ExecState::GetConstant(const std::string& constantName, RefCountedObject*& 
 	if (!PushConstantOntoStack(constantName)) {
 		return false;
 	}
-	StackElement* pElementConstantValue = this->pStack->Pull();
-	bool success = false;
-
-	ForthType t = pElementConstantValue->GetType();
-	if (pTS->TypeIsObject(t)) {
-		constantValue = pElementConstantValue->GetObject();
-		constantValue->IncReference();
-		success = true;
+	if (this->pStack->Count() == 0) {
+		return CreateStackOverflowException("whilst getting object constant");
 	}
-	delete pElementConstantValue;
-	pElementConstantValue = nullptr;
-
-	return success;
+	ForthType tosType = this->pStack->GetTOSType();
+	if (!pTS->TypeIsObject(tosType)) {
+		return CreateException("Constant does not evaluate to an object");
+	}
+	constantValue = this->pStack->PullAsObject();
+	constantValue->IncReference();
+	return true;
 }
 
 
@@ -541,11 +531,15 @@ bool ExecState::ExecuteWordDirectly(const std::string& word) {
 	XT executeXT = ppExecBody[0]->wordElement_XT;
 
 	if (executeOnTOSObject) {
-		StackElement* pElementObjectToExecOn = this->pStack->Pull();
-		RefCountedObject* pObjToExecOn = pElementObjectToExecOn->GetObject();
+		if (this->pStack->Count() == 0) {
+			return CreateStackUnderflowException("Whilst executing a word directly");
+		}
+		ForthType tosType = this->pStack->GetTOSType();
+		if (!pTS->TypeIsObject(tosType)) {
+			return CreateException("Cannot execute a word on an object, where TOS is not an object");
+		}
+		RefCountedObject* pObjToExecOn = this->pStack->PullAsObject();
 		this->NestSelfPointer(pObjToExecOn);
-		delete pElementObjectToExecOn;
-		pElementObjectToExecOn = nullptr;
 	}
 
 	NestAndSetCFA(ppExecBody, 1);
@@ -582,12 +576,10 @@ bool ExecState::NestSelfPointer(RefCountedObject* pSelf) {
 }
 
 bool ExecState::UnnestSelfPointer() {
-	StackElement* pElement = this->pSelfStack->Pull();
-	if (pElement == nullptr) {
+	if (this->pSelfStack->Count() == 0) {
 		return CreateSelfStackUnderflowException();
 	}
-	delete pElement;
-	pElement = nullptr;
+	this->pSelfStack->DropTOS();
 	return true;
 }
 

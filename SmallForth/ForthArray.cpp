@@ -12,10 +12,6 @@ ForthArray::ForthArray(ForthDict* pDict) :
 
 ForthArray::~ForthArray()
 {
-	for (StackElement* pElement : this->elements) {
-		delete pElement;
-		pElement = nullptr;
-	}
 	this->elements.erase(this->elements.begin(), this->elements.end());
 }
 
@@ -24,8 +20,7 @@ std::string ForthArray::GetObjectType()
 	return "Array";
 }
 
-bool ForthArray::ToString(ExecState* pExecState) const
-{
+bool ForthArray::ToString(ExecState* pExecState) const {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 	std::string str = "Array: " + pTS->TypeToString(containedType) + " size: ";
 	str += std::to_string(this->elements.size());
@@ -53,12 +48,10 @@ bool ForthArray::InvokeFunctionIndex(ExecState* pExecState, ObjectFunction funct
 }
 
 bool ForthArray::Construct(ExecState* pExecState) {
-	StackElement* pElement = pExecState->pStack->TopElement();
-	if (pElement == nullptr) {
+	if (pExecState->pStack->Count() == 0) {
 		return pExecState->CreateStackUnderflowException("constructing an array - cannot find type or value to create array for");
 	}
-	ForthType type = pElement->GetType();
-
+	ForthType type = pExecState->pStack->GetTOSType();
 	ForthArray* pNewArray = new ForthArray(nullptr);
 	pNewArray->SetContainedType(type);
 	if (!pNewArray->Append(pExecState)) {
@@ -81,80 +74,55 @@ bool ForthArray::GetSize(ExecState* pExecState) {
 }
 
 bool ForthArray::Append(ExecState* pExecState) {
-	StackElement* pElementToAppend = pExecState->pStack->Pull();
-	if (pElementToAppend == nullptr) {
+	StackElement elementToAppend = pExecState->pStack->PullNoPter();
+	if (elementToAppend.GetType() == StackElement_Undefined) {
 		return pExecState->CreateStackUnderflowException("appending to an array");
 	}
-	ForthType elementType = pElementToAppend->GetType();
+	ForthType elementType = elementToAppend.GetType();
 	if (elementType != this->containedType) {
-		delete pElementToAppend;
-		pElementToAppend = nullptr;
 		return pExecState->CreateException("Incorrect type for array");
 	}
-	this->elements.push_back(pElementToAppend);
-
+	this->elements.push_back(elementToAppend);
 	return true;
 }
 
 bool ForthArray::ElementAtIndex(ExecState* pExecState) {
-	StackElement* pElementIndex = pExecState->pStack->Pull();
-	if (pElementIndex == nullptr) {
+	if (pExecState->pStack->Count() == 0) {
 		return pExecState->CreateStackUnderflowException("Cannot get element in array - need an index");
 	}
-	if (pElementIndex->GetType() != StackElement_Int) {
-		delete pElementIndex;
-		pElementIndex = nullptr;
+	if (!pExecState->pStack->TOSIsType(StackElement_Int)) {
 		return pExecState->CreateException("Cannot get element in array - need an integer index");
 	}
-	int index = (int)pElementIndex->GetInt();
-	delete pElementIndex;
-	pElementIndex = nullptr;
-
+	int index = (int)pExecState->pStack->PullAsInt();
 	if (index < 0 || index >= (int)this->elements.size()) {
 		return pExecState->CreateException("Element index out of range whilst accessing an array");
 	}
-	StackElement* pElement = elements[index];
-	StackElement* pCopiedElement = new StackElement(*pElement);
-	if (!pExecState->pStack->Push(pCopiedElement)) {
-		delete pCopiedElement;
-		pCopiedElement = nullptr;
+	StackElement& elementAtIndex = elements[index];
+	if (!pExecState->pStack->Push(elementAtIndex)) {
 		return pExecState->CreateStackOverflowException("whilst pushing an array element");
 	}
 	return true;
 }
 
 bool ForthArray::SetElementAtIndex(ExecState* pExecState) {
-	StackElement* pElementIndex = pExecState->pStack->Pull();
-	if (pElementIndex == nullptr) {
+	if (pExecState->pStack->Count() == 0) {
 		return pExecState->CreateStackUnderflowException("Cannot set element in array - need an index");
 	}
-	if (pElementIndex->GetType() != StackElement_Int) {
-		delete pElementIndex;
-		pElementIndex = nullptr;
+	if (!pExecState->pStack->TOSIsType(StackElement_Int)) {
 		return pExecState->CreateException("Cannot set element in array - need an integer index");
 	}
-	int index = (int)pElementIndex->GetInt();
-	delete pElementIndex;
-	pElementIndex = nullptr;
+	int index = (int)pExecState->pStack->PullAsInt();
 	if (index < 0 || index >= (int)this->elements.size()) {
-		return pExecState->CreateException("Element index out of range whilst accessing an array to set array element");
+		return pExecState->CreateException("Element index out of range whilst accessing an array to set an element");
 	}
-
-	StackElement* pElementElement = pExecState->pStack->Pull();
-	if (pElementElement == nullptr) {
+	if (pExecState->pStack->Count() == 0) {
 		return pExecState->CreateStackUnderflowException("Cannot set element in array - need an element to set array index to");
 	}
-	if (pElementElement->GetType() != this->containedType) {
-		delete pElementElement;
-		pElementElement = nullptr;
+	if (!pExecState->pStack->TOSIsType((ElementType)this->containedType)) {
 		return pExecState->CreateException("Cannot set element in array - need a matching element type");
 	}
+	StackElement elementToSet = pExecState->pStack->PullNoPter();
 
-	StackElement* pCurrentElement = this->elements[index];
-	this->elements[index] = pElementElement;
-	if (pCurrentElement!=pElementElement) {
-		delete pCurrentElement;
-		pCurrentElement = nullptr;
-	}
+	this->elements[index] = elementToSet;
 	return true;
 }

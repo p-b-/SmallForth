@@ -457,8 +457,7 @@ bool PreBuiltWords::BuiltIn_ThreadSafeBoolVariable(ExecState* pExecState) {
 
 	WordBodyElement** ppWBE = pExecState->GetPointerToBoolStateVariable(index);
 	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Bool);
-	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
-	if (!pExecState->pStack->Push(pElementVariable)) {
+	if (!pExecState->pStack->Push(pterType, ppWBE)) {
 		return pExecState->CreateStackOverflowException("whilst pushing a state boolean variable");
 	}
 	return true;
@@ -481,8 +480,7 @@ bool PreBuiltWords::BuiltIn_ThreadSafeIntVariable(ExecState* pExecState) {
 
 	WordBodyElement** ppWBE = pExecState->GetPointerToIntStateVariable(index);
 	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Int);
-	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
-	if (!pExecState->pStack->Push(pElementVariable)) {
+	if (!pExecState->pStack->Push(pterType, ppWBE)) {
 		return pExecState->CreateStackOverflowException("whilst pushing a state int variable");
 	}
 	return true;
@@ -493,8 +491,7 @@ bool PreBuiltWords::BuiltIn_CompileState(ExecState* pExecState) {
 
 	WordBodyElement** ppWBE = pExecState->GetPointerToIntStateVariable(ExecState::c_compileStateIndex);
 	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Int);
-	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
-	if (!pExecState->pStack->Push(pElementVariable)) {
+	if (!pExecState->pStack->Push(pterType, ppWBE)) {
 		return pExecState->CreateStackOverflowException("whilst pushing a state int variable");
 	}
 	return true;
@@ -505,8 +502,7 @@ bool PreBuiltWords::BuiltIn_PostponeState(ExecState* pExecState) {
 
 	WordBodyElement** ppWBE = pExecState->GetPointerToBoolStateVariable(ExecState::c_postponedExecIndex);
 	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Bool);
-	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
-	if (!pExecState->pStack->Push(pElementVariable)) {
+	if (!pExecState->pStack->Push(pterType, ppWBE)) {
 		return pExecState->CreateStackOverflowException("whilst pushing a state boolean variable");
 	}
 	return true;
@@ -517,8 +513,7 @@ bool PreBuiltWords::BuiltIn_InsideCommentState(ExecState* pExecState) {
 
 	WordBodyElement** ppWBE = pExecState->GetPointerToBoolStateVariable(ExecState::c_insideCommentIndex);
 	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Bool);
-	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
-	if (!pExecState->pStack->Push(pElementVariable)) {
+	if (!pExecState->pStack->Push(pterType, ppWBE)) {
 		return pExecState->CreateStackOverflowException("whilst pushing a state boolean variable");
 	}
 	return true;
@@ -529,8 +524,7 @@ bool PreBuiltWords::BuiltIn_InsideCommentLineState(ExecState* pExecState) {
 
 	WordBodyElement** ppWBE = pExecState->GetPointerToBoolStateVariable(ExecState::c_insideCommentLineIndex);
 	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Bool);
-	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
-	if (!pExecState->pStack->Push(pElementVariable)) {
+	if (!pExecState->pStack->Push(pterType, ppWBE)) {
 		return pExecState->CreateStackOverflowException("whilst pushing a state boolean variable");
 	}
 	return true;
@@ -541,8 +535,7 @@ bool PreBuiltWords::BuiltIn_DebugState(ExecState* pExecState) {
 
 	WordBodyElement** ppWBE = pExecState->GetPointerToIntStateVariable(ExecState::c_debugStateIndex);
 	ForthType pterType = pTS->CreatePointerTypeTo(StackElement_Int);
-	StackElement* pElementVariable = new StackElement(pterType, ppWBE);
-	if (!pExecState->pStack->Push(pElementVariable)) {
+	if (!pExecState->pStack->Push(pterType, ppWBE)) {
 		return pExecState->CreateStackOverflowException("whilst pushing a state int variable");
 	}
 	return true;
@@ -905,11 +898,10 @@ bool PreBuiltWords::BuiltIn_Here(ExecState* pExecState) {
 
 // Execute XT that is on the stack
 bool PreBuiltWords::BuiltIn_Execute(ExecState* pExecState) {
-	StackElement* pElement = pExecState->pStack->Pull();
-	WordBodyElement** pWBE = pElement->GetWordBodyElement();
-	delete pElement;
-	pElement = nullptr;
-
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("whilst attempting to execute");
+	}
+	WordBodyElement** pWBE = pExecState->pStack->PullAsCFA();
 	pExecState->NestAndSetCFA(pWBE, 1);
 
 	XT execFirst = pExecState->pExecBody[0]->wordElement_XT;
@@ -922,26 +914,22 @@ bool PreBuiltWords::BuiltIn_Execute(ExecState* pExecState) {
 
 // Execute XT that is on the stack on object that next on the stack
 bool PreBuiltWords::BuiltIn_ExecuteOnObject(ExecState* pExecState) {
-	StackElement* pElementWordToExecute = pExecState->pStack->Pull();
-	WordBodyElement** pWBE = pElementWordToExecute->GetWordBodyElement();
-	delete pElementWordToExecute;
-	pElementWordToExecute = nullptr;
-
-	StackElement* pElementObjectToExecOn = pExecState->pStack->Pull();
-	RefCountedObject* pObjToExecOn = pElementObjectToExecOn->GetObject();
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("whilst attempting to execute on object");
+	}
+	WordBodyElement** pWBE = pExecState->pStack->PullAsCFA();
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("whilst attempting to execute on object");
+	}
+	RefCountedObject* pObjToExecOn = pExecState->pStack->PullAsObject();
 	pExecState->NestSelfPointer(pObjToExecOn);
-	delete pElementObjectToExecOn;
-	pElementObjectToExecOn = nullptr;
-
 	pExecState->NestAndSetCFA(pWBE, 1);
-
 	XT execFirst = pExecState->pExecBody[0]->wordElement_XT;
 	bool returnValue = execFirst(pExecState);
 
 	pExecState->UnnestSelfPointer();
 
 	pExecState->UnnestCFA();
-
 	return returnValue;
 }
 
@@ -974,14 +962,13 @@ bool PreBuiltWords::BuiltIn_Jump(ExecState* pExecState) {
 		InputProcessor::ResetExecutionHaltFlag();
 		return pExecState->CreateException("Halted");
 	}
-	StackElement* pElement = pExecState->pStack->Pull();
-	if (pElement == nullptr) {
-		return pExecState->CreateStackUnderflowException();
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("whilst jumping");
 	}
-	int64_t newIp = pElement->GetInt();
-
-	delete pElement;
-	pElement = nullptr;
+	else if (!pExecState->pStack->TOSIsType(StackElement_Int)) {
+		return pExecState->CreateException("Require an integer to jump");
+	}
+	int64_t newIp = pExecState->pStack->PullAsInt();
 
 	if (newIp == 0) {
 		// Initial CFA is generally DOCOL. However, it is an XT not a pointer to a body, which is what IP expects
@@ -998,15 +985,21 @@ bool PreBuiltWords::BuiltIn_JumpOnTrue(ExecState* pExecState) {
 		return pExecState->CreateException("Halted");
 	}
 
-	StackElement* pAddrElement = nullptr;
-	StackElement* pBoolElement = nullptr;
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pAddrElement, pBoolElement)) {
-		return false;
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("whilst executing JUMPONTRUE");
 	}
-	int64_t newIp = pAddrElement->GetInt();
-	bool flag = pBoolElement->GetBool();
+	else if (!pExecState->pStack->TOSIsType(StackElement_Bool)) {
+		return pExecState->CreateException("Require ( n b -- ) to execute JUMPONTRUE, no bool at TOS");
+	}
+	bool flag = pExecState->pStack->PullAsBool();
 
-	ForthWord::BuiltInHelper_DeleteOperands(pAddrElement, pBoolElement);
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("whilst executing JUMPONTRUE");
+	}
+	else if (!pExecState->pStack->TOSIsType(StackElement_Int)) {
+		return pExecState->CreateException("Require ( n b -- ) to execute JUMPONTRUE, no integer available");
+	}
+	int64_t newIp = pExecState->pStack->PullAsInt();
 
 	if (newIp == 0) {
 		return pExecState->CreateException("Cannot jump to initialise CFA in level-2 word");
@@ -1024,15 +1017,21 @@ bool PreBuiltWords::BuiltIn_JumpOnFalse(ExecState* pExecState) {
 		return pExecState->CreateException("Halted");
 	}
 
-	StackElement* pAddrElement = nullptr;
-	StackElement* pBoolElement = nullptr;
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pAddrElement, pBoolElement)) {
-		return false;
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("whilst executing JUMPONFALSE");
 	}
-	int64_t newIp = pAddrElement->GetInt();
-	bool flag = pBoolElement->GetBool();
+	else if (!pExecState->pStack->TOSIsType(StackElement_Bool)) {
+		return pExecState->CreateException("Require ( n b -- ) to execute JUMPONFALSE, no bool at TOS");
+	}
+	bool flag = pExecState->pStack->PullAsBool();
 
-	ForthWord::BuiltInHelper_DeleteOperands(pAddrElement, pBoolElement);
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("whilst executing JUMPONFALSE");
+	}
+	else if (!pExecState->pStack->TOSIsType(StackElement_Int)) {
+		return pExecState->CreateException("Require ( n b -- ) to execute JUMPONFALSE, no integer available");
+	}
+	int64_t newIp = pExecState->pStack->PullAsInt();
 
 	if (newIp == 0) {
 		return pExecState->CreateException("Cannot jump to initialise CFA in level-2 word");
@@ -1050,23 +1049,18 @@ bool PreBuiltWords::BuiltIn_PokeIntegerInWord(ExecState* pExecState) {
 	if (nCompileState==0) {
 		return pExecState->CreateException("Cannot execute !INWORD when not compiling");
 	}
-	StackElement* pAddressElement = nullptr;
-	StackElement* pValueElement = nullptr;
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pAddressElement, pValueElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 2) {
+		return pExecState->CreateStackUnderflowException("whlst executing XOR");
 	}
-	if (pValueElement->GetType() != StackElement_Int) {
-		ForthWord::BuiltInHelper_DeleteOperands(pValueElement, pAddressElement);
-		return pExecState->CreateException("Need an integer value to poke into word");
+	ForthType t1 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	ForthType t2 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	if (t1!=StackElement_Int || t2!=StackElement_Int) {
+		return pExecState->CreateException("Need an integer value to for address, and to poke into word ( nAddr n -- )");
 	}
-	if (pAddressElement->GetType() != StackElement_Int) {
-		ForthWord::BuiltInHelper_DeleteOperands(pValueElement, pAddressElement);
-		return pExecState->CreateException("Need an integer address to poke into word");
-	}
-	int v = (int)pValueElement->GetInt();
-	int addr = (int)pAddressElement->GetInt();
-	ForthWord::BuiltInHelper_DeleteOperands(pValueElement, pAddressElement);
-
+	int v = (int)pExecState->pStack->PullAsInt();
+	int addr = (int)pExecState->pStack->PullAsInt();
 	WordBodyElement* pLiteral = new WordBodyElement();
 	pLiteral->wordElement_int = v;
 	return pExecState->pCompiler->AlterElementInWordUnderCreation(pExecState, addr, pLiteral);
@@ -1098,8 +1092,7 @@ bool PreBuiltWords::BuiltIn_WordCFAFromInputStream(ExecState* pExecState) {
 		return pExecState->CreateException("Cannot find word in dictionary");
 	}
 	WordBodyElement** pCFA = pWord->GetPterToBody();
-	StackElement* pNewElement = new StackElement(pCFA);
-	pExecState->pStack->Push(pNewElement);
+	pExecState->pStack->Push(pCFA);
 	return true;
 }
 
@@ -1109,7 +1102,7 @@ bool PreBuiltWords::BuiltIn_WordCFAFromDefinition(ExecState* pExecState) {
 	if (pWBE == nullptr) {
 		return pExecState->CreateException("Expecting a word pointer in definition");
 	}
-	if (!pExecState->pStack->Push(new StackElement(pWBE->wordElement_BodyPter))) {
+	if (!pExecState->pStack->Push(pWBE->wordElement_BodyPter)) {
 		return pExecState->CreateStackUnderflowException();
 	}
 	return true;
@@ -1150,19 +1143,15 @@ bool PreBuiltWords::BuiltIn_LineCommentStart(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_Allot(ExecState* pExecState) {
-	StackElement* pElementAllotBy = pExecState->pStack->Pull();
-	if (pElementAllotBy == nullptr) {
+	if (pExecState->pStack->Count() == 0) {
 		return pExecState->CreateStackUnderflowException("whilst attempting to allot cells to a word");
 	}
-	else if (pElementAllotBy->GetType() != StackElement_Int) {
-		delete pElementAllotBy;
-		pElementAllotBy = nullptr;
+	ForthType tosElementType = pExecState->pStack->GetTOSType();
+	if (tosElementType != StackElement_Int) {
 		return pExecState->CreateException("ALLOT requires an integer");
 	}
-	int64_t n = pElementAllotBy->GetInt();
-	delete pElementAllotBy;
-	pElementAllotBy = nullptr;//
-
+	StackElement elementAllotBy = pExecState->pStack->PullNoPter();
+	int64_t n = elementAllotBy.GetInt();
 	bool success = pExecState->pCompiler->ExpandLastWordCompiledBy(pExecState, (int)n);
 
 	return success;
@@ -1205,46 +1194,29 @@ bool PreBuiltWords::BuiltIn_Create(ExecState* pExecState) {
 bool PreBuiltWords::BuiltIn_AddWordToObject(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
-	// ( word object -- )
-	StackElement* pElementType = pExecState->pStack->Pull();
-	if (pElementType == nullptr) {
-		return pExecState->CreateStackUnderflowException();
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("whilst adding word to object - requires requires ( word type -- )");
 	}
-	if (pElementType->GetType() != StackElement_Type ||
-		!pTS->TypeIsUserObject(pElementType->GetValueType())) {
-		delete pElementType;
-		pElementType = nullptr;
+	ForthType tosElementType = pExecState->pStack->GetTOSType();
+	if (tosElementType != StackElement_Type) {
+		return pExecState->CreateException("Adding a word to an object requires ( word type -- ), no type");
+	}
+	ForthType objectType = pExecState->pStack->PullAsType();
+	if (!pTS->TypeIsUserObject(objectType)) {
 		return pExecState->CreateException("Adding a word to an object requires ( word type -- ), where type is a type of user object.  No such type found");
 	}
 
-	StackElement* pElementWord = pExecState->pStack->Pull();
-	if (pElementWord == nullptr) {
-		delete pElementType;
-		pElementType = nullptr;
-		return pExecState->CreateStackUnderflowException();
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("whilst adding word to object - requires requires ( word type -- )");
 	}
-	if (pElementWord->GetType() != ObjectType_Word) {
-		delete pElementType;
-		pElementType = nullptr;
-		delete pElementWord;
-		pElementWord = nullptr;
+	tosElementType = pExecState->pStack->GetTOSType();
+	if (tosElementType != ObjectType_Word) {
 		return pExecState->CreateException("Adding a word to an object requires ( word object -- ), no word found on stack");
 	}
-
-	ForthType objectType = pElementType->GetValueType();
-	ForthWord* pWord = (ForthWord*)pElementWord->GetObject();
+	ForthWord* pWord = (ForthWord*)pExecState->pStack->PullAsObject();
 
 	bool success = true;
 	success = pTS->AddWordToObject(pExecState, objectType, pWord);
-
-	// Cannot delete these before adding the word to the object, as it could bring the ref count to 0.  (Although the word
-	//  has likely just been created, it will still have a reference for the last word created.  However, the object may
-	//  only exist on the stack).
-	delete pElementWord;
-	pElementWord = nullptr;
-	delete pElementType;
-	pElementType = nullptr;
-
 	return success;
 }
 
@@ -1496,166 +1468,149 @@ bool PreBuiltWords::WordToFloat(ExecState* pExecState) {
 // ( [e] -- b ) true if [e] is object, false if [e] is pter to anything or value
 bool PreBuiltWords::IsObject(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement = pExecState->pStack->Pull();
-	ForthType t = pElement->GetType();
-	delete pElement;
-	pElement = nullptr;
-	StackElement* pReturnElement = new StackElement(pTS->TypeIsObject(t));
-	if (!pExecState->pStack->Push(pReturnElement)) {
+	StackElement element = pExecState->pStack->PullNoPter();
+	ForthType t = element.GetType();
+	if (!pExecState->pStack->Push(pTS->TypeIsObject(t))) {
 		return pExecState->CreateStackOverflowException("whilst determining if a type is an object");
 	}
 	return true;
+
+/*	StackElement* pElement = pExecState->pStack->Pull();
+	ForthType t = pElement->GetType();
+	delete pElement;
+	pElement = nullptr;
+	if (!pExecState->pStack->Push(pTS->TypeIsObject(t))) {
+		return pExecState->CreateStackOverflowException("whilst determining if a type is an object");
+	}
+	return true; */
 };
 
 // ( [e] -- b ) true if [e] is pter to object or value, false otherwise
 bool PreBuiltWords::IsPter(ExecState* pExecState) {
-	StackElement* pElement = pExecState->pStack->Pull();
-	ForthType t = pElement->GetType();
-	delete pElement;
-	pElement = nullptr;
-	StackElement* pReturnElement = new StackElement(TypeSystem::IsPter(t));
-	if (!pExecState->pStack->Push(pReturnElement)) {
+	StackElement element = pExecState->pStack->PullNoPter();
+	ForthType t = element.GetType();
+	if (!pExecState->pStack->Push(TypeSystem::IsPter(t))) {
 		return pExecState->CreateStackOverflowException("whilst determining if a type is a pter");
 	}
 	return true;
+	//StackElement* pElement = pExecState->pStack->Pull();
+	//ForthType t = pElement->GetType();
+	//delete pElement;
+	//pElement = nullptr;
+	//if (!pExecState->pStack->Push(TypeSystem::IsPter(t))) {
+	//	return pExecState->CreateStackOverflowException("whilst determining if a type is a pter");
+	//}
+	//return true;
 };
 
 // ( n -- n n )
 bool PreBuiltWords::BuiltIn_Dup(ExecState* pExecState) {
-	StackElement* pElement = pExecState->pStack->Pull();
-
-	if (pElement == nullptr) {
-		return pExecState->CreateException("Stack underflow");
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("whilst executing DUP");
 	}
-
-	StackElement* pClonedElement = new StackElement(*pElement);
-
-	pExecState->pStack->Push(pElement);
-	pExecState->pStack->Push(pClonedElement);
-
+	if (!pExecState->pStack->DupTOS()) {
+		return pExecState->CreateStackOverflowException("whilst executing DUP");
+	}
 	return true;
 }
 
 // ( n m -- m n )
 bool PreBuiltWords::BuiltIn_Swap(ExecState* pExecState) {
-	StackElement* pElement1 = nullptr;
-	StackElement* pElement2 = nullptr;
-	// Element1 is further in the stack than element2
-	// ( Element1 Element2 -- Element2 Element1)
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElement1, pElement2)) {
-		return false;
+	if (!pExecState->pStack->SwapTOS()) {
+		return pExecState->CreateStackUnderflowException("when executing SWAP");
 	}
-
-	pExecState->pStack->Push(pElement2);
-	pExecState->pStack->Push(pElement1);
-
 	return true;
 }
 
 // ( n -- )
 bool PreBuiltWords::BuiltIn_Drop(ExecState* pExecState) {
-	StackElement* pElement1 = nullptr;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement1)) {
-		return false;
+	if (!pExecState->pStack->DropTOS()) {
+		return pExecState->CreateStackUnderflowException("when executing DROP");
 	}
-	delete pElement1;
-	pElement1 = nullptr;
 	return true;
 }
 
 // ( n m -- n m n)
 bool PreBuiltWords::BuiltIn_Over(ExecState* pExecState) {
-	StackElement* pElement1 = nullptr;
-	StackElement* pElement2 = nullptr;
+	if (pExecState->pStack->Count() < 2) {
+		return pExecState->CreateStackUnderflowException("whilst executing OVER");
+	}
 	// Element1 is further in the stack than element2
 	// ( Element1 Element2 -- Element2 Element1)
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElement1, pElement2)) {
-		return false;
-	}
-	if (!pExecState->pStack->Push(pElement1)) {
-		delete pElement2;
-		pElement2 = nullptr;
+	StackElement element2 = pExecState->pStack->PullNoPter();
+	StackElement element1 = pExecState->pStack->PullNoPter();
+
+	pExecState->pStack->Push(element1);
+	pExecState->pStack->Push(element2);
+	if (!pExecState->pStack->Push(element1)) {
 		return pExecState->CreateStackOverflowException("whilst executing OVER");
 	}
-	if (!pExecState->pStack->Push(pElement2)) {
-		return pExecState->CreateStackOverflowException("whilst executing OVER");
-	}
-	StackElement* pElement3 = new StackElement(*pElement1);
-	if (!pExecState->pStack->Push(pElement3)) {
-		return pExecState->CreateStackOverflowException("whilst executing OVER");
-	}
+
 	return true;
 }
 
 // ( m n p -- n p m)
 bool PreBuiltWords::BuiltIn_Rot(ExecState* pExecState) {
-	StackElement* pElementm = nullptr;
-	StackElement* pElementn = nullptr;
-	StackElement* pElementp = nullptr;
-	if (!ForthWord::BuiltInHelper_GetThreeStackElements(pExecState, pElementm, pElementn, pElementp)) {
-		return false;
+	if (pExecState->pStack->Count() < 3) {
+		return pExecState->CreateStackUnderflowException("whilst executing ROT");
 	}
-
-	if (!pExecState->pStack->Push(pElementn)) {
-		delete pElementm;
-		pElementm = nullptr;
-		delete pElementp;
-		pElementp = nullptr;
-		return pExecState->CreateStackOverflowException("whilst executing ROT");
-	}
-	if (!pExecState->pStack->Push(pElementp)) {
-		delete pElementm;
-		pElementm = nullptr;
-		return pExecState->CreateStackOverflowException("whilst executing ROT");
-	}
-	if (!pExecState->pStack->Push(pElementm)) {
-		return pExecState->CreateStackOverflowException("whilst executing ROT");
-	}
+	StackElement elementp = pExecState->pStack->PullNoPter();
+	StackElement elementn = pExecState->pStack->PullNoPter();
+	StackElement elementm = pExecState->pStack->PullNoPter();
+	pExecState->pStack->Push(elementn);
+	pExecState->pStack->Push(elementp);
+	pExecState->pStack->Push(elementm);
 	return true;
+
+	//StackElement* pElementm = nullptr;
+	//StackElement* pElementn = nullptr;
+	//StackElement* pElementp = nullptr;
+	//if (!ForthWord::BuiltInHelper_GetThreeStackElements(pExecState, pElementm, pElementn, pElementp)) {
+	//	return false;
+	//}
+
+	//pExecState->pStack->Push(pElementn);
+	//pExecState->pStack->Push(pElementp);
+	//pExecState->pStack->Push(pElementm);
+	//return true;
 }
 
 // ( m n p -- p m n)
 bool PreBuiltWords::BuiltIn_ReverseRot(ExecState* pExecState) {
-	StackElement* pElementm = nullptr;
-	StackElement* pElementn = nullptr;
-	StackElement* pElementp = nullptr;
-	if (!ForthWord::BuiltInHelper_GetThreeStackElements(pExecState, pElementm, pElementn, pElementp)) {
-		return false;
+	if (pExecState->pStack->Count() < 3) {
+		return pExecState->CreateStackUnderflowException("whilst executing -ROT");
 	}
-
-	if (!pExecState->pStack->Push(pElementp)) {
-		delete pElementm;
-		pElementm = nullptr;
-		delete pElementn;
-		pElementp = nullptr;
-		return pExecState->CreateStackOverflowException("whilst executing -ROT");
-	}
-	if (!pExecState->pStack->Push(pElementm)) {
-		delete pElementn;
-		pElementp = nullptr;
-		return pExecState->CreateStackOverflowException("whilst executing -ROT");
-	}
-	if (!pExecState->pStack->Push(pElementn)) {
-		return pExecState->CreateStackOverflowException("whilst executing -ROT");
-	}
+	StackElement elementp = pExecState->pStack->PullNoPter();
+	StackElement elementn = pExecState->pStack->PullNoPter();
+	StackElement elementm = pExecState->pStack->PullNoPter();
+	pExecState->pStack->Push(elementp);
+	pExecState->pStack->Push(elementm);
+	pExecState->pStack->Push(elementn);
 	return true;
+
+	//StackElement* pElementm = nullptr;
+	//StackElement* pElementn = nullptr;
+	//StackElement* pElementp = nullptr;
+	//if (!ForthWord::BuiltInHelper_GetThreeStackElements(pExecState, pElementm, pElementn, pElementp)) {
+	//	return false;
+	//}
+
+	//pExecState->pStack->Push(pElementp);
+	//pExecState->pStack->Push(pElementm);
+	//pExecState->pStack->Push(pElementn);
+	//return true;
 }
 
 // >R ( a -- R: a )
 bool PreBuiltWords::BuiltIn_PushDataStackToReturnStack(ExecState* pExecState) {
-	StackElement* pElement = nullptr;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("whilst executing >R");
 	}
-	if (pElement->GetType() != StackElement_Int) {
-		delete pElement;
-		pElement = nullptr;
+	else if (!pExecState->pStack->TOSIsType(StackElement_Int)) {
 		return pExecState->CreateException("Cannot push a non-integer to the return stack");
 	}
-	int nToPush = (int)pElement->GetInt();
-	delete pElement;
-	pElement = nullptr;
-	if (!pExecState->pReturnStack->Push(nToPush)) {
+	int64_t nToPush = pExecState->pStack->PullAsInt();
+	if (!pExecState->pReturnStack->Push((int)nToPush)) {
 		return pExecState->CreateReturnStackOverflowException();
 	}
 	return true;
@@ -1699,9 +1654,8 @@ bool PreBuiltWords::BuiltIn_PushTempStackToDataStack(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_StackSize(ExecState* pExecState) {
 	int64_t stackSize = pExecState->pStack->Count();
-	StackElement* pNewElement = new StackElement(stackSize);
 	// If push fails, it deletes the element
-	if (!pExecState->pStack->Push(pNewElement)) {
+	if (!pExecState->pStack->Push(stackSize)) {
 		return pExecState->CreateStackOverflowException();
 	}
 	return true;
@@ -1709,9 +1663,8 @@ bool PreBuiltWords::BuiltIn_StackSize(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_RStackSize(ExecState* pExecState) {
 	int64_t stackSize = pExecState->pReturnStack->Count();
-	StackElement* pNewElement = new StackElement(stackSize);
 	// If push fails, it deletes the element
-	if (!pExecState->pStack->Push(pNewElement)) {
+	if (!pExecState->pStack->Push(stackSize)) {
 		return pExecState->CreateStackOverflowException();
 	}
 	return true;
@@ -1719,9 +1672,8 @@ bool PreBuiltWords::BuiltIn_RStackSize(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_TStackSize(ExecState* pExecState) {
 	int64_t stackSize = pExecState->pTempStack->Count();
-	StackElement* pNewElement = new StackElement(stackSize);
 	// If push fails, it deletes the element
-	if (!pExecState->pStack->Push(pNewElement)) {
+	if (!pExecState->pStack->Push(stackSize)) {
 		return pExecState->CreateStackOverflowException();
 	}
 	return true;
@@ -1754,29 +1706,23 @@ bool PreBuiltWords::BuiltIn_PrintStackTop(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_Emit(ExecState* pExecState) {
-	StackElement* pTop = pExecState->pStack->Pull();
-	if (pTop == nullptr) {
-		return pExecState->CreateStackUnderflowException();
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("Whilst executing EMIT");
 	}
-	ForthType t = pTop->GetType();
-
-	ostream* pStdoutStream = pExecState->GetStdout();
-	bool success = true;
-	if (t == StackElement_Int) {
-		char c = (pTop->GetInt() & 0xff);
-
-		(*pStdoutStream) << c;
+	ForthType tosType = pExecState->pStack->GetTOSType();
+	char toEmit = '\0';
+	if (tosType == StackElement_Char) {
+		toEmit = pExecState->pStack->PullAsChar() & 0xff;
 	}
-	else if (t == StackElement_Char) {
-		char c = pTop->GetChar();
-		(*pStdoutStream) << c;
+	else if (tosType == StackElement_Int) {
+		toEmit = pExecState->pStack->PullAsInt();
 	}
 	else {
-		success = pExecState->CreateException("Could not convert top to char");
+		return pExecState->CreateException("Could not convert TOS to char");
 	}
-	delete pTop;
-	pTop = nullptr;
-	return success;
+	ostream* pStdoutStream = pExecState->GetStdout();
+	(*pStdoutStream) << toEmit;
+	return true;
 }
 
 bool PreBuiltWords::BuiltIn_Add(ExecState* pExecState) {
@@ -1824,89 +1770,77 @@ bool PreBuiltWords::BuiltIn_GreaterThan(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_Not(ExecState* pExecState) {
-	StackElement* pElement = pExecState->pStack->Pull();
-	if (pElement == nullptr) {
-		return pExecState->CreateStackUnderflowException();
+	if (pExecState->pStack->Count() == 0) {
+		return pExecState->CreateStackUnderflowException("Whilst executing NOT");
 	}
-	if (pElement->GetType() != StackElement_Bool) {
-		delete pElement;
-		pElement = nullptr;
+	if (pExecState->pStack->GetTOSType() != StackElement_Bool) {
 		return pExecState->CreateException("Cannot invert non-boolean type");
 	}
-	bool value = pElement->GetBool();
-	delete pElement;
-	pElement = nullptr;
-
-	pElement = new StackElement(!value);
-	if (!pExecState->pStack->Push(pElement)) {
+	bool value = pExecState->pStack->PullAsBool();
+	if (!pExecState->pStack->Push(!value)) {
 		return pExecState->CreateStackOverflowException();
 	}
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_Or(ExecState* pExecState) {
-	StackElement* pElement1;
-	StackElement* pElement2;
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElement1, pElement2)) {
-		return false;
+	if (pExecState->pStack->Count() < 2) {
+		return pExecState->CreateStackUnderflowException("whlst executing OR");
 	}
-	if (pElement1->GetType() != StackElement_Bool ||
-		pElement2->GetType() != StackElement_Bool) {
-		ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
-		return pExecState->CreateException("OR operation needs two booleans");
+	ForthType t1 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	ForthType t2 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	if (t1 != StackElement_Bool ||
+		t2 != StackElement_Bool) {
+		return pExecState->CreateException("OR expects two bools ( b b -- b )");
 	}
-	bool value1 = pElement1->GetBool();
-	bool value2 = pElement2->GetBool();
-	ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
+	bool value2 = pExecState->pStack->PullAsBool();
+	bool value1 = pExecState->pStack->PullAsBool();
 
-	StackElement* pElementResult = new StackElement(value1 || value2);
-	if (!pExecState->pStack->Push(pElementResult)) {
+	if (!pExecState->pStack->Push(value1 || value2)) {
 		return pExecState->CreateStackUnderflowException();
 	}
-
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_And(ExecState* pExecState) {
-	StackElement* pElement1;
-	StackElement* pElement2;
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElement1, pElement2)) {
-		return false;
+	if (pExecState->pStack->Count() < 2) {
+		return pExecState->CreateStackUnderflowException("whlst executing AND");
 	}
-	if (pElement1->GetType() != StackElement_Bool ||
-		pElement2->GetType() != StackElement_Bool) {
-		ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
-		return pExecState->CreateException("AMD operation needs two booleans");
+	ForthType t1 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	ForthType t2 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	if (t1 != StackElement_Bool ||
+		t2 != StackElement_Bool) {
+		return pExecState->CreateException("AND expects two bools ( b b -- b )");
 	}
-	bool value1 = pElement1->GetBool();
-	bool value2 = pElement2->GetBool();
-	ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
+	bool value2 = pExecState->pStack->PullAsBool();
+	bool value1 = pExecState->pStack->PullAsBool();
 
-	StackElement* pElementResult = new StackElement(value1 && value2);
-	if (!pExecState->pStack->Push(pElementResult)) {
+	if (!pExecState->pStack->Push(value1 && value2)) {
 		return pExecState->CreateStackUnderflowException();
 	}
-
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_Xor(ExecState* pExecState) {
-	StackElement* pElement1;
-	StackElement* pElement2;
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElement1, pElement2)) {
-		return false;
+	if (pExecState->pStack->Count() < 2) {
+		return pExecState->CreateStackUnderflowException("whlst executing XOR");
 	}
-	if (pElement1->GetType() != StackElement_Bool ||
-		pElement2->GetType() != StackElement_Bool) {
-		ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
-		return pExecState->CreateException("XOR operation needs two booleans");
+	ForthType t1 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	ForthType t2 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	if (t1 != StackElement_Bool ||
+		t2 != StackElement_Bool) {
+		return pExecState->CreateException("XOR expects two bools ( b b -- b )");
 	}
-	bool value1 = pElement1->GetBool();
-	bool value2 = pElement2->GetBool();
-	ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
+	bool value2 = pExecState->pStack->PullAsBool();
+	bool value1 = pExecState->pStack->PullAsBool();
 
-	StackElement* pElementResult = new StackElement(value1 != value2);
-	if (!pExecState->pStack->Push(pElementResult)) {
+	if (!pExecState->pStack->Push(value1 != value2)) {
 		return pExecState->CreateStackUnderflowException();
 	}
 
@@ -1915,22 +1849,19 @@ bool PreBuiltWords::BuiltIn_Xor(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_Power(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement1;
-	StackElement* pElement2;
-	if (!ForthWord::BuiltInHelper_GetTwoStackElements(pExecState, pElement1, pElement2)) {
-		return false;
+
+	if (pExecState->pStack->Count() < 2) {
+		return pExecState->CreateStackUnderflowException("whlst executing XOR");
 	}
-	ForthType type1 = pElement1->GetType();
-	ForthType type2 = pElement2->GetType();
-	if (!pTS->IsNumeric(type1) || !pTS->IsNumeric(type2)) {
-		ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
+	ForthType t1 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	ForthType t2 = pExecState->pStack->GetTOSType();
+	pExecState->pStack->SwapTOS();
+	if (!pTS->IsNumeric(t1) || !pTS->IsNumeric(t2)) {
 		return pExecState->CreateException("Power function needs to numeric elements to operate on");
 	}
-	// Return x ^ y
-	double x = pElement1->GetFloat();
-	double y = pElement2->GetFloat();
-	ForthWord::BuiltInHelper_DeleteOperands(pElement1, pElement2);
-
+	double y = pExecState->pStack->PullAsFloat();
+	double x = pExecState->pStack->PullAsFloat();
 	double toReturn = pow(x, y);
 	if (!pExecState->pStack->Push(toReturn)) {
 		return pExecState->CreateStackOverflowException("whilst pushing result of power function");
@@ -1940,19 +1871,14 @@ bool PreBuiltWords::BuiltIn_Power(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_Cos(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing COS");
 	}
-	if (!pTS->IsNumeric(pElement->GetType())) {
-		delete pElement;
-		pElement = nullptr;
+	ForthType type = pExecState->pStack->GetTOSType();
+	if (!pTS->IsNumeric(type)) {
 		return pExecState->CreateException("Cos function needs a numeric to operate on");
 	}
-
-	double theta = pElement->GetFloat();
-	delete pElement;
-	pElement = nullptr;
+	double theta = pExecState->pStack->PullAsFloat();
 	double toReturn = cos(theta);
 	if (!pExecState->pStack->Push(toReturn)) {
 		return pExecState->CreateStackOverflowException("whilst pushing result of cosine function");
@@ -1962,19 +1888,14 @@ bool PreBuiltWords::BuiltIn_Cos(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_Sin(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing SIN");
 	}
-	if (!pTS->IsNumeric(pElement->GetType())) {
-		delete pElement;
-		pElement = nullptr;
-		return pExecState->CreateException("Sin function needs a numeric to operate on");
+	ForthType type = pExecState->pStack->GetTOSType();
+	if (!pTS->IsNumeric(type)) {
+		return pExecState->CreateException("SIN function needs a numeric to operate on");
 	}
-
-	double theta = pElement->GetFloat();
-	delete pElement;
-	pElement = nullptr;
+	double theta = pExecState->pStack->PullAsFloat();
 	double toReturn = sin(theta);
 	if (!pExecState->pStack->Push(toReturn)) {
 		return pExecState->CreateStackOverflowException("whilst pushing result of sine function");
@@ -1984,18 +1905,14 @@ bool PreBuiltWords::BuiltIn_Sin(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_Tan(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing TAN");
 	}
-	if (!pTS->IsNumeric(pElement->GetType())) {
-		delete pElement;
-		pElement = nullptr;
-		return pExecState->CreateException("Tan function needs a numeric to operate on");
+	ForthType type = pExecState->pStack->GetTOSType();
+	if (!pTS->IsNumeric(type)) {
+		return pExecState->CreateException("TAN function needs a numeric to operate on");
 	}
-	double theta = pElement->GetFloat();
-	delete pElement;
-	pElement = nullptr;
+	double theta = pExecState->pStack->PullAsFloat();
 	double toReturn = tan(theta);
 	if (!pExecState->pStack->Push(toReturn)) {
 		return pExecState->CreateStackOverflowException("whilst pushing result of tan function");
@@ -2005,83 +1922,65 @@ bool PreBuiltWords::BuiltIn_Tan(ExecState* pExecState) {
 
 bool PreBuiltWords::BuiltIn_Arccosine(ExecState* pExecState) { 
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing ARCCOS");
 	}
-	if (!pTS->IsNumeric(pElement->GetType())) {
-		delete pElement;
-		pElement = nullptr;
-		return pExecState->CreateException("Cos-1 function needs a numeric to operate on");
+	ForthType type = pExecState->pStack->GetTOSType();
+	if (!pTS->IsNumeric(type)) {
+		return pExecState->CreateException("ARCOS function needs a numeric to operate on");
 	}
-
-	double theta = pElement->GetFloat();
-	delete pElement;
-	pElement = nullptr;
+	double theta = pExecState->pStack->PullAsFloat();
 	double toReturn = acos(theta);
 	if (!pExecState->pStack->Push(toReturn)) {
-		return pExecState->CreateStackOverflowException("whilst pushing result of arccosine function");
+		return pExecState->CreateStackOverflowException("whilst pushing result of arccos function");
 	}
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_Arcsine(ExecState* pExecState) { 
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing ARCSINE");
 	}
-	if (!pTS->IsNumeric(pElement->GetType())) {
-		delete pElement;
-		pElement = nullptr;
-		return pExecState->CreateException("Sin-1 function needs a numeric to operate on");
+	ForthType type = pExecState->pStack->GetTOSType();
+	if (!pTS->IsNumeric(type)) {
+		return pExecState->CreateException("ARCSINE function needs a numeric to operate on");
 	}
-
-	double theta = pElement->GetFloat();
-	delete pElement;
-	pElement = nullptr;
+	double theta = pExecState->pStack->PullAsFloat();
 	double toReturn = asin(theta);
 	if (!pExecState->pStack->Push(toReturn)) {
-		return pExecState->CreateStackOverflowException("whilst pushing result of a4rcsine function");
+		return pExecState->CreateStackOverflowException("whilst pushing result of arcsine function");
 	}
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_Arctan(ExecState* pExecState) { 
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing ARCTAN");
 	}
-	if (!pTS->IsNumeric(pElement->GetType())) {
-		delete pElement;
-		pElement = nullptr;
-		return pExecState->CreateException("Tan-1 function needs a numeric to operate on");
+	ForthType type = pExecState->pStack->GetTOSType();
+	if (!pTS->IsNumeric(type)) {
+		return pExecState->CreateException("ATAN function needs a numeric to operate on");
 	}
-	double theta = pElement->GetFloat();
-	delete pElement;
-	pElement = nullptr;
+	double theta = pExecState->pStack->PullAsFloat();
 	double toReturn = atan(theta);
 	if (!pExecState->pStack->Push(toReturn)) {
-		return pExecState->CreateStackOverflowException("whilst pushing result of arctan function");
+		return pExecState->CreateStackOverflowException("whilst pushing result of atan function");
 	}
 	return true;
 }
 
 bool PreBuiltWords::BuiltIn_Sqrt(ExecState* pExecState) {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing SQRT");
 	}
-	if (!pTS->IsNumeric(pElement->GetType())) {
-		delete pElement;
-		pElement = nullptr;
-		return pExecState->CreateException("Sqrt function needs a numeric to operate on");
+	ForthType type = pExecState->pStack->GetTOSType();
+	if (!pTS->IsNumeric(type)) {
+		return pExecState->CreateException("SQRT function needs a numeric to operate on");
 	}
-	double x = pElement->GetFloat();
-	delete pElement;
-	pElement = nullptr;
+	double x = pExecState->pStack->PullAsFloat();
 	double toReturn = sqrt(x);
 	if (!pExecState->pStack->Push(toReturn)) {
 		return pExecState->CreateStackOverflowException("whilst pushing result of sqrt function");
@@ -2098,7 +1997,7 @@ bool PreBuiltWords::BuiltIn_Peek(ExecState* pExecState) {
 	if (!pElementAddress->IsPter()) {
 		return pExecState->CreateException("Cannot load pter value, as top of stack is not a pointer");
 	}
-	pExecState->pStack->Pull();
+	pElementAddress = pExecState->pStack->Pull();
 
 	bool returnValue = true;
 	StackElement* pValueElement = pElementAddress->GetDerefedPterValueAsStackElement();
@@ -2124,7 +2023,7 @@ bool PreBuiltWords::BuiltIn_Poke(ExecState* pExecState) {
 	if (!pAddressElement->IsPter()) {
 		return pExecState->CreateException("Cannot store into pter value, as top of stack is not a pointer");
 	}
-	pExecState->pStack->Pull();
+	pAddressElement = pExecState->pStack->Pull();
 	StackElement* pValueElement = pExecState->pStack->Pull();
 	if (pValueElement == nullptr) {
 		delete pAddressElement;
@@ -2156,10 +2055,8 @@ bool PreBuiltWords::BuiltIn_PushPter(ExecState* pExecState) {
 	}
 	ForthType currentType = (*ppWBE_Type)->forthType;
 	ForthType pointerType = pTS->CreatePointerTypeTo(currentType);
-	//void* pter = reinterpret_cast<void*>(ppWBE_Literal[0]);
 	void* pter = static_cast<void*>(ppWBE_Literal);
-	StackElement* pNewStackElement = new StackElement(pointerType, pter);
-	if (!pExecState->pStack->Push(pNewStackElement)) {
+	if (!pExecState->pStack->Push(pointerType, pter)) {
 		return pExecState->CreateStackOverflowException();
 	}
 	return true;
@@ -2193,15 +2090,8 @@ bool PreBuiltWords::BuiltIn_False(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_PushType(ExecState* pExecState) {
-	StackElement* pSE = pExecState->pStack->Pull();
-	if (pSE == nullptr) {
-		return pExecState->CreateStackUnderflowException();
-	}
-	//ValueType t = pSE->GetTypeAsTypeValue();
-	ForthType t = pSE->GetType();
-	delete pSE;
-	pSE = nullptr;
-
+	StackElement tos = pExecState->pStack->PullNoPter();
+	ForthType t = tos.GetType();
 	if (!pExecState->pStack->Push(t)) {
 		return pExecState->CreateStackOverflowException();
 	}
@@ -2209,16 +2099,13 @@ bool PreBuiltWords::BuiltIn_PushType(ExecState* pExecState) {
 }
 
 bool PreBuiltWords::BuiltIn_TypeFromInt(ExecState* pExecState) {
-	StackElement* pElement;
-	if (!ForthWord::BuiltInHelper_GetOneStackElement(pExecState, pElement)) {
-		return false;
+	if (pExecState->pStack->Count() < 1) {
+		return pExecState->CreateStackUnderflowException("whlst executing TYPEFROMINT");
 	}
-	if (pElement->GetType() != ValueType_Int) {
+	if (!pExecState->pStack->TOSIsType(StackElement_Int)) {
 		return pExecState->CreateException("Only ints can be cast to types");
 	}
-	int64_t typeAsInt = pElement->GetInt();
-	ForthWord::BuiltInHelper_DeleteStackElement(pElement);
-
+	int64_t typeAsInt = pExecState->pStack->PullAsInt();
 	ForthType typeAsType = (ForthType)typeAsInt;
 	pExecState->pStack->Push(typeAsType);
 
@@ -2258,7 +2145,7 @@ bool PreBuiltWords::BuiltIn_PushUpcomingLiteral(ExecState* pExecState) {
 	}
 	ForthType forthType = (*ppWBE_Type)->forthType;
 
-	if (!pExecState->pStack->Push(new StackElement(forthType, ppWBE_Literal))) {
+	if (!pExecState->pStack->Push(forthType, ppWBE_Literal)) {
 		return pExecState->CreateStackOverflowException();
 	}
 	return true;

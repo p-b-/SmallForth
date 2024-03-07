@@ -169,117 +169,112 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
 
-	StackElement* pTop = pExecState->pStack->Pull();
-	if (pTop == nullptr) {
+	if (pExecState->pStack->Count() == 0) {
 		return pExecState->CreateStackUnderflowException();
 	}
-	ForthType t = pTop->GetType();
-	bool success = true;
-	if (t != StackElement_PterToCFA) {
-		success = pExecState->CreateException("Cannot describe the word CFA on stack, as, it is not a pointer to a CFA");
-		delete pTop;
-		pTop = nullptr;
+	if (!pExecState->pStack->TOSIsType(StackElement_PterToCFA)) {
+		return pExecState->CreateException("SEE expects a pointer to a WORD");
 	}
-	else {
-		WordBodyElement** pCFA = pTop->GetWordBodyElement();
-		std::list<Breakpoint>* pBreakpoints = pExecState->pDebugger->GetBreakpointsForWord(pCFA);
-		ForthWord* pInitialWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
-		(*pStdoutStream) << "Word: " << pInitialWord->GetName() << std::endl;
-		delete pTop;
-		pTop = nullptr;
-		WordBodyElement* pEl = pCFA[0];
+	WordBodyElement** pCFA = pExecState->pStack->PullAsCFA();
 
-		ForthType upcomingWordType = 0;
-		bool upcomingWordIsLiteralType = false;
-		bool upcomingWordIsLiteral = false;
+	bool success = true;
 
-		int bodySize = -1;
+	std::list<Breakpoint>* pBreakpoints = pExecState->pDebugger->GetBreakpointsForWord(pCFA);
+	ForthWord* pInitialWord = pExecState->pDict->FindWordFromCFAPter(pCFA);
+	(*pStdoutStream) << "Word: " << pInitialWord->GetName() << std::endl;
+	
+	WordBodyElement* pEl = pCFA[0];
 
-		std::string firstWord;
-		if (pEl->wordElement_XT == PreBuiltWords::BuiltIn_DoCol) {
-			firstWord = "DOCOL";
-		}
-		else if (pEl->wordElement_XT == PreBuiltWords::BuiltIn_PushPter)
-		{
-			firstWord = "PUSHPTER";
-			bodySize = 2;
-			upcomingWordIsLiteralType = true;
-		}
-		else if (pEl->wordElement_XT == PreBuiltWords::BuiltIn_FetchLiteral) {
-			firstWord = "FETCHLITERAL";
-			bodySize = 2;
-			upcomingWordIsLiteralType = true;
-		}
-		else if (pEl->wordElement_XT != PreBuiltWords::BuiltIn_DoCol) {
-			success = pExecState->CreateException("Cannot decompile a level-one word");
-		}
-		if (success) {
-			(*pStdoutStream) << "0: " << firstWord << std::endl;
-			int ip = 0;
-			bool loop = true;
+	ForthType upcomingWordType = 0;
+	bool upcomingWordIsLiteralType = false;
+	bool upcomingWordIsLiteral = false;
 
-			while (loop) {
-				++ip;
-				WordBodyElement* pEl = pCFA[ip];
-				ForthWord* pWord = pExecState->pDict->FindWordFromCFAPter(pEl->wordElement_BodyPter);
-				if (pWord == nullptr) {
-					if (upcomingWordIsLiteralType) {
-						upcomingWordType = pEl->forthType;
-						std::string typeDescription = pTS->TypeToString(upcomingWordType);
-						(*pStdoutStream) << ip << ":    literal type (" << typeDescription << ")" << std::endl;
-						upcomingWordIsLiteralType = false;
-						upcomingWordIsLiteral = true;
-					}
-					else if (upcomingWordIsLiteral) {
-						(*pStdoutStream) << ip << ":    literal value (";
-						std::string contentsOfLiteral;
-						bool successAtLiteral;
-						if (pTS->IsValueOrValuePter(upcomingWordType)) {
-							successAtLiteral = pTS->VariableToString(pExecState, upcomingWordType, reinterpret_cast<void*>(pEl->wordElement_int));
-						}
-						else {
-							successAtLiteral = pTS->VariableToString(pExecState, upcomingWordType, pEl->pter);
-						}
-						if (!successAtLiteral) {
-							(*pStdoutStream) << " could not retrieve)" << std::endl;
-							return false;
-						}
-						successAtLiteral;
-						tie(successAtLiteral, contentsOfLiteral) = pExecState->pStack->PullAsString();
-						if (!successAtLiteral) {
-							return pExecState->CreateException(contentsOfLiteral.c_str());
-						}
+	int bodySize = -1;
 
-						(*pStdoutStream) << contentsOfLiteral;
-						(*pStdoutStream) << ")" << std::endl;
-						upcomingWordIsLiteral = false;
-					}
+	std::string firstWord;
+	if (pEl->wordElement_XT == PreBuiltWords::BuiltIn_DoCol) {
+		firstWord = "DOCOL";
+	}
+	else if (pEl->wordElement_XT == PreBuiltWords::BuiltIn_PushPter)
+	{
+		firstWord = "PUSHPTER";
+		bodySize = 2;
+		upcomingWordIsLiteralType = true;
+	}
+	else if (pEl->wordElement_XT == PreBuiltWords::BuiltIn_FetchLiteral) {
+		firstWord = "FETCHLITERAL";
+		bodySize = 2;
+		upcomingWordIsLiteralType = true;
+	}
+	else if (pEl->wordElement_XT != PreBuiltWords::BuiltIn_DoCol) {
+		success = pExecState->CreateException("Cannot decompile a level-one word");
+	}
+	if (success) {
+		(*pStdoutStream) << "0: " << firstWord << std::endl;
+		int ip = 0;
+		bool loop = true;
+
+		while (loop) {
+			++ip;
+			WordBodyElement* pEl = pCFA[ip];
+			ForthWord* pWord = pExecState->pDict->FindWordFromCFAPter(pEl->wordElement_BodyPter);
+			if (pWord == nullptr) {
+				if (upcomingWordIsLiteralType) {
+					upcomingWordType = pEl->forthType;
+					std::string typeDescription = pTS->TypeToString(upcomingWordType);
+					(*pStdoutStream) << ip << ":    literal type (" << typeDescription << ")" << std::endl;
+					upcomingWordIsLiteralType = false;
+					upcomingWordIsLiteral = true;
 				}
-				else {
-					if (pWord->body[0]->wordElement_XT == PreBuiltWords::BuiltIn_PushUpcomingLiteral) {
-						upcomingWordIsLiteralType = true;
+				else if (upcomingWordIsLiteral) {
+					(*pStdoutStream) << ip << ":    literal value (";
+					std::string contentsOfLiteral;
+					bool successAtLiteral;
+					if (pTS->IsValueOrValuePter(upcomingWordType)) {
+						successAtLiteral = pTS->VariableToString(pExecState, upcomingWordType, reinterpret_cast<void*>(pEl->wordElement_int));
 					}
-					std::string debugAnnotation = "   ";
-					if (pBreakpoints!=nullptr) {
-						for (auto& bp : *pBreakpoints) {
-							if (bp.GetIP() == ip) {
-								if (bp.IsEnabled()) {
-									debugAnnotation = "+B ";
-								}
-								else {
-									debugAnnotation = "xB ";
-								}
+					else {
+						successAtLiteral = pTS->VariableToString(pExecState, upcomingWordType, pEl->pter);
+					}
+					if (!successAtLiteral) {
+						(*pStdoutStream) << " could not retrieve)" << std::endl;
+						return false;
+					}
+					successAtLiteral;
+					tie(successAtLiteral, contentsOfLiteral) = pExecState->pStack->PullAsString();
+					if (!successAtLiteral) {
+						return pExecState->CreateException(contentsOfLiteral.c_str());
+					}
+
+					(*pStdoutStream) << contentsOfLiteral;
+					(*pStdoutStream) << ")" << std::endl;
+					upcomingWordIsLiteral = false;
+				}
+			}
+			else {
+				if (pWord->body[0]->wordElement_XT == PreBuiltWords::BuiltIn_PushUpcomingLiteral) {
+					upcomingWordIsLiteralType = true;
+				}
+				std::string debugAnnotation = "   ";
+				if (pBreakpoints!=nullptr) {
+					for (auto& bp : *pBreakpoints) {
+						if (bp.GetIP() == ip) {
+							if (bp.IsEnabled()) {
+								debugAnnotation = "+B ";
+							}
+							else {
+								debugAnnotation = "xB ";
 							}
 						}
 					}
-					(*pStdoutStream) << ip << ": " << debugAnnotation << pWord->GetName() << std::endl;
-					if (pWord->GetName() == "exit") {
-						loop = false;
-					}
 				}
-				if (ip == bodySize) {
+				(*pStdoutStream) << ip << ": " << debugAnnotation << pWord->GetName() << std::endl;
+				if (pWord->GetName() == "exit") {
 					loop = false;
 				}
+			}
+			if (ip == bodySize) {
+				loop = false;
 			}
 		}
 	}

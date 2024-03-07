@@ -1,5 +1,5 @@
 #pragma once
-#include <stack>
+#include <vector>
 #include <tuple>
 #include "StackElement.h"
 
@@ -13,26 +13,57 @@ public:
 	bool Push(char value);
 	bool Push(double value);
 	bool Push(bool value);
+	bool Push(BinaryOperationType value);
 	bool Push(WordBodyElement** wordBodyPter);
 	bool Push(ForthType value);
 	bool Push(RefCountedObject* value);
+	bool Push(ForthType forthType, WordBodyElement** ppLiteral);
+	bool Push(ForthType forthType, void* pter);
 	bool Push(const std::string& value);
 
 	void Clear();
 
+	bool TOSIsType(ElementType elementType);
+	ForthType GetTOSType();
+	bool SwapTOS();
+	bool DropTOS();
+	bool DupTOS();
+
 	StackElement* TopElement();
 	StackElement* Pull();
+	bool PullAsBool();
+	int64_t PullAsInt();
+	char PullAsChar();
+	double PullAsFloat();
+	ForthType PullAsType();
+	WordBodyElement** PullAsCFA();
+	void* PullAsVoidPter();
+	StackElement PullNoPter();
+	RefCountedObject* PullAsObject();
+
+
 	std::tuple<bool, std::string> PullAsString();
 	std::tuple<StackElement*, StackElement* > PullTwo();
 	std::tuple<bool, StackElement* > PullType(ElementType type);
 
 	bool Push(StackElement* pElement);
-	int Count() const { return (int)stack.size(); }
+	bool Push(const StackElement& pElement);
 
+	int Count() const { return topOfStack+1; }
+
+private:
+	bool MoveToNextSP();
+	inline void ShrinkStack() {
+		this->stack[this->topOfStack].RelinquishValue();
+		--this->topOfStack;
+	}
 
 private:
 	int stackSize;
 
-	std::stack<StackElement* > stack;
+	std::vector<StackElement> stack;
+	int topOfStack;
+
+//	std::stack<StackElement* > stack;
 };
 
