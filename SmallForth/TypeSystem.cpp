@@ -230,7 +230,7 @@ std::tuple<ForthType, void*> TypeSystem::DeferencePointer(ForthType type, void* 
 	if (TypeIsObjectOrObjectPter(type)) {
 		--indirectionCount;
 		WordBodyElement** ppWBE = static_cast<WordBodyElement**>(pter);
-		void* pterInWBE = (*ppWBE)->pter;
+		void* pterInWBE = (*ppWBE)->refCountedPter.pter;
 		ForthType newForthType = (indirectionCount << 16) | GetValueType(type);
 		return { newForthType, pterInWBE };
 	}
@@ -239,7 +239,7 @@ std::tuple<ForthType, void*> TypeSystem::DeferencePointer(ForthType type, void* 
 			--indirectionCount;
 
 			WordBodyElement** ppWBE = static_cast<WordBodyElement**>(pter);
-			void* pterInWBE = (*ppWBE)->pter;
+			void* pterInWBE = (*ppWBE)->refCountedPter.pter;
 			ForthType newForthType = (indirectionCount << 16) | GetValueType(type);
 			return { newForthType, pterInWBE };
 		}
@@ -247,7 +247,7 @@ std::tuple<ForthType, void*> TypeSystem::DeferencePointer(ForthType type, void* 
 			--indirectionCount;
 			ForthType newForthType = (indirectionCount << 16) | GetValueType(type);
 			WordBodyElement** ppWBE = static_cast<WordBodyElement**>(pter);
-			pter = &(*ppWBE)->pter;
+			pter = &(*ppWBE)->refCountedPter.pter;
 
 			return { newForthType, pter };
 		}
@@ -262,7 +262,7 @@ std::tuple<bool, void*> TypeSystem::DeferencePointerToObjectPter(ForthType type,
 	for (int n = 0; n < indirectionCount; ++n) {
 		if (ppValue != nullptr) {
 			WordBodyElement** ppWBE = reinterpret_cast<WordBodyElement**>(ppValue);
-			ppValue = static_cast<void**>((*ppWBE)->pter);
+			ppValue = static_cast<void**>((*ppWBE)->refCountedPter.pter);
 			if (n == indirectionCount - 1) {
 				pValue = static_cast<void*>(ppValue);
 			}
@@ -287,7 +287,7 @@ std::tuple<bool, const void*> TypeSystem::DeferencePointerToObjectPter(ForthType
 	for (int n = 0; n < indirectionCount; ++n) {
 		if (ppValue != nullptr) {
 			const WordBodyElement* const* ppWBE = reinterpret_cast<const WordBodyElement* const*>(ppValue);
-			ppValue = static_cast<const void* const*>((*ppWBE)->pter);
+			ppValue = static_cast<const void* const*>((*ppWBE)->refCountedPter.pter);
 			if (n == indirectionCount - 1) {
 				pValue = static_cast<const void*>(ppValue);
 			}
@@ -312,7 +312,7 @@ std::tuple<bool, const void*> TypeSystem::DeferencePointerToValuePter(ForthType 
 	const WordBodyElement* const* ppWBE = static_cast<const WordBodyElement* const*>(pter);
 	for (int n = 0; n < indirectionCount; ++n) {
 		if (ppWBE != nullptr) {
-			void* pterInWBE = (*ppWBE)->pter;
+			void* pterInWBE = (*ppWBE)->refCountedPter.pter;
 			if (n < indirectionCount - 1) {
 				ppWBE = static_cast<const WordBodyElement* const*>(pterInWBE);
 			}
@@ -337,10 +337,10 @@ void TypeSystem::IncReferenceForPter(ForthType type, void* pter) {
 		if (ppWBE != nullptr) {
 			WordBodyElement* pWBE = *ppWBE;
 			if (n < indirectionCount - 1) {
-				ppWBE = static_cast<WordBodyElement**>(pWBE->pter);
+				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter.pter);
 			}
 			else {
-				pObject = static_cast<RefCountedObject*>(pWBE->pter);
+				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter.pter);
 			}
 		}
 	}
@@ -357,10 +357,10 @@ void TypeSystem::IncReferenceForPterBy(ForthType type, void* pter, int by) {
 		if (ppWBE != nullptr) {
 			WordBodyElement* pWBE = *ppWBE;
 			if (n < indirectionCount - 1) {
-				ppWBE = static_cast<WordBodyElement**>(pWBE->pter);
+				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter.pter);
 			}
 			else {
-				pObject = static_cast<RefCountedObject*>(pWBE->pter);
+				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter.pter);
 			}
 		}
 	}
@@ -377,10 +377,10 @@ void TypeSystem::DecReferenceForPter(ForthType type, void* pter) {
 		if (ppWBE != nullptr) {
 			WordBodyElement* pWBE = *ppWBE;
 			if (n < indirectionCount - 1) {
-				ppWBE = static_cast<WordBodyElement**>(pWBE->pter);
+				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter.pter);
 			}
 			else {
-				pObject = static_cast<RefCountedObject*>(pWBE->pter);
+				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter.pter);
 
 			}
 		}
@@ -398,10 +398,10 @@ void TypeSystem::DecReferenceForPterBy(ForthType type, void* pter, int by) {
 		if (ppWBE != nullptr) {
 			WordBodyElement* pWBE = *ppWBE;
 			if (n < indirectionCount - 1) {
-				ppWBE = static_cast<WordBodyElement**>(pWBE->pter);
+				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter.pter);
 			}
 			else {
-				pObject = static_cast<RefCountedObject*>(pWBE->pter);
+				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter.pter);
 			}
 		}
 	}
@@ -413,10 +413,10 @@ void TypeSystem::DecReferenceForPterBy(ForthType type, void* pter, int by) {
 int TypeSystem::GetReferenceCount(ForthType type, void* pter) {
 	int indirectionCount = GetIndirectionLevel(type);
 	WordBodyElement** ppWBE = static_cast<WordBodyElement**>(pter);
-	RefCountedObject* pRefCountedObj = static_cast<RefCountedObject*>(pter);;
+	RefCountedObject* pRefCountedObj = static_cast<RefCountedObject*>(pter);
 
 	for (int n = 0; n < indirectionCount; ++n) {
-		void* pterInWBE = (*ppWBE)->pter;
+		void* pterInWBE = (*ppWBE)->refCountedPter.pter;
 		if (n < indirectionCount - 1) {
 			ppWBE = static_cast<WordBodyElement**>(pterInWBE);
 		}
@@ -430,6 +430,18 @@ int TypeSystem::GetReferenceCount(ForthType type, void* pter) {
 	}
 	else {
 		return 0;
+	}
+}
+
+int TypeSystem::GetPterReferenceCount(ForthType type, void* pter) {
+	int indirectionCount = GetIndirectionLevel(type);
+	WordBodyElement** ppWBE = static_cast<WordBodyElement**>(pter);
+	RefCountedObject* pRefCountedObj = static_cast<RefCountedObject*>(pter);
+	if (indirectionCount > 0) {
+		return (*ppWBE)->refCountedPter.refCount;
+	}
+	else {
+		return 1;
 	}
 }
 

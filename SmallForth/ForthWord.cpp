@@ -97,7 +97,8 @@ void ForthWord::CompileTypeIntoWord(ForthType forthType) {
 
 void ForthWord::CompilePterIntoWord(void* pter) {
 	WordBodyElement* pNewElement = new WordBodyElement();
-	pNewElement->pter = pter;
+	pNewElement->refCountedPter.pter = pter;
+	pNewElement->refCountedPter.refCount = 1;
 	GrowByAndAdd(1, pNewElement);
 }
 
@@ -234,7 +235,7 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 						successAtLiteral = pTS->VariableToString(pExecState, upcomingWordType, reinterpret_cast<void*>(pEl->wordElement_int));
 					}
 					else {
-						successAtLiteral = pTS->VariableToString(pExecState, upcomingWordType, pEl->pter);
+						successAtLiteral = pTS->VariableToString(pExecState, upcomingWordType, pEl->refCountedPter.pter);
 					}
 					if (!successAtLiteral) {
 						(*pStdoutStream) << " could not retrieve)" << std::endl;

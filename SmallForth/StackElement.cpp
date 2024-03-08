@@ -287,7 +287,7 @@ StackElement::StackElement(ForthType forthType, WordBodyElement** ppLiteral) {
 	if (!pTS->IsPter(forthType)) {
 		WordBodyElement* pLiteral = *ppLiteral;
 		if (pTS->TypeIsObject(elementType)) {
-			this->valuePter = pLiteral->pter;
+			this->valuePter = pLiteral->refCountedPter.pter;
 			pTS->IncReferenceForPter(elementType, this->valuePter);
 		}
 		else {
@@ -365,7 +365,7 @@ void StackElement::SetTo(ForthType forthType, WordBodyElement** ppLiteral) {
 	if (!pTS->IsPter(forthType)) {
 		WordBodyElement* pLiteral = *ppLiteral;
 		if (pTS->TypeIsObject(elementType)) {
-			this->valuePter = pLiteral->pter;
+			this->valuePter = pLiteral->refCountedPter.pter;
 			pTS->IncReferenceForPter(elementType, this->valuePter);
 		}
 		else {
@@ -576,7 +576,9 @@ bool StackElement::PokeValueIntoContainedPter(ExecState* pExecState, StackElemen
 	WordBodyElement** ppWBE = static_cast<WordBodyElement**>(valuePter);
 	WordBodyElement* pWBE = *ppWBE;
 	if (pTS->IsPter(pValueElement->elementType)) {
-		pWBE->pter = pValueElement->GetContainedPter();
+		// TODO Dec reference in current pter
+		pWBE->refCountedPter.pter = pValueElement->GetContainedPter();
+		// TODO Inc reference in this pter
 	}
 	else {
 		switch (pTS->GetValueType(pValueElement->elementType)) {
@@ -624,12 +626,14 @@ bool StackElement::PokeObjectIntoContainedPter(ExecState* pExecState, StackEleme
 		//																											      RefCountedObject*
 		WordBodyElement** ppWBEAddress = static_cast<WordBodyElement**>(valuePter);
 		WordBodyElement** ppWBEObject = static_cast<WordBodyElement**>(objectPter);
-		WordBodyElement** ppWBEContainedInAddress = static_cast<WordBodyElement**>((*ppWBEAddress)->pter);
+		// TODO Test this change
+		//WordBodyElement** ppWBEContainedInAddress = static_cast<WordBodyElement**>((*ppWBEAddress)->pter);
+		WordBodyElement** ppWBEContainedInAddress = static_cast<WordBodyElement**>((*ppWBEAddress)->refCountedPter.pter);
 		if (ppWBEContainedInAddress != ppWBEObject && ppWBEContainedInAddress != nullptr) {
 			pTS->DecReferenceForPter(addressType, valuePter);
 			pTS->DecReferenceForPter(addressType, valuePter);
-			(*ppWBEAddress)->pter = nullptr;
-			(*ppWBEAddress)->pter = ppWBEObject;
+			(*ppWBEAddress)->refCountedPter.pter = nullptr;
+			(*ppWBEAddress)->refCountedPter.pter = ppWBEObject;
 			pTS->IncReferenceForPter(objectType, objectPter);
 			pTS->IncReferenceForPter(objectType, objectPter);
 		}
@@ -637,7 +641,9 @@ bool StackElement::PokeObjectIntoContainedPter(ExecState* pExecState, StackEleme
 	else {
 		RefCountedObject* pObject = static_cast<RefCountedObject*>(objectPter);
 		WordBodyElement** ppWBEAddress = static_cast<WordBodyElement**>(valuePter);
-		RefCountedObject* pContainedInAddress = static_cast<RefCountedObject*>((*ppWBEAddress)->pter);
+		//RefCountedObject* pContainedInAddress = static_cast<RefCountedObject*>((*ppWBEAddress)->pter);
+		// TODO Test this change
+		RefCountedObject* pContainedInAddress = static_cast<RefCountedObject*>((*ppWBEAddress)->refCountedPter.pter);
 		// Not calling dec/inc reference directly only the objects, but using the type system to do so
 		// This is because we may not actually be working with pointers to objects directly, but levels of redirection and
 		//  the direction dec/inc only work on pointers to the objects, not pointers to pointers to pointers to objects.
@@ -657,8 +663,8 @@ bool StackElement::PokeObjectIntoContainedPter(ExecState* pExecState, StackEleme
 			// So as it won't be dec-ed there, we do it here.
 			pTS->DecReferenceForPter(addressType, valuePter);
 
-			(*ppWBEAddress)->pter = nullptr;
-			(*ppWBEAddress)->pter = pObject;
+			(*ppWBEAddress)->refCountedPter.pter = nullptr;
+			(*ppWBEAddress)->refCountedPter.pter = pObject;
 
 
 			pTS->IncReferenceForPter(objectType, objectPter);
@@ -678,7 +684,8 @@ WordBodyElement* StackElement::GetValueAsWordBodyElement() const {
 	WordBodyElement* pWBE = new WordBodyElement();
 	if (!pTS->IsPter(elementType)) {
 		if (pTS->TypeIsObject(elementType)) {
-			pWBE->pter = this->valuePter;
+			pWBE->refCountedPter.pter = this->valuePter;
+			pWBE->refCountedPter.refCount = 1;
 			pTS->IncReferenceForPter(elementType, this->valuePter);
 		}
 		else {
@@ -692,7 +699,8 @@ WordBodyElement* StackElement::GetValueAsWordBodyElement() const {
 		}
 	}
 	else {
-		pWBE->pter = this->valuePter;
+		pWBE->refCountedPter.pter = this->valuePter;
+		pWBE->refCountedPter.refCount = 1;
 		if (!pTS->IsValueOrValuePter(elementType)) {
 			pTS->IncReferenceForPter(elementType, this->valuePter);
 		}
