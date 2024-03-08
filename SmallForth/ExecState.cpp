@@ -43,6 +43,7 @@ ExecState::ExecState(DataStack* pStack, ForthDict* pDict, InputProcessor* pInput
 		pElementBool = nullptr;
 
 		WordBodyElement* pElementInt = new WordBodyElement();
+		pElementInt->refCountedPter.refCount = 99;
 		pElementInt->wordElement_int = 0;
 		intStates[n] = pElementInt;
 		pElementInt = nullptr;

@@ -1053,9 +1053,16 @@ bool PreBuiltWords::PushRefCount(ExecState* pExecState) {
 		return pExecState->CreateException("No TOS to out reference count for");
 	}
 	if (pTS->TypeIsObjectOrObjectPter(pElement->GetType())) {
+		int pterRefCount = pTS->GetPterReferenceCount(pElement->GetType(), pElement->GetContainedPter());
 		int refCount = pTS->GetReferenceCount(pElement->GetType(), pElement->GetContainedPter());
 		ostream* pStdoutStream = pExecState->GetStdout();
-		(*pStdoutStream) << "Reference count is " << refCount << std::endl;
+		(*pStdoutStream) << "Pter ref count is: " << pterRefCount;
+		(*pStdoutStream) << ", obj count is: " << refCount << std::endl;
+	}
+	else if (TypeSystem::IsPter(pElement->GetType())) {
+		int pterRefCount = pTS->GetPterReferenceCount(pElement->GetType(), pElement->GetContainedPter());
+		ostream* pStdoutStream = pExecState->GetStdout();
+		(*pStdoutStream) << "Pter ref count is: " << pterRefCount << std::endl;
 	}
 	else {
 		return pExecState->CreateException("Only object types have reference counts");

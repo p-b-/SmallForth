@@ -58,6 +58,8 @@ public:
 	std::tuple<ForthType, void*> DeferencePointer(ForthType type, void* pter);
 	bool ValueCompatibleWithAddress(ForthType addressType, ForthType valueType, bool directAssignment) const;
 	int GetReferenceCount(ForthType type, void* pter);
+	int GetPterReferenceCount(ForthType type, void* pter);
+
 
 	bool VariableToString(ExecState* pExecState, ForthType type, const void* pter) const;
 	bool TypeExists(std::string typeName) const;
