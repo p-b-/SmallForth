@@ -337,9 +337,12 @@ void TypeSystem::IncReferenceForPter(ForthType type, void* pter) {
 		if (ppWBE != nullptr) {
 			WordBodyElement* pWBE = *ppWBE;
 			if (n < indirectionCount - 1) {
+				// TODO Add atomic increment here
+				pWBE->refCountedPter.refCount++;
 				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter.pter);
 			}
 			else {
+				pWBE->refCountedPter.refCount++;
 				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter.pter);
 			}
 		}
@@ -357,9 +360,12 @@ void TypeSystem::IncReferenceForPterBy(ForthType type, void* pter, int by) {
 		if (ppWBE != nullptr) {
 			WordBodyElement* pWBE = *ppWBE;
 			if (n < indirectionCount - 1) {
+				// TODO Add atomic increment here
+				pWBE->refCountedPter.refCount+=by;
 				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter.pter);
 			}
 			else {
+				pWBE->refCountedPter.refCount += by;
 				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter.pter);
 			}
 		}
@@ -377,11 +383,13 @@ void TypeSystem::DecReferenceForPter(ForthType type, void* pter) {
 		if (ppWBE != nullptr) {
 			WordBodyElement* pWBE = *ppWBE;
 			if (n < indirectionCount - 1) {
+				// TODO Add atomic decrement here
+				pWBE->refCountedPter.refCount --;
 				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter.pter);
 			}
 			else {
+				pWBE->refCountedPter.refCount--;
 				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter.pter);
-
 			}
 		}
 	}
@@ -398,9 +406,12 @@ void TypeSystem::DecReferenceForPterBy(ForthType type, void* pter, int by) {
 		if (ppWBE != nullptr) {
 			WordBodyElement* pWBE = *ppWBE;
 			if (n < indirectionCount - 1) {
+				// TODO Add atomic decrement here
+				pWBE->refCountedPter.refCount -= by;
 				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter.pter);
 			}
 			else {
+				pWBE->refCountedPter.refCount -= by;
 				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter.pter);
 			}
 		}
