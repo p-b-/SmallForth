@@ -45,6 +45,7 @@ void RefCountedObject::InitialiseDictionary() {
 }
 
 void RefCountedObject::IncReference() {
+	// TODO Add atomic increment
 	//if (GetObjectTypeId() == 1026) {
 	//	ForthString* fs = (ForthString*)this;
 	//	cout << "       : " << GetObjectType() << " " << fs->GetContainedString()<<" " << std::hex << this << std::dec << " inc " << this->referenceCount << " to " << (this->referenceCount+1) << endl;
@@ -54,6 +55,8 @@ void RefCountedObject::IncReference() {
 }
 
 void RefCountedObject::DecReference() {
+	// TODO Add atomic decrement
+
 	//if (GetObjectTypeId() == 1026) {
 	//	ForthString* fs = (ForthString*)this;
 	//	cout << "       : " << GetObjectType() << " " << fs->GetContainedString() << " " << std::hex << this << std::dec << " dec " << this->referenceCount << " to " << (this->referenceCount-1) << endl;
@@ -67,10 +70,12 @@ void RefCountedObject::DecReference() {
 }
 
 void RefCountedObject::IncReferenceBy(int by) {
+	// TODO Add atomic increment
 	this->referenceCount += by;
 }
 
 void RefCountedObject::DecReferenceBy(int by) {
+	// TODO Add atomic decrement
 	this->referenceCount -= by;
 	if (this->referenceCount <= 0) {
 		delete this;
