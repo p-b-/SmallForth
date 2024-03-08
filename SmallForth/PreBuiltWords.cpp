@@ -1712,10 +1712,10 @@ bool PreBuiltWords::BuiltIn_Emit(ExecState* pExecState) {
 	ForthType tosType = pExecState->pStack->GetTOSType();
 	char toEmit = '\0';
 	if (tosType == StackElement_Char) {
-		toEmit = pExecState->pStack->PullAsChar() & 0xff;
+		toEmit = pExecState->pStack->PullAsChar();
 	}
 	else if (tosType == StackElement_Int) {
-		toEmit = pExecState->pStack->PullAsInt();
+		toEmit = pExecState->pStack->PullAsInt() & 0xff;
 	}
 	else {
 		return pExecState->CreateException("Could not convert TOS to char");
