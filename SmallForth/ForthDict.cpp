@@ -59,7 +59,7 @@ bool ForthDict::ForgetWord(std::string wordName) {
 	std::map<std::string, ForthWord*>::iterator word = this->words.find(wordName);
 	if (word != this->words.end()) {
 		word->second->SetWordVisibility(false);
-		// TODO Forgetting word will delete it - not required.  Will cause points to inside word to point at freed memory
+		// TODO Forgetting word will delete it - not required.  Will cause pointers to inside word to point at freed memory
 		word->second->DecReference();
 	}
 	else {

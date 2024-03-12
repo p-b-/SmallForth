@@ -42,27 +42,6 @@ void PreBuiltWords::RegisterWords(ForthDict* pDict) {
 	InitialiseWord(pDict, "#insideCommentLine", PreBuiltWords::BuiltIn_InsideCommentLineState);
 	InitialiseWord(pDict, "#debugState", PreBuiltWords::BuiltIn_DebugState);
 
-	// TODO Delete this
-	//ForthWord* pCompileStateWord = new ForthWord("#compileState", PreBuiltWords::BuiltIn_DoCol);
-	//CompileWordIntoWord(pDict, pCompileStateWord, "pushliteral");
-	//CompileTypeIntoWord(pCompileStateWord, StackElement_Int);
-	//CompileLiteralValueIntoWord(pCompileStateWord, 0);
-	//CompileWordIntoWord(pDict, pCompileStateWord, "#intvar");
-	//CompileWordIntoWord(pDict, pCompileStateWord, "exit");
-	//pCompileStateWord->SetWordVisibility(true);
-	//pDict->AddWord(pCompileStateWord);
-
-	// TODO Delete this
-	//// Creating this means #nextBoolVarIndex starts at 1, not 0
-	//ForthWord* pPostponeStateWord = new ForthWord("#postponeState", PreBuiltWords::BuiltIn_DoCol);
-	//CompileWordIntoWord(pDict, pPostponeStateWord, "pushliteral");
-	//CompileTypeIntoWord(pPostponeStateWord, StackElement_Int);
-	//CompileLiteralValueIntoWord(pPostponeStateWord, 1);
-	//CompileWordIntoWord(pDict, pPostponeStateWord, "#boolvar");
-	//CompileWordIntoWord(pDict, pPostponeStateWord, "exit");
-	//pPostponeStateWord->SetWordVisibility(true);
-	//pDict->AddWord(pPostponeStateWord);
-	
 	InitialiseWord(pDict, "docol", PreBuiltWords::BuiltIn_DoCol);
 	InitialiseWord(pDict, "[docol]", PreBuiltWords::BuiltIn_IndirectDoCol);
 	InitialiseWord(pDict, "immediate", PreBuiltWords::BuiltIn_Immediate);
@@ -324,7 +303,7 @@ void PreBuiltWords::CreateSecondLevelWords(ExecState* pExecState) {
 	InterpretForth(pExecState, ": else   #compileState @ 0 = if \" Cannot execute ELSE when not compiling \" exception then \
                                          postpone here dup <r swap >r >r postpone , (postpone) jump postpone updateforwardjump ; immediate");
 	// Note, #if, and #then, have to be defined without exception traps on compilation state, because the actual IF and THEN definitions rely on if and then for the trapping.
-	// TODO Make forget work properaly
+	// TODO Make forget work properly
 
 	InterpretForth(pExecState, ": leave #compileState @ 0 = if \" Cannot execute LEAVE when not compiling \" exception then (postpone) <r (postpone) dup (postpone) >r (postpone) jump ; immediate ");
 	InterpretForth(pExecState, ": while #compileState @ 0 = if \" Cannot execute WHILE when not compiling \" exception then (postpone) not postpone if postpone leave postpone then ; immediate ");
@@ -1220,7 +1199,6 @@ bool PreBuiltWords::BuiltIn_AddWordToObject(ExecState* pExecState) {
 	return success;
 }
 
-// TODO Once variables are working, remove compile state from ExecState and implement this word in Forth
 bool PreBuiltWords::BuiltIn_StartCompilation(ExecState* pExecState) {
 	if (!pExecState->SetVariable("#compileState", (int64_t)1)) {
 		return pExecState->CreateException("Could not set compilation state to 1");
@@ -1228,7 +1206,6 @@ bool PreBuiltWords::BuiltIn_StartCompilation(ExecState* pExecState) {
 	return true;
 }
 
-// TODO Once variables are working, remove compile state from ExecState and implement this word in Forth
 bool PreBuiltWords::BuiltIn_EndCompilation(ExecState* pExecState) {
 	if (!pExecState->SetVariable("#compileState", (int64_t)0)) {
 		return pExecState->CreateException("Could not reset compilation state");
