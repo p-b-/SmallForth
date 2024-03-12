@@ -14,10 +14,6 @@ RefCountedObject::RefCountedObject() {
 
 RefCountedObject::RefCountedObject(ForthDict* pDict) :
 RefCountedObject() {
-	//this->referenceCount = 0;
-	//this->pDictionary = nullptr;
-	//this->objectType = ValueType_Undefined;
-	//this->markedByReferenceCounter = false;
 	if (pDict == nullptr) {
 		InitialiseDictionary();
 	}
@@ -32,9 +28,6 @@ RefCountedObject::~RefCountedObject() {
 		this->pDictionary->DecReference();
 		this->pDictionary = nullptr;
 	}
-	/*if (this->referenceCount != 0) {
-		cout << "Deleting an object with reference " << this->referenceCount << endl;
-	}*/
 }
 
 void RefCountedObject::InitialiseDictionary() {
@@ -45,32 +38,27 @@ void RefCountedObject::InitialiseDictionary() {
 }
 
 void RefCountedObject::IncReference() {
-	//if (GetObjectTypeId() == 1026) {
-	//	ForthString* fs = (ForthString*)this;
-	//	cout << "       : " << GetObjectType() << " " << fs->GetContainedString()<<" " << std::hex << this << std::dec << " inc " << this->referenceCount << " to " << (this->referenceCount+1) << endl;
-	//}
+	// TODO Add atomic increment
 
 	++this->referenceCount;
 }
 
 void RefCountedObject::DecReference() {
-	//if (GetObjectTypeId() == 1026) {
-	//	ForthString* fs = (ForthString*)this;
-	//	cout << "       : " << GetObjectType() << " " << fs->GetContainedString() << " " << std::hex << this << std::dec << " dec " << this->referenceCount << " to " << (this->referenceCount-1) << endl;
-	//}
+	// TODO Add atomic decrement
+
 	--this->referenceCount;
 	if (this->referenceCount == 0) {
-//		cout << "## Deleting ref obj" << std::hex << this << std::dec << endl;
-//
 		delete this;
 	}
 }
 
 void RefCountedObject::IncReferenceBy(int by) {
+	// TODO Add atomic increment
 	this->referenceCount += by;
 }
 
 void RefCountedObject::DecReferenceBy(int by) {
+	// TODO Add atomic decrement
 	this->referenceCount -= by;
 	if (this->referenceCount <= 0) {
 		delete this;

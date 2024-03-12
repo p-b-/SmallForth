@@ -15,12 +15,6 @@ DataStack::DataStack(int stackSize) {
 }
 
 DataStack::~DataStack() {
-	//while (this->stack.size() > 0) {
-	//	StackElement* pTopElement = this->stack.top();
-	//	this->stack.pop();
-	//	delete pTopElement;
-	//	pTopElement = nullptr;
-	//}
 }
 
 bool DataStack::Push(int64_t value) {
