@@ -627,15 +627,17 @@ bool StackElement::PokeObjectIntoContainedPter(ExecState* pExecState, StackEleme
 		WordBodyElement** ppWBEAddress = static_cast<WordBodyElement**>(valuePter);
 		WordBodyElement** ppWBEObject = static_cast<WordBodyElement**>(objectPter);
 		// TODO Test this change
-		//WordBodyElement** ppWBEContainedInAddress = static_cast<WordBodyElement**>((*ppWBEAddress)->pter);
 		WordBodyElement** ppWBEContainedInAddress = static_cast<WordBodyElement**>((*ppWBEAddress)->refCountedPter.pter);
+		// Currently, the contained pointer has this many references held on it.
+		int currentValuePterCount = (*ppWBEAddress)->refCountedPter.refCount;
+
 		if (ppWBEContainedInAddress != ppWBEObject && ppWBEContainedInAddress != nullptr) {
-			pTS->DecReferenceForPter(addressType, valuePter);
+			pTS->DecReferenceForPterBy(addressType, valuePter, currentValuePterCount-1);
 			pTS->DecReferenceForPter(addressType, valuePter);
 			(*ppWBEAddress)->refCountedPter.pter = nullptr;
 			(*ppWBEAddress)->refCountedPter.pter = ppWBEObject;
-			pTS->IncReferenceForPter(objectType, objectPter);
-			pTS->IncReferenceForPter(objectType, objectPter);
+			pTS->IncReferenceForPterBy(addressType, valuePter, currentValuePterCount - 1);
+			pTS->IncReferenceForPter(addressType, valuePter);
 		}
 	}
 	else {
@@ -644,12 +646,15 @@ bool StackElement::PokeObjectIntoContainedPter(ExecState* pExecState, StackEleme
 		//RefCountedObject* pContainedInAddress = static_cast<RefCountedObject*>((*ppWBEAddress)->pter);
 		// TODO Test this change
 		RefCountedObject* pContainedInAddress = static_cast<RefCountedObject*>((*ppWBEAddress)->refCountedPter.pter);
+
+		// Currently, the contained pointer has this many references held on it.
+		int currentValuePterCount = (*ppWBEAddress)->refCountedPter.refCount;
 		// Not calling dec/inc reference directly only the objects, but using the type system to do so
 		// This is because we may not actually be working with pointers to objects directly, but levels of redirection and
 		//  the direction dec/inc only work on pointers to the objects, not pointers to pointers to pointers to objects.
 		if (pContainedInAddress != pObject && pContainedInAddress !=nullptr)  {
-			// Removing reference to whatever pAddress  currently points at - decrease reference
-			pTS->DecReferenceForPter(addressType, valuePter);
+			// Removing reference to whatever pAddress currently points at - decrease reference
+			pTS->DecReferenceForPterBy(addressType, valuePter, currentValuePterCount-1);
 
 			// *** Comment A
 			// The reference count belongs to the object, not the object pointer.
@@ -666,14 +671,12 @@ bool StackElement::PokeObjectIntoContainedPter(ExecState* pExecState, StackEleme
 			(*ppWBEAddress)->refCountedPter.pter = nullptr;
 			(*ppWBEAddress)->refCountedPter.pter = pObject;
 
-
-			pTS->IncReferenceForPter(objectType, objectPter);
-
+			pTS->IncReferenceForPterBy(addressType, valuePter, currentValuePterCount-1);
 
 			// *** Comment B
 			// Stop deleting pAddressElement (after exiting) down from deleting the object
 			// See above comment marked *** Comment A
-			pTS->IncReferenceForPter(objectType, objectPter);
+			pTS->IncReferenceForPter(addressType, valuePter);
 		}
 	}
 	return true;
