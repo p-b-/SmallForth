@@ -106,7 +106,6 @@ bool DataStack::Push(ForthType forthType, void* pter) {
 	return true;
 }
 
-
 bool DataStack::Push(const std::string& value) {
 	ForthString* pForthString = new ForthString(value);
 	if (!MoveToNextSP()) {

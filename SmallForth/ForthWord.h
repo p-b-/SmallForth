@@ -4,7 +4,8 @@
 #include "RefCountedObject.h"
 
 class StackElement;
-class ExecState; 
+class ExecState;
+class WordBodyElement;
 
 class ForthWord : public RefCountedObject
 {

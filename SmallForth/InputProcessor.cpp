@@ -15,7 +15,7 @@
 #include "CompileHelper.h"
 #include "ForthFile.h"
 #include "PreBuiltWords.h"
-
+#include "WordBodyElement.h"
 
 volatile bool InputProcessor::s_executionToHalt = false;
 

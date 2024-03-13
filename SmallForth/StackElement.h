@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string>
 #include "RefCountedObject.h"
+class WordBodyElement;
 
 class StackElement
 {

@@ -12,6 +12,7 @@ class ForthWord;
 class TypeSystem;
 class CompileHelper;
 class DebugHelper;
+class WordBodyElement;
 
 struct ExecSubState {
 	WordBodyElement** pterToCFA;

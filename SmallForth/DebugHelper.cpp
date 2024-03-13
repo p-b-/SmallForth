@@ -5,6 +5,7 @@
 #include "InputProcessor.h"
 #include "PreBuiltWords.h"
 #include "ForthWord.h"
+#include "WordBodyElement.h"
 
 Breakpoint::Breakpoint(const Breakpoint& rhs) {
 	_enabled = rhs._enabled;

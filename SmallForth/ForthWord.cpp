@@ -11,6 +11,7 @@
 #include "DebugHelper.h"
 #include "ForthFile.h"
 #include "PreBuiltWords.h"
+#include "WordBodyElement.h"
 
 ForthWord::ForthWord(const std::string& name) :
 	RefCountedObject(nullptr) {
@@ -97,8 +98,8 @@ void ForthWord::CompileTypeIntoWord(ForthType forthType) {
 
 void ForthWord::CompilePterIntoWord(void* pter) {
 	WordBodyElement* pNewElement = new WordBodyElement();
-	pNewElement->refCountedPter.pter = pter;
-	pNewElement->refCountedPter.refCount = 1;
+	pNewElement->refCountedPter = pter;
+	pNewElement->refCount = 1;
 	GrowByAndAdd(1, pNewElement);
 }
 
@@ -235,7 +236,7 @@ bool ForthWord::BuiltIn_DescribeWord(ExecState* pExecState) {
 						successAtLiteral = pTS->VariableToString(pExecState, upcomingWordType, reinterpret_cast<void*>(pEl->wordElement_int));
 					}
 					else {
-						successAtLiteral = pTS->VariableToString(pExecState, upcomingWordType, pEl->refCountedPter.pter);
+						successAtLiteral = pTS->VariableToString(pExecState, upcomingWordType, pEl->refCountedPter);
 					}
 					if (!successAtLiteral) {
 						(*pStdoutStream) << " could not retrieve)" << std::endl;

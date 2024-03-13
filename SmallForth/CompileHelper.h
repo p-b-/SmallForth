@@ -2,6 +2,7 @@
 #include <string>
 class ForthWord;
 class ExecState;
+class WordBodyElement;
 
 class CompileHelper
 {

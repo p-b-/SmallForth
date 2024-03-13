@@ -9,6 +9,7 @@
 #include "ForthDict.h"
 #include "ReturnStack.h"
 #include "InputProcessor.h"
+#include "WordBodyElement.h"
 
 using std::ostream;
 
@@ -1075,22 +1076,6 @@ bool PreBuiltWords::PushRefCount(ExecState* pExecState) {
 	else {
 		return pExecState->CreateException("Only object types have reference counts");
 	}
-
-	/*if (pTS->TypeIsObjectOrObjectPter(pElement->GetType())) {
-		int pterRefCount = pTS->GetPterReferenceCount(pElement->GetType(), pElement->GetContainedPter());
-		int refCount = pTS->GetReferenceCount(pElement->GetType(), pElement->GetContainedPter());
-		ostream* pStdoutStream = pExecState->GetStdout();
-		(*pStdoutStream) << "Pter ref count is: " << pterRefCount;
-		(*pStdoutStream) << ", obj count is: " << refCount << std::endl;
-	}
-	else if (TypeSystem::IsPter(pElement->GetType())) {
-		int pterRefCount = pTS->GetPterReferenceCount(pElement->GetType(), pElement->GetContainedPter());
-		ostream* pStdoutStream = pExecState->GetStdout();
-		(*pStdoutStream) << "Pter ref count is: " << pterRefCount << std::endl;
-	}
-	else {
-		return pExecState->CreateException("Only object types have reference counts");
-	}*/
 	return true;
 }
 

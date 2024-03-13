@@ -51,27 +51,6 @@ enum BinaryOperationType {
 	BinaryOp_NotEquals
 };
 
-struct RefCountedPter {
-	// Note, order here matters. Dereferencing a pointer (TypeSystem::DeferencePointer() ) can lead to a pointer to either a value in WordBodyElement union (such as an int, bool)
-	//  or a pointer to the pter contained here. It is this pter in this struct that has its location returned.
-	// Swapping these leads to a pointer being returned for value types that does not actually align with the start of those value types in memory.
-	void* pter;
-	int16_t refCount;
-};
-
-union WordBodyElement {
-
-	XT wordElement_XT;
-	int64_t wordElement_int;
-	double wordElement_float;
-	bool wordElement_bool;
-	char wordElement_char;
-	WordBodyElement** wordElement_BodyPter;
-
-	RefCountedPter refCountedPter;
-	ForthType forthType;
-};
-
 enum ObjectFunction {
 	Function_GetSize = 0,
 	Function_Hash,
