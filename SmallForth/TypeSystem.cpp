@@ -343,11 +343,9 @@ void TypeSystem::IncReferenceForPter(ForthType type, void* pter) {
 				pWBE->refCount++;
 				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter);
 			}
-			else {
-				if (isObject) {
-					pWBE->refCount++;
-					pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter);
-				}
+			else if (isObject) {
+				pWBE->refCount++;
+				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter);
 			}
 		}
 	}
@@ -360,6 +358,8 @@ void TypeSystem::IncReferenceForPterBy(ForthType type, void* pter, int by) {
 	WordBodyElement** ppWBE = static_cast<WordBodyElement**>(pter);
 	RefCountedObject* pObject = static_cast<RefCountedObject*>(pter);
 	int indirectionCount = GetIndirectionLevel(type);
+	bool isObject = TypeIsObjectOrObjectPter(type);
+
 	for (int n = 0; n < indirectionCount; ++n) {
 		if (ppWBE != nullptr) {
 			WordBodyElement* pWBE = *ppWBE;
@@ -368,13 +368,13 @@ void TypeSystem::IncReferenceForPterBy(ForthType type, void* pter, int by) {
 				pWBE->refCount+=by;
 				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter);
 			}
-			else {
+			else if (isObject) {
 				pWBE->refCount += by;
 				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter);
 			}
 		}
 	}
-	if (pObject != nullptr) {
+	if (pObject != nullptr && isObject) {
 		pObject->IncReferenceBy(by);
 	}
 }
@@ -383,6 +383,8 @@ void TypeSystem::DecReferenceForPter(ForthType type, void* pter) {
 	WordBodyElement** ppWBE = static_cast<WordBodyElement**>(pter);
 	RefCountedObject* pObject = static_cast<RefCountedObject*>(pter);
 	int indirectionCount = GetIndirectionLevel(type);
+	bool isObject = TypeIsObjectOrObjectPter(type);
+
 	for (int n = 0; n < indirectionCount; ++n) {
 		if (ppWBE != nullptr) {
 			WordBodyElement* pWBE = *ppWBE;
@@ -391,13 +393,13 @@ void TypeSystem::DecReferenceForPter(ForthType type, void* pter) {
 				pWBE->refCount --;
 				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter);
 			}
-			else {
+			else if (isObject) {
 				pWBE->refCount--;
 				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter);
 			}
 		}
 	}
-	if (pObject != nullptr) {
+	if (pObject != nullptr && isObject) {
 		pObject->DecReference();
 	}
 }
@@ -406,6 +408,8 @@ void TypeSystem::DecReferenceForPterBy(ForthType type, void* pter, int by) {
 	WordBodyElement** ppWBE = static_cast<WordBodyElement**>(pter);
 	RefCountedObject* pObject = static_cast<RefCountedObject*>(pter);
 	int indirectionCount = GetIndirectionLevel(type);
+	bool isObject = TypeIsObjectOrObjectPter(type);
+
 	for (int n = 0; n < indirectionCount; ++n) {
 		if (ppWBE != nullptr) {
 			WordBodyElement* pWBE = *ppWBE;
@@ -414,13 +418,13 @@ void TypeSystem::DecReferenceForPterBy(ForthType type, void* pter, int by) {
 				pWBE->refCount -= by;
 				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter);
 			}
-			else {
+			else if (isObject) {
 				pWBE->refCount -= by;
 				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter);
 			}
 		}
 	}
-	if (pObject != nullptr) {
+	if (pObject != nullptr && isObject) {
 		pObject->DecReferenceBy(by);
 	}
 }
