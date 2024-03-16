@@ -343,7 +343,7 @@ void TypeSystem::IncReferenceForPter(ForthType type, void* pter) {
 				pWBE->refCount++;
 				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter);
 			}
-			else if (isObject) {
+			else {
 				pWBE->refCount++;
 				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter);
 			}
@@ -368,7 +368,7 @@ void TypeSystem::IncReferenceForPterBy(ForthType type, void* pter, int by) {
 				pWBE->refCount+=by;
 				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter);
 			}
-			else if (isObject) {
+			else { 
 				pWBE->refCount += by;
 				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter);
 			}
@@ -393,7 +393,7 @@ void TypeSystem::DecReferenceForPter(ForthType type, void* pter) {
 				pWBE->refCount --;
 				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter);
 			}
-			else if (isObject) {
+			else {
 				pWBE->refCount--;
 				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter);
 			}
@@ -418,7 +418,7 @@ void TypeSystem::DecReferenceForPterBy(ForthType type, void* pter, int by) {
 				pWBE->refCount -= by;
 				ppWBE = static_cast<WordBodyElement**>(pWBE->refCountedPter);
 			}
-			else if (isObject) {
+			else {
 				pWBE->refCount -= by;
 				pObject = static_cast<RefCountedObject*>(pWBE->refCountedPter);
 			}

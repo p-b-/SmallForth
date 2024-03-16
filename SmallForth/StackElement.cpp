@@ -44,12 +44,10 @@ StackElement::StackElement(const StackElement& element) {
 	else {
 		// It's a pointer to something, just copy the pointer.
 		this->valuePter = element.valuePter; 
-		if (!pTS->IsValueOrValuePter(elementType)) {
-			// Its a pointer to a ref-counted object - increase reference count.  Note, the type system will take care of
-			//  getting the reference out of the WordbodyElement** that the this->valuePter points at
-			if (this->valuePter != nullptr) {
-				pTS->IncReferenceForPter(elementType, this->valuePter);
-			}
+		// Its a pointer to a ref-counted object, or a pter to a value - increase reference count.  Note, the type system will take care of
+		//  getting the reference out of the WordbodyElement** that the this->valuePter points at
+		if (this->valuePter != nullptr) {
+			pTS->IncReferenceForPter(elementType, this->valuePter);
 		}
 	}
 }
@@ -98,7 +96,7 @@ StackElement& StackElement::operator=(const StackElement& element) {
 			objectToDec = this->valuePter;
 			typeToDec = this->elementType;
 		}
-		else if (pTS->IsPter(elementType) && !pTS->IsValueOrValuePter(elementType)) {
+		else if (pTS->IsPter(elementType)) {
 			decObjectPter = true;
 			objectToDec = this->valuePter;
 			typeToDec = this->elementType;
@@ -129,12 +127,10 @@ StackElement& StackElement::operator=(const StackElement& element) {
 		else {
 			// It's a pointer to something, just copy the pointer.
 			this->valuePter = element.valuePter;
-			if (!pTS->IsValueOrValuePter(elementType)) {
-				// Its a pointer to a ref-counted object - increase reference count.  Note, the type system will take care of
-				//  getting the reference out of the WordbodyElement** that the this->valuePter points at
-				if (this->valuePter != nullptr) {
-					pTS->IncReferenceForPter(elementType, this->valuePter);
-				}
+			// Its a pointer to a ref-counted object, or a pter to a value - increase reference count.  Note, the type system will take care of
+			//  getting the reference out of the WordbodyElement** that the this->valuePter points at
+			if (this->valuePter != nullptr) {
+				pTS->IncReferenceForPter(elementType, this->valuePter);
 			}
 		}
 
@@ -168,7 +164,7 @@ StackElement& StackElement::operator=(StackElement&& element) {
 			objectToDec = this->valuePter;
 			typeToDec = this->elementType;
 		}
-		else if (pTS->IsPter(elementType) && !pTS->IsValueOrValuePter(elementType)) {
+		else if (pTS->IsPter(elementType)) {
 			decObjectPter = true;
 			objectToDec = this->valuePter;
 			typeToDec = this->elementType;
@@ -220,9 +216,7 @@ StackElement& StackElement::operator=(StackElement&& element) {
 
 StackElement::~StackElement() {
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	if (!pTS->IsValueOrValuePter(elementType)) {
-		pTS->DecReferenceForPter(elementType, this->valuePter);
-	}
+	pTS->DecReferenceForPter(elementType, this->valuePter);
 }
 
 StackElement::StackElement(char c) {
@@ -276,9 +270,7 @@ StackElement::StackElement(ForthType forthType, void* pter) {
 
 	elementType = forthType;
 	valuePter = pter;
-	if (!pTS->IsValueOrValuePter(elementType)) {
-		pTS->IncReferenceForPter(elementType, this->valuePter);
-	}
+	pTS->IncReferenceForPter(elementType, this->valuePter);
 }
 
 StackElement::StackElement(ForthType forthType, WordBodyElement** ppLiteral) {
@@ -304,10 +296,9 @@ StackElement::StackElement(ForthType forthType, WordBodyElement** ppLiteral) {
 	}
 	else {
 		this->valuePter = (void*)ppLiteral;
-		// If pointer to a ref-counted object, increment the object (follow the dereference chain)
-		if (!pTS->IsValueOrValuePter(forthType)) {
-			pTS->IncReferenceForPter(forthType, (static_cast<WordBodyElement**>(this->valuePter)));
-		}
+		// If pointer to a ref-counted object, or a value pter, increment the object (follow the dereference chain)
+		//  (if a pter to a value, this does not increment a ref-count for object, but does increment ref counters for all pters in pter-chain)
+		pTS->IncReferenceForPter(forthType, (static_cast<WordBodyElement**>(this->valuePter)));
 	}
 }
 
@@ -383,9 +374,7 @@ void StackElement::SetTo(ForthType forthType, WordBodyElement** ppLiteral) {
 	else {
 		this->valuePter = (void*)ppLiteral;
 		// If pointer to a ref-counted object, increment the object (follow the dereference chain)
-		if (!pTS->IsValueOrValuePter(forthType)) {
-			pTS->IncReferenceForPter(forthType, (static_cast<WordBodyElement**>(this->valuePter)));
-		}
+		pTS->IncReferenceForPter(forthType, (static_cast<WordBodyElement**>(this->valuePter)));
 	}
 }
 
@@ -395,7 +384,6 @@ void StackElement::SetTo(ForthType forthType, void* value) {
 	elementType = forthType;
 	valuePter = value;
 	if (TypeSystem::IsPter(elementType)) {
-	//if (!pTS->IsValueOrValuePter(elementType)) {
 		pTS->IncReferenceForPter(elementType, this->valuePter);
 	}
 }
@@ -405,7 +393,7 @@ void StackElement::RelinquishValue() {
 		return;
 	}
 	TypeSystem* pTS = TypeSystem::GetTypeSystem();
-	if (!pTS->IsValueOrValuePter(elementType)) {
+	if (pTS->IsPter(elementType) || pTS->TypeIsObject(elementType)) {
 		pTS->DecReferenceForPter(elementType, this->valuePter);
 		this->valuePter = nullptr;
 	}
@@ -424,7 +412,6 @@ void StackElement::RelinquishValue() {
 	}
 
 	this->elementType = StackElement_Undefined;
-
 }
 
 char StackElement::GetChar() const 
@@ -694,6 +681,8 @@ WordBodyElement* StackElement::GetValueAsWordBodyElement() const {
 			pTS->IncReferenceForPter(elementType, this->valuePter);
 		}
 		else {
+			// This sets the initial pter ref count to 1
+			pWBE->refCount = 1;
 			switch (pTS->GetValueType(elementType)) {
 			case StackElement_Char: pWBE->wordElement_char = this->valueChar; break;
 			case StackElement_Int: pWBE->wordElement_int = this->valueInt64; break;
@@ -706,9 +695,7 @@ WordBodyElement* StackElement::GetValueAsWordBodyElement() const {
 	else {
 		pWBE->refCountedPter = this->valuePter;
 		pWBE->refCount = 1;
-		if (!pTS->IsValueOrValuePter(elementType)) {
-			pTS->IncReferenceForPter(elementType, this->valuePter);
-		}
+		pTS->IncReferenceForPter(elementType, this->valuePter);
 	}
 	return pWBE;
 }
