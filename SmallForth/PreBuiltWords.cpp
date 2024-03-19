@@ -9,6 +9,7 @@
 #include "ForthDict.h"
 #include "ReturnStack.h"
 #include "InputProcessor.h"
+#include "WordBodyElement.h"
 
 using std::ostream;
 
@@ -1050,12 +1051,27 @@ bool PreBuiltWords::PushRefCount(ExecState* pExecState) {
 
 	StackElement* pElement = pExecState->pStack->TopElement();
 	if (pElement == nullptr) {
-		return pExecState->CreateException("No TOS to out reference count for");
+		return pExecState->CreateException("No TOS to count reference count for");
 	}
-	if (pTS->TypeIsObjectOrObjectPter(pElement->GetType())) {
+	if (TypeSystem::IsPter(pElement->GetType())) {
+		if (pTS->TypeIsObjectOrObjectPter(pElement->GetType())) {
+			int pterRefCount = pTS->GetPterReferenceCount(pElement->GetType(), pElement->GetContainedPter());
+			int refCount = pTS->GetReferenceCount(pElement->GetType(), pElement->GetContainedPter());
+			ostream* pStdoutStream = pExecState->GetStdout();
+			(*pStdoutStream) << "Pter ref count is: " << pterRefCount;
+			(*pStdoutStream) << ", obj count is: " << refCount << std::endl;
+		}
+		else {
+			int pterRefCount = pTS->GetPterReferenceCount(pElement->GetType(), pElement->GetContainedPter());
+			ostream* pStdoutStream = pExecState->GetStdout();
+			(*pStdoutStream) << "Pter ref count is: " << pterRefCount << std::endl;
+		}
+	}
+	else if (pTS->TypeIsObject(pElement->GetType())) {
 		int refCount = pTS->GetReferenceCount(pElement->GetType(), pElement->GetContainedPter());
 		ostream* pStdoutStream = pExecState->GetStdout();
-		(*pStdoutStream) << "Reference count is " << refCount << std::endl;
+		(*pStdoutStream) << "Pter ref count is: N/A";
+		(*pStdoutStream) << ", obj count is: " << refCount << std::endl;
 	}
 	else {
 		return pExecState->CreateException("Only object types have reference counts");

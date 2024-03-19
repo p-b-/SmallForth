@@ -4,6 +4,7 @@
 #include <map>
 
 class ForthWord;
+class WordBodyElement;
 
 class ForthDict : public RefCountedObject
 {

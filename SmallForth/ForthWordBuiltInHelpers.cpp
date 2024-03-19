@@ -8,6 +8,7 @@
 #include "TypeSystem.h"
 #include "CompileHelper.h"
 #include "PreBuiltWords.h"
+#include "WordBodyElement.h"
 
 // TODO Refactor this
 //      This will be altered when changing the way binary operations function.  Simple types will still have code from here, but if type1 (further down the stack) is an object, it

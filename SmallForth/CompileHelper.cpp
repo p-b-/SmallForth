@@ -5,6 +5,7 @@
 #include "ForthWord.h"
 #include "ForthDict.h"
 #include "PreBuiltWords.h"
+#include "WordBodyElement.h"
 
 CompileHelper::CompileHelper() {
 	this->pWordUnderCreation = nullptr;

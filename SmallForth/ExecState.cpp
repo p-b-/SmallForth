@@ -9,6 +9,7 @@
 #include "ForthFile.h"
 #include "CompileHelper.h"
 #include "DebugHelper.h"
+#include "WordBodyElement.h"
 
 ExecState::ExecState() 
 : ExecState(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr) {
@@ -43,6 +44,7 @@ ExecState::ExecState(DataStack* pStack, ForthDict* pDict, InputProcessor* pInput
 		pElementBool = nullptr;
 
 		WordBodyElement* pElementInt = new WordBodyElement();
+		pElementInt->refCount = 99;
 		pElementInt->wordElement_int = 0;
 		intStates[n] = pElementInt;
 		pElementInt = nullptr;

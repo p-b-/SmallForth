@@ -4,6 +4,7 @@
 #include <list>
 class ExecState;
 class ForthWord;
+class WordBodyElement;
 
 class Breakpoint {
 public:

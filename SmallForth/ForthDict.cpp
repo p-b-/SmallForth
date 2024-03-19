@@ -4,6 +4,7 @@
 #include "ForthWord.h"
 #include "ExecState.h"
 #include "DataStack.h"
+#include "WordBodyElement.h"
 
 ForthDict::ForthDict() :
 	RefCountedObject() {

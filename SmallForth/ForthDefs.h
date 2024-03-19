@@ -51,18 +51,6 @@ enum BinaryOperationType {
 	BinaryOp_NotEquals
 };
 
-union WordBodyElement {
-
-	XT wordElement_XT;
-	int64_t wordElement_int;
-	double wordElement_float;
-	bool wordElement_bool;
-	char wordElement_char;
-	WordBodyElement** wordElement_BodyPter;
-	void* pter;
-	ForthType forthType;
-};
-
 enum ObjectFunction {
 	Function_GetSize = 0,
 	Function_Hash,
